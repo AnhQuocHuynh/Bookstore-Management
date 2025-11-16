@@ -1,5 +1,5 @@
 {
-  "name": "Bookstore-Management",
+  "name": "bookstore-management",
   "private": true,
   "scripts": {
     "build": "turbo run build",

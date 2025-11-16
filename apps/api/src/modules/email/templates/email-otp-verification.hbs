@@ -1,0 +1,130 @@
+<html lang='en'>
+  <head>
+    <meta charset='utf-8' />
+    <meta name='viewport' content='width=device-width' />
+    <title>Your verification code</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: #f6f8fb;
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+          'Helvetica Neue', Arial;
+        color: #111827;
+        -webkit-text-size-adjust: 100%;
+      }
+      .container {
+        width: 100%;
+        max-width: 600px;
+        margin: 24px auto;
+        background: #ffffff;
+        border-radius: 8px;
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+        overflow: hidden;
+      }
+      .header {
+        padding: 24px;
+        text-align: center;
+        background: linear-gradient(90deg, #0ea5e9, #7c3aed);
+        color: white;
+      }
+      .header h1 {
+        margin: 0;
+        font-size: 20px;
+        font-weight: 600;
+      }
+      .content {
+        padding: 28px 24px;
+      }
+      .lead {
+        font-size: 16px;
+        margin-bottom: 20px;
+        line-height: 1.5;
+      }
+      .otp-box {
+        display: block;
+        margin: 0 auto 22px auto;
+        padding: 18px 22px;
+        border-radius: 8px;
+        background: #f3f4f6;
+        text-align: center;
+        font-size: 28px;
+        letter-spacing: 4px;
+        font-weight: 700;
+        width: fit-content;
+      }
+      .note {
+        font-size: 13px;
+        color: #6b7280;
+        margin-top: 10px;
+      }
+      .footer {
+        padding: 16px 24px;
+        font-size: 13px;
+        color: #9ca3af;
+        text-align: center;
+        background: #fafafa;
+      }
+      a.cta {
+        display: inline-block;
+        margin-top: 8px;
+        padding: 10px 16px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-weight: 600;
+      }
+      /* Mobile small adjustments */
+      @media (max-width: 420px) {
+        .otp-box {
+          font-size: 24px;
+          padding: 14px 18px;
+        }
+        .content {
+          padding: 20px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <table
+      role='presentation'
+      width='100%'
+      cellpadding='0'
+      cellspacing='0'
+      aria-hidden='true'
+    >
+      <tr>
+        <td align='center'>
+          <div class='container' role='article' aria-label='Verification code'>
+            <div class='header'>
+              <h1>Verification Code</h1>
+            </div>
+
+            <div class='content'>
+              <p class='lead'>Use the code below to verify your email address.
+                This code is valid for a short time only.</p>
+
+              <div
+                class='otp-box'
+                role='text'
+                aria-live='polite'
+                aria-atomic='true'
+              >
+                {{otp}}
+              </div>
+
+              <p class='note'>If you didn't request this code, you can safely
+                ignore this email. Do not share this code with anyone.</p>
+              <p style='margin-top:18px;'>Thanks,<br />The Team</p>
+            </div>
+
+            <div class='footer'>
+              This message was sent to you for account security purposes.
+            </div>
+          </div>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

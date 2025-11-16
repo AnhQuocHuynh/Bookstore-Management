@@ -1,0 +1,60 @@
+import {
+  Author,
+  AuthorizationCode,
+  Book,
+  Category,
+  Customer,
+  DisplayLog,
+  DisplayProduct,
+  DisplayShelf,
+  Employee,
+  Inventory,
+  Invitation,
+  Invoice,
+  Order,
+  OrderDetail,
+  Otp,
+  Payment,
+  Publisher,
+  Purchase,
+  PurchaseDetail,
+  ReturnExchangeDetail,
+  RT,
+  Supplier,
+  User,
+} from '@/database/tenant/entities';
+import { Global, Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+
+@Global()
+@Module({
+  imports: [
+    TypeOrmModule.forFeature([
+      Book,
+      Employee,
+      Order,
+      RT,
+      Invitation,
+      AuthorizationCode,
+      Customer,
+      User,
+      Otp,
+      Author,
+      Category,
+      Invoice,
+      OrderDetail,
+      Payment,
+      Publisher,
+      PurchaseDetail,
+      Purchase,
+      Supplier,
+      ReturnExchangeDetail,
+      Inventory,
+      DisplayLog,
+      DisplayProduct,
+      DisplayShelf,
+    ]),
+  ],
+  exports: [TypeOrmModule],
+})
+export class TenantDatabaseModule {}
