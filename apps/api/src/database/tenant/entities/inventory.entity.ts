@@ -1,5 +1,6 @@
-import { Book } from '@/database/tenant/entities/book.entity';
+import { Book } from '@/database/tenant/entities';
 import {
+  BeforeInsert,
   Column,
   CreateDateColumn,
   Entity,
@@ -21,28 +22,25 @@ export class Inventory {
   @Column({ type: 'int', default: 0 })
   quantity: number;
 
-  @Column({
-    type: 'int',
-    default: 0,
-  })
+  @Column({ type: 'int', default: 0 })
   reserved: number;
 
   @Column({ type: 'int', default: 0 })
   damaged: number;
 
-  @Column({
-    type: 'int',
-    default: 0,
-  })
+  @Column({ type: 'int' })
   available: number;
 
-  @CreateDateColumn({
-    type: 'timestamp',
-  })
+  @CreateDateColumn({ type: 'timestamp' })
   readonly createdAt: Date;
 
-  @UpdateDateColumn({
-    type: 'timestamp',
-  })
+  @UpdateDateColumn({ type: 'timestamp' })
   readonly updatedAt: Date;
+
+  @BeforeInsert()
+  setAvailable() {
+    if (this.available === undefined || this.available === null) {
+      this.available = this.quantity || 0;
+    }
+  }
 }

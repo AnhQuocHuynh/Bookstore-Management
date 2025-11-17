@@ -16,6 +16,20 @@ import { Repository } from 'typeorm';
 export class PublishersService {
   constructor(private readonly tenantService: TenantService) {}
 
+  async getPublisherByField(
+    field: keyof Publisher,
+    value: string,
+    repo: Repository<Publisher>,
+  ) {
+    return (
+      repo.findOne({
+        where: {
+          [field]: value,
+        },
+      }) ?? null
+    );
+  }
+
   async getPublishers(bookStoreId: string) {
     const dataSource = await this.tenantService.getTenantConnection({
       bookStoreId,

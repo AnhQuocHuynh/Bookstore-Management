@@ -1,5 +1,5 @@
 import { CategoryStatus } from '@/common/enums';
-import { Book } from '@/database/tenant/entities/book.entity';
+import { Book } from '@/database/tenant/entities';
 import {
   Column,
   CreateDateColumn,
