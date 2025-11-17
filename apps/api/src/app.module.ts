@@ -5,6 +5,7 @@ import { AdminModule } from '@/modules/admin/admin.module';
 import { AuthModule } from '@/modules/auth/auth.module';
 import { BookStoreModule } from '@/modules/bookstore/bookstore.module';
 import { EmailModule } from '@/modules/email/email.module';
+import { FilesModule } from '@/modules/files/files.module';
 import { InvitationModule } from '@/modules/invitations/invitation.module';
 import { SupplierModule } from '@/modules/suppliers/supplier.module';
 import { UserModule } from '@/modules/users/user.module';
@@ -52,6 +53,7 @@ import { PublishersModule } from './modules/publishers/publishers.module';
     SupplierModule,
     PublishersModule,
     BookStoreModule,
+    FilesModule,
   ],
 })
 export class AppModule {}
