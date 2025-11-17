@@ -41,9 +41,6 @@ export class Book {
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   price: number;
 
-  @Column({ type: 'int', default: 0 })
-  stockQuantity: number;
-
   @Column({ type: 'date', nullable: true })
   publicationDate?: Date;
 
@@ -53,8 +50,10 @@ export class Book {
   @Column({ nullable: true })
   language?: string;
 
-  @Column({ nullable: true })
-  coverImage?: string;
+  @Column({
+    type: 'text',
+  })
+  coverImage: string;
 
   @ManyToOne(() => Author, (author) => author.books, {
     onDelete: 'CASCADE',

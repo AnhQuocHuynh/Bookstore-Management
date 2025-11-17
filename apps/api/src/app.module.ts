@@ -14,7 +14,9 @@ import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
+import { BooksModule } from './modules/books/books.module';
 import { PublishersModule } from './modules/publishers/publishers.module';
+import { CategoriesModule } from './modules/categories/categories.module';
 
 @Module({
   imports: [
@@ -54,6 +56,8 @@ import { PublishersModule } from './modules/publishers/publishers.module';
     PublishersModule,
     BookStoreModule,
     FilesModule,
+    BooksModule,
+    CategoriesModule,
   ],
 })
 export class AppModule {}
