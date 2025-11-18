@@ -14,6 +14,18 @@ import { Repository } from 'typeorm';
 export class CategoriesService {
   constructor(private readonly tenantsService: TenantService) {}
 
+  async getCategories(userSession: TUserSession) {
+    const { bookStoreId } = userSession;
+
+    const dataSource = await this.tenantsService.getTenantConnection({
+      bookStoreId,
+    });
+
+    const categoryRepo = dataSource.getRepository(Category);
+
+    return categoryRepo.find();
+  }
+
   async findCategoryByField(
     field: keyof Category,
     value: string,

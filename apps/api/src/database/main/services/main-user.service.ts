@@ -40,4 +40,21 @@ export class MainUserService {
   async updateUser(data: Partial<User>, userId: string) {
     await this.userRepo.update({ id: userId }, data);
   }
+
+  async getUseByIds(userIds: string[]) {
+    if (!userIds || userIds.length === 0) return {};
+
+    const users = await this.userRepo
+      .createQueryBuilder('user')
+      .where('user.id IN (:...userIds)', { userIds })
+      .getMany();
+
+    const userMap: { [id: string]: User } = {};
+
+    for (const user of users) {
+      userMap[user.id] = user;
+    }
+
+    return userMap;
+  }
 }

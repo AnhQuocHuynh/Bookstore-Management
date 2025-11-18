@@ -17,6 +17,7 @@ export class DisplayLog {
 
   @ManyToOne(() => Book, (book) => book.displayLogs, {
     onDelete: 'RESTRICT',
+    nullable: true,
   })
   book: Book;
 
@@ -25,8 +26,8 @@ export class DisplayLog {
   })
   shelf: DisplayShelf;
 
-  @Column({ type: 'int' })
-  quantity: number;
+  @Column({ type: 'int', nullable: true })
+  quantity?: number;
 
   @Column({
     type: 'enum',
