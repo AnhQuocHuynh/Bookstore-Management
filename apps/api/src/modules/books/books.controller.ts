@@ -1,4 +1,4 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post } from '@nestjs/common';
 import { BooksService } from './books.service';
 import { Roles, UserSession } from '@/common/decorators';
 import { UserRole } from '@/modules/users/enums';
@@ -16,5 +16,11 @@ export class BooksController {
     @UserSession() userSession: TUserSession,
   ) {
     return this.booksService.createBook(createBookDto, userSession);
+  }
+
+  @Get()
+  @Roles(UserRole.CUSTOMER, UserRole.EMPLOYEE, UserRole.OWNER)
+  async getBooks(@UserSession() userSession: TUserSession) {
+    return this.booksService.getBooks(userSession);
   }
 }

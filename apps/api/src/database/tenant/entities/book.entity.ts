@@ -32,7 +32,9 @@ export class Book {
   @Column({ unique: true })
   isbn: string;
 
-  @Column()
+  @Column({
+    unique: true,
+  })
   title: string;
 
   @Column({ type: 'text', nullable: true })

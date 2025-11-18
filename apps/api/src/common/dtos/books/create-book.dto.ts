@@ -1,3 +1,5 @@
+import { CreateInventoryDto } from '@/common/dtos/inventories';
+import { Type } from 'class-transformer';
 import {
   ArrayNotEmpty,
   IsArray,
@@ -8,6 +10,7 @@ import {
   IsPositive,
   IsString,
   IsUUID,
+  ValidateNested,
 } from 'class-validator';
 
 export class CreateBookDto {
@@ -58,4 +61,9 @@ export class CreateBookDto {
     each: true,
   })
   readonly categoryIds: string[];
+
+  @Type(() => CreateInventoryDto)
+  @ValidateNested()
+  @IsNotEmpty()
+  readonly createInventoryDto: CreateInventoryDto;
 }

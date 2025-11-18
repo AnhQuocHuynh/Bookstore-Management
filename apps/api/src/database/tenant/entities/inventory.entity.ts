@@ -19,14 +19,11 @@ export class Inventory {
   })
   book: Book;
 
-  @Column({ type: 'int', default: 0 })
+  @Column({ type: 'int' })
   quantity: number;
 
   @Column({ type: 'int', default: 0 })
   reserved: number;
-
-  @Column({ type: 'int', default: 0 })
-  damaged: number;
 
   @Column({ type: 'int' })
   available: number;
