@@ -1,10 +1,13 @@
 import { InvoiceStatus } from '@/common/enums';
+import { DecimalTransformer } from '@/common/transformers';
+import { Payment } from '@/database/tenant/entities';
 import {
   Column,
   CreateDateColumn,
   Entity,
   JoinColumn,
-  ManyToOne,
+  OneToMany,
+  OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -15,7 +18,7 @@ export class Invoice {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => Order, (order) => order.invoices, {
+  @OneToOne(() => Order, (order) => order.invoice, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({
@@ -23,19 +26,32 @@ export class Invoice {
   })
   order: Order;
 
+  @OneToMany(() => Payment, (payment) => payment.invoice, {
+    cascade: true,
+  })
+  payments: Payment[];
+
   @Column({ unique: true })
   invoiceCode: string;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   issueDate: Date;
 
-  @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })
-  taxRate: number;
-
-  @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })
+  @Column({
+    type: 'decimal',
+    precision: 12,
+    scale: 2,
+    default: 0,
+    transformer: DecimalTransformer,
+  })
   taxAmount: number;
 
-  @Column({ type: 'decimal', precision: 12, scale: 2 })
+  @Column({
+    type: 'decimal',
+    precision: 12,
+    scale: 2,
+    transformer: DecimalTransformer,
+  })
   totalWithTax: number;
 
   @Column({

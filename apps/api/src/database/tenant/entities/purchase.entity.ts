@@ -11,6 +11,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { PurchaseDetail } from './purchase-detail.entity';
+import { DecimalTransformer } from '@/common/transformers';
 
 @Entity()
 export class Purchase {
@@ -30,7 +31,13 @@ export class Purchase {
   })
   managerId: string;
 
-  @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })
+  @Column({
+    type: 'decimal',
+    precision: 12,
+    scale: 2,
+    default: 0,
+    transformer: DecimalTransformer,
+  })
   totalAmount: number;
 
   @Column({ type: 'timestamp', nullable: true })

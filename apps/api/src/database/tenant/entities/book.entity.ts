@@ -1,5 +1,6 @@
 import { BookStatus } from '@/common/enums';
 import {
+  CartItem,
   DisplayLog,
   DisplayProduct,
   Inventory,
@@ -23,6 +24,7 @@ import {
 import { Author } from './author.entity';
 import { Category } from './category.entity';
 import { PurchaseDetail } from './purchase-detail.entity';
+import { DecimalTransformer } from '@/common/transformers';
 
 @Entity()
 export class Book {
@@ -40,7 +42,12 @@ export class Book {
   @Column({ type: 'text', nullable: true })
   description?: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  @Column({
+    type: 'decimal',
+    precision: 12,
+    scale: 2,
+    transformer: DecimalTransformer,
+  })
   price: number;
 
   @Column({ type: 'date', nullable: true })
@@ -128,4 +135,9 @@ export class Book {
     cascade: true,
   })
   displayLogs: DisplayLog[];
+
+  @OneToMany(() => CartItem, (cartItem) => cartItem.book, {
+    cascade: true,
+  })
+  cartItems: CartItem[];
 }

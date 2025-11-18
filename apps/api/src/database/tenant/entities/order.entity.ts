@@ -1,6 +1,6 @@
 import { OrderStatus, PaymentMethod } from '@/common/enums';
+import { ReturnExchangeDetail } from '@/database/tenant/entities';
 import { Customer } from '@/database/tenant/entities/customer.enity';
-import { Employee } from '@/database/tenant/entities/employee.entity';
 import {
   Column,
   CreateDateColumn,
@@ -8,13 +8,13 @@ import {
   JoinColumn,
   ManyToOne,
   OneToMany,
+  OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { Invoice } from './invoice.entity';
 import { OrderDetail } from './order-detail.entity';
-import { Payment } from './payment.entity';
-import { ReturnExchangeDetail } from '@/database/tenant/entities';
+import { DecimalTransformer } from '@/common/transformers';
 
 @Entity('orders')
 export class Order {
@@ -29,28 +29,26 @@ export class Order {
   })
   customer: Customer;
 
-  @ManyToOne(() => Employee, (employee) => employee.orders, {
-    onDelete: 'SET NULL',
-  })
-  employee: Employee;
-
   @OneToMany(() => OrderDetail, (detail) => detail.order, { cascade: true })
   details: OrderDetail[];
 
-  @OneToMany(() => Invoice, (invoice) => invoice.order, { cascade: true })
-  invoices: Invoice[];
+  @OneToOne(() => Invoice, (invoice) => invoice.order, {
+    cascade: true,
+  })
+  invoice: Invoice;
 
-  @OneToMany(() => Payment, (payment) => payment.order, { cascade: true })
-  payments: Payment[];
-
-  @Column({ type: 'decimal', precision: 12, scale: 2 })
+  @Column({
+    type: 'decimal',
+    precision: 12,
+    scale: 2,
+    transformer: DecimalTransformer,
+  })
   totalAmount: number;
 
-  @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })
-  discount: number;
-
-  @Column({ type: 'decimal', precision: 12, scale: 2 })
-  finalAmount: number;
+  @Column({
+    type: 'text',
+  })
+  shippingAddress: string;
 
   @Column({
     type: 'enum',
@@ -80,9 +78,6 @@ export class Order {
 
   @Column({ unique: true })
   orderCode: string;
-
-  @Column({ type: 'timestamp', nullable: true })
-  paidAt?: Date;
 
   @OneToMany(
     () => ReturnExchangeDetail,

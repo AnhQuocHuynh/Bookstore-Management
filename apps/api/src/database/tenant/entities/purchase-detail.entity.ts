@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import { Book } from './book.entity';
 import { Purchase } from './purchase.entity';
+import { DecimalTransformer } from '@/common/transformers';
 
 @Entity()
 export class PurchaseDetail {
@@ -34,10 +35,20 @@ export class PurchaseDetail {
   @Column({ type: 'int' })
   quantity: number;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    transformer: DecimalTransformer,
+  })
   unitPrice: number;
 
-  @Column({ type: 'decimal', precision: 12, scale: 2 })
+  @Column({
+    type: 'decimal',
+    precision: 12,
+    scale: 2,
+    transformer: DecimalTransformer,
+  })
   subTotal: number;
 
   @CreateDateColumn({

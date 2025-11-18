@@ -4,11 +4,14 @@ import { TenantDatabaseModule } from '@/database/tenant/tenant-database.module';
 import { AdminModule } from '@/modules/admin/admin.module';
 import { AuthModule } from '@/modules/auth/auth.module';
 import { BookStoreModule } from '@/modules/bookstore/bookstore.module';
+import { CartModule } from '@/modules/cart/cart.module';
 import { DisplayModule } from '@/modules/display/display.module';
 import { EmailModule } from '@/modules/email/email.module';
 import { FilesModule } from '@/modules/files/files.module';
 import { InventoriesModule } from '@/modules/inventories/inventories.module';
 import { InvitationModule } from '@/modules/invitations/invitation.module';
+import { InvoicesModule } from '@/modules/invoices/invoices.module';
+import { OrdersModule } from '@/modules/orders/orders.module';
 import { SupplierModule } from '@/modules/suppliers/supplier.module';
 import { UserModule } from '@/modules/users/user.module';
 import { TenantModule } from '@/tenants/tenant.module';
@@ -62,6 +65,9 @@ import { PublishersModule } from './modules/publishers/publishers.module';
     CategoriesModule,
     DisplayModule,
     InventoriesModule,
+    OrdersModule,
+    CartModule,
+    InvoicesModule,
   ],
 })
 export class AppModule {}
