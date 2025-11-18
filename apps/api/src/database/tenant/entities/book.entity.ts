@@ -1,5 +1,6 @@
 import { BookStatus } from '@/common/enums';
 import {
+  CartItem,
   DisplayLog,
   DisplayProduct,
   Inventory,
@@ -128,4 +129,9 @@ export class Book {
     cascade: true,
   })
   displayLogs: DisplayLog[];
+
+  @OneToMany(() => CartItem, (cartItem) => cartItem.book, {
+    cascade: true,
+  })
+  cartItems: CartItem[];
 }

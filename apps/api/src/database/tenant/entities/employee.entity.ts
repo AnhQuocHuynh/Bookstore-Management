@@ -1,4 +1,4 @@
-import { Order, User } from '@/database/tenant/entities';
+import { Cart, Order, User } from '@/database/tenant/entities';
 import {
   Column,
   CreateDateColumn,
@@ -43,4 +43,9 @@ export class Employee {
     cascade: true,
   })
   orders: Order[];
+
+  @OneToMany(() => Cart, (cart) => cart.employee, {
+    cascade: true,
+  })
+  carts: Cart[];
 }
