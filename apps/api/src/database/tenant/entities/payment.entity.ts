@@ -1,25 +1,27 @@
 import { PaymentMethod, PaymentStatus } from '@/common/enums';
+import { DecimalTransformer } from '@/common/transformers';
+import { Invoice } from '@/database/tenant/entities';
 import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { Order } from './order.entity';
 
 @Entity()
 export class Payment {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => Order, (order) => order.payments, {
-    onDelete: 'CASCADE',
+  @Column({
+    type: 'decimal',
+    precision: 12,
+    scale: 2,
+    transformer: DecimalTransformer,
   })
-  order: Order;
-
-  @Column({ type: 'decimal', precision: 12, scale: 2 })
   amount: number;
 
   @Column({
@@ -53,4 +55,12 @@ export class Payment {
     type: 'timestamp',
   })
   updatedAt: Date;
+
+  @ManyToOne(() => Invoice, (invoice) => invoice.payments, {
+    onDelete: 'CASCADE',
+  })
+  @JoinColumn({
+    name: 'invoice_id',
+  })
+  invoice: Invoice;
 }

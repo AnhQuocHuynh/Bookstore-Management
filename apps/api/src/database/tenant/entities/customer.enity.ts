@@ -1,3 +1,4 @@
+import { Order } from '@/database/tenant/entities';
 import {
   Column,
   CreateDateColumn,
@@ -9,7 +10,6 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { User } from './user.entity';
-import { Order } from '@/database/tenant/entities/order.entity';
 
 @Entity()
 export class Customer {

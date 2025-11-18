@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import { Book } from './book.entity';
 import { Order } from './order.entity';
+import { DecimalTransformer } from '@/common/transformers';
 
 @Entity()
 export class OrderDetail {
@@ -24,23 +25,30 @@ export class OrderDetail {
   order: Order;
 
   @ManyToOne(() => Book, (book) => book.orderDetails, {
-    onDelete: 'RESTRICT',
+    onDelete: 'CASCADE',
   })
   @JoinColumn({
     name: 'book_id',
   })
   book: Book;
 
-  @Column({ type: 'int', default: 1 })
+  @Column({ type: 'int' })
   quantity: number;
 
-  @Column({ type: 'decimal', precision: 12, scale: 2 })
+  @Column({
+    type: 'decimal',
+    precision: 12,
+    scale: 2,
+    transformer: DecimalTransformer,
+  })
   unitPrice: number;
 
-  @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })
-  discount: number;
-
-  @Column({ type: 'decimal', precision: 12, scale: 2 })
+  @Column({
+    type: 'decimal',
+    precision: 12,
+    scale: 2,
+    transformer: DecimalTransformer,
+  })
   subTotal: number;
 
   @CreateDateColumn({
@@ -52,7 +60,4 @@ export class OrderDetail {
     type: 'timestamp',
   })
   updatedAt: Date;
-
-  @Column({ type: 'text', nullable: true })
-  note?: string;
 }

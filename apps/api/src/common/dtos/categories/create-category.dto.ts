@@ -1,4 +1,11 @@
-import { IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsPositive,
+  IsString,
+  IsUUID,
+} from 'class-validator';
 
 export class CreateCategoryDto {
   @IsString()
@@ -17,4 +24,8 @@ export class CreateCategoryDto {
   @IsOptional()
   @IsUUID()
   readonly parentId?: string;
+
+  @IsNumber()
+  @IsPositive()
+  readonly taxRate: number;
 }

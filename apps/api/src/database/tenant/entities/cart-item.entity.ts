@@ -1,3 +1,4 @@
+import { DecimalTransformer } from '@/common/transformers';
 import { Book, Cart } from '@/database/tenant/entities';
 import {
   Column,
@@ -19,7 +20,12 @@ export class CartItem {
   })
   quantity: number;
 
-  @Column({ type: 'decimal', precision: 12, scale: 2 })
+  @Column({
+    type: 'decimal',
+    precision: 12,
+    scale: 2,
+    transformer: DecimalTransformer,
+  })
   price: number;
 
   @CreateDateColumn({

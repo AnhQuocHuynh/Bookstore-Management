@@ -24,6 +24,7 @@ import {
 import { Author } from './author.entity';
 import { Category } from './category.entity';
 import { PurchaseDetail } from './purchase-detail.entity';
+import { DecimalTransformer } from '@/common/transformers';
 
 @Entity()
 export class Book {
@@ -41,7 +42,12 @@ export class Book {
   @Column({ type: 'text', nullable: true })
   description?: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  @Column({
+    type: 'decimal',
+    precision: 12,
+    scale: 2,
+    transformer: DecimalTransformer,
+  })
   price: number;
 
   @Column({ type: 'date', nullable: true })

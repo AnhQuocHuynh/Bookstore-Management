@@ -1,4 +1,5 @@
 import { CategoryStatus } from '@/common/enums';
+import { DecimalTransformer } from '@/common/transformers';
 import { Book } from '@/database/tenant/entities';
 import {
   Column,
@@ -46,6 +47,15 @@ export class Category {
     default: CategoryStatus.ACTIVE,
   })
   status: CategoryStatus;
+
+  @Column({
+    type: 'decimal',
+    precision: 4,
+    scale: 2,
+    default: 0.1,
+    transformer: DecimalTransformer,
+  })
+  taxRate: number;
 
   @CreateDateColumn({
     type: 'timestamp',

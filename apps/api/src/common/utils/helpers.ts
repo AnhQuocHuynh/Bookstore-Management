@@ -2,6 +2,7 @@ import { ALGORITHM, IV_LENGTH } from '@/common/constants';
 import { ConfigService } from '@nestjs/config';
 import * as bcryptjs from 'bcryptjs';
 import crypto from 'crypto';
+import Decimal from 'decimal.js';
 import { CookieOptions, Response } from 'express';
 
 export async function hashPassword(password: string): Promise<string> {
@@ -135,4 +136,10 @@ export function assignDefined<T>(target: T, source: Partial<T>): T {
     }
   });
   return target;
+}
+
+export function calculateMoney(...values: (string | number)[]): number {
+  return values
+    .reduce((acc, val) => acc.plus(new Decimal(val)), new Decimal(0))
+    .toNumber();
 }

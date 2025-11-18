@@ -39,11 +39,6 @@ export class Employee {
   })
   user: User;
 
-  @OneToMany(() => Order, (order) => order.employee, {
-    cascade: true,
-  })
-  orders: Order[];
-
   @OneToMany(() => Cart, (cart) => cart.employee, {
     cascade: true,
   })
