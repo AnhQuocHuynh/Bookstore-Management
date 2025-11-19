@@ -1,5 +1,5 @@
 import { IsVietnamesePhoneNumber } from '@/common/decorators';
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateBookStoreDto {
   @IsString()
@@ -12,4 +12,9 @@ export class CreateBookStoreDto {
   @IsString()
   @IsNotEmpty()
   readonly address: string;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  readonly logoUrl?: string;
 }

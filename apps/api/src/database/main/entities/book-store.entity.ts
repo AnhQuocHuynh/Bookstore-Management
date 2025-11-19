@@ -31,6 +31,12 @@ export class BookStore {
   })
   phoneNumber: string;
 
+  @Column({
+    type: 'text',
+    nullable: true,
+  })
+  logoUrl?: string;
+
   @Column({ default: false })
   isActive: boolean;
 

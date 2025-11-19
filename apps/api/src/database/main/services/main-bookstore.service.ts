@@ -106,6 +106,16 @@ export class MainBookStoreService {
     );
   }
 
+  async getBookStoresOfUser(userId: string) {
+    return this.bookStoreRepo.find({
+      where: {
+        user: {
+          id: userId,
+        },
+      },
+    });
+  }
+
   private async generateUniqueStoreCode(storeName: string): Promise<string> {
     while (true) {
       const code = generateStoreCode(storeName);
