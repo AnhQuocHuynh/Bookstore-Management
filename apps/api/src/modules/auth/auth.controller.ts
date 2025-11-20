@@ -7,21 +7,24 @@ import {
   ResendOtpDto,
   ResetPasswordDto,
   SignInDto,
+  SignInOfBookStoreDto,
   SignUpDto,
   VerifyOtpDto,
 } from '@/modules/auth/dto';
+import { UserRole } from '@/modules/users/enums';
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
   Post,
+  Query,
   Res,
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { AuthService } from './auth.service';
-import { UserRole } from '@/modules/users/enums';
 
 @Controller('auth')
 export class AuthController {
@@ -34,6 +37,24 @@ export class AuthController {
     @Res({ passthrough: true }) response: Response,
   ) {
     return this.authService.signIn(signInDto, response);
+  }
+
+  @Public()
+  @Post('sign-in/bookstore')
+  async signInOfBookStore(
+    @Body() signInOfBookStoreDto: SignInOfBookStoreDto,
+    @Query('token') token: string,
+    @Res({
+      passthrough: true,
+    })
+    response: Response,
+  ) {
+    if (!token?.trim()) throw new BadRequestException('Token is missing...');
+    return this.authService.signInOfBookStore(
+      signInOfBookStoreDto,
+      token,
+      response,
+    );
   }
 
   @Public()
@@ -86,7 +107,7 @@ export class AuthController {
   }
 
   @Post('change-password')
-  @Roles(UserRole.CUSTOMER, UserRole.OWNER)
+  @Roles(UserRole.OWNER)
   async changePassword(
     @Body() changePasswordDto: ChangePasswordDto,
     @UserSession() userSession: TUserSession,
@@ -95,7 +116,7 @@ export class AuthController {
   }
 
   @Post('change-password/request-otp')
-  @Roles(UserRole.CUSTOMER, UserRole.OWNER)
+  @Roles(UserRole.OWNER)
   async requestChangePasswordOtp(@UserSession() userSession: TUserSession) {
     return this.authService.requestChangePasswordOtp(userSession);
   }

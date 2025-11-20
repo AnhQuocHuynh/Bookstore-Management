@@ -46,17 +46,13 @@ export class InvitationController {
   async acceptInvitation(
     @Body() acceptInvitationDto: AcceptInvitationDto,
     @Headers('x-auth-code') authCode: string,
-    @Query('bookStoreId') bookStoreId: string,
   ) {
     if (!authCode?.trim())
       throw new BadRequestException('Auth code is missing...');
-    if (!bookStoreId?.trim())
-      throw new BadRequestException('Bookstore Id is missing...');
 
     return this.invitationService.acceptInvitation(
       acceptInvitationDto,
       authCode,
-      bookStoreId,
     );
   }
 }

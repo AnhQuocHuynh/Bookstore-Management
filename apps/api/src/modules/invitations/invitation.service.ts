@@ -2,6 +2,7 @@ import {
   AuthorizationCodeTypeEnum,
   EmailTemplateNameEnum,
   InvitationStatusEnum,
+  UserTenantRole,
 } from '@/common/enums';
 import {
   generateSecureToken,
@@ -11,6 +12,7 @@ import {
 } from '@/common/utils/helpers';
 import { TUserSession } from '@/common/utils/types';
 import { MainBookStoreService } from '@/database/main/services/main-bookstore.service';
+import { MainEmployeeMappingService } from '@/database/main/services/main-employee-mapping.service';
 import { MainUserService } from '@/database/main/services/main-user.service';
 import {
   AuthorizationCode,
@@ -45,13 +47,15 @@ export class InvitationService {
     private readonly configService: ConfigService,
     private readonly mainUserService: MainUserService,
     private readonly mainBookStoreService: MainBookStoreService,
+    private readonly mainEmployeeMappingService: MainEmployeeMappingService,
   ) {}
 
   async createInvitation(
     createInvitationDto: CreateInvitationDto,
     userSession: TUserSession,
   ) {
-    const { email } = createInvitationDto;
+    console.log(userSession);
+    const { email, role } = createInvitationDto;
     const { userId, bookStoreId } = userSession;
 
     if (!bookStoreId?.trim())
@@ -84,11 +88,13 @@ export class InvitationService {
         },
       },
       relations: {
-        user: true,
+        user: {
+          employee: true,
+        },
       },
     });
 
-    if (existingEmployee && existingEmployee.user.isActive)
+    if (existingEmployee && existingEmployee.user.employee?.isActive)
       throw new ConflictException(
         'This email is already registered as an employee.',
       );
@@ -116,7 +122,7 @@ export class InvitationService {
     });
     await invitationRepo.save(newInvitation);
 
-    const inviteLink = `${this.configService.get<string>('frontend_url', '')}/invite/accept?token=${token}&bookStoreId=${bookStoreData.id}`;
+    const inviteLink = `${this.configService.get<string>('frontend_url', '')}/invite/accept?token=${token}&bookStoreId=${bookStoreData.id}&role=${role}`;
 
     await this.emailService.handleSendEmail(
       email,
@@ -126,6 +132,7 @@ export class InvitationService {
         inviterName: user.fullName,
         inviterEmail: user.email,
         inviteLink,
+        Role: role,
       },
     );
 
@@ -205,9 +212,8 @@ export class InvitationService {
   async acceptInvitation(
     acceptInvitationDto: AcceptInvitationDto,
     authCode: string,
-    bookStoreId: string,
   ) {
-    const { email } = acceptInvitationDto;
+    const { email, bookStoreId, role, ...res } = acceptInvitationDto;
 
     const dataSource = await this.tenantService.getTenantConnection({
       bookStoreId,
@@ -256,18 +262,20 @@ export class InvitationService {
         },
       },
       relations: {
-        user: true,
+        user: {
+          employee: true,
+        },
       },
     });
 
-    if (existingEmployee && existingEmployee.user.isActive)
+    if (existingEmployee && existingEmployee?.user?.employee?.isActive)
       throw new ConflictException(`This email has been registered.`);
 
     const newUser = userTenantRepo.create({
-      ...acceptInvitationDto,
-      password: await hashPassword(acceptInvitationDto.password),
-      role: UserRole.EMPLOYEE,
-      isActive: true,
+      email,
+      role: role as unknown as UserTenantRole,
+      phoneNumber: res.phoneNumber,
+      fullName: res.fullName,
     });
     await userTenantRepo.save(newUser);
 
@@ -275,8 +283,16 @@ export class InvitationService {
       isFirstLogin: false,
       user: newUser,
       userId: newUser.id,
+      password: await hashPassword(res.password),
+      isActive: true,
     });
     await employeeRepo.save(newEmployee);
+
+    await this.mainEmployeeMappingService.createNewEmployeeMapping({
+      email: newUser.email,
+      bookstore: bookStoreData,
+      role,
+    });
 
     await this.emailService.handleSendEmail(
       newUser.email,
@@ -284,7 +300,7 @@ export class InvitationService {
       {
         bookStoreName: bookStoreData.name,
         employeeName: newEmployee.user.fullName,
-        role: UserRole.CUSTOMER,
+        role,
         inviterName: bookStoreData.user.fullName,
         inviterEmail: bookStoreData.user.email,
         loginUrl: '',

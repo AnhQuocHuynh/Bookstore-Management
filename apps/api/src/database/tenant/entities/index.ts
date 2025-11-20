@@ -2,6 +2,7 @@ export * from './author.entity';
 export * from './authorization-code.entity';
 export * from './book.entity';
 export * from './category.entity';
+export * from './customer-company.entity';
 export * from './customer.enity';
 export * from './display-log.entity';
 export * from './display-product.entity';

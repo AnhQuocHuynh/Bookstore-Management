@@ -1,33 +1,40 @@
-import { AuthorizationCodeTypeEnum } from '@/common/enums';
-import { Employee } from '@/database/tenant/entities';
+import { Customer } from '@/database/tenant/entities/customer.enity';
 import {
   Column,
   CreateDateColumn,
   Entity,
   JoinColumn,
-  ManyToOne,
+  OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 
 @Entity()
-export class AuthorizationCode {
+export class CustomerCompany {
   @PrimaryGeneratedColumn('uuid')
   readonly id: string;
 
   @Column()
-  code: string;
+  companyName: string;
+
+  @Column()
+  taxCode: string;
+
+  @Column()
+  billingAddress: string;
+
+  @Column()
+  contactPerson: string;
 
   @Column({
-    type: 'timestamp',
+    unique: true,
   })
-  expiresAt: Date;
+  contactPhone: string;
 
   @Column({
-    type: 'enum',
-    enum: AuthorizationCodeTypeEnum,
+    unique: true,
   })
-  type: AuthorizationCodeTypeEnum;
+  contactEmail: string;
 
   @CreateDateColumn({
     type: 'timestamp',
@@ -39,12 +46,11 @@ export class AuthorizationCode {
   })
   readonly updatedAt: Date;
 
-  @ManyToOne(() => Employee, (employee) => employee.authorizationCodes, {
+  @OneToOne(() => Customer, (customer) => customer.company, {
     onDelete: 'CASCADE',
-    nullable: true,
   })
   @JoinColumn({
-    name: 'employee_id',
+    name: 'customer_id',
   })
-  employee?: Employee;
+  customer: Customer;
 }

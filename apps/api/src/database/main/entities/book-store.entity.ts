@@ -1,10 +1,15 @@
-import { DatabaseConnection, User } from '@/database/main/entities';
+import {
+  DatabaseConnection,
+  EmployeeMapping,
+  User,
+} from '@/database/main/entities';
 import {
   Column,
   CreateDateColumn,
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
@@ -56,4 +61,9 @@ export class BookStore {
 
   @UpdateDateColumn()
   readonly updatedAt: Date;
+
+  @OneToMany(() => EmployeeMapping, (em) => em.bookstore, {
+    cascade: true,
+  })
+  employeeMappings: EmployeeMapping[];
 }

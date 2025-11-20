@@ -1,12 +1,5 @@
 import { OtpTypeEnum } from '@/common/enums';
-import {
-  IsEmail,
-  IsEnum,
-  IsOptional,
-  IsString,
-  IsUUID,
-  Length,
-} from 'class-validator';
+import { IsEmail, IsEnum, IsString, Length } from 'class-validator';
 
 export class VerifyOtpDto {
   @IsEmail()
@@ -18,8 +11,4 @@ export class VerifyOtpDto {
 
   @IsEnum(OtpTypeEnum)
   readonly type: OtpTypeEnum;
-
-  @IsOptional()
-  @IsUUID()
-  readonly bookStoreId?: string;
 }

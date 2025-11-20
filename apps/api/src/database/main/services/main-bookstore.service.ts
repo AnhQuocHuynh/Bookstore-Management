@@ -9,7 +9,12 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { omit } from 'lodash';
-import { FindOptionsRelations, FindOptionsWhere, Repository } from 'typeorm';
+import {
+  FindOptionsOrder,
+  FindOptionsRelations,
+  FindOptionsWhere,
+  Repository,
+} from 'typeorm';
 
 @Injectable()
 export class MainBookStoreService {
@@ -108,13 +113,17 @@ export class MainBookStoreService {
     );
   }
 
-  async getBookStoresOfUser(userId: string) {
+  async getBookStoresOfUser(
+    userId: string,
+    optionOrder?: FindOptionsOrder<BookStore>,
+  ) {
     return this.bookStoreRepo.find({
       where: {
         user: {
           id: userId,
         },
       },
+      order: optionOrder,
     });
   }
 
