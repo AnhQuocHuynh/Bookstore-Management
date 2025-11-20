@@ -1,5 +1,6 @@
 import { IsStrongPassword, IsVietnamesePhoneNumber } from '@/common/decorators';
-import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
+import { EmployeeRole } from '@/common/enums';
+import { IsEmail, IsEnum, IsNotEmpty, IsString, IsUUID } from 'class-validator';
 
 export class AcceptInvitationDto {
   @IsString()
@@ -14,4 +15,10 @@ export class AcceptInvitationDto {
 
   @IsVietnamesePhoneNumber()
   readonly phoneNumber: string;
+
+  @IsUUID()
+  readonly bookStoreId: string;
+
+  @IsEnum(EmployeeRole)
+  readonly role: EmployeeRole;
 }

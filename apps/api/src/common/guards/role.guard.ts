@@ -1,4 +1,4 @@
-import { IS_PUBLIC_KEY, ROLES_KEY } from '@/common/decorators';
+import { ROLES_KEY } from '@/common/decorators';
 import {
   CanActivate,
   ExecutionContext,
@@ -18,12 +18,7 @@ export class RoleGuard implements CanActivate {
       [context.getHandler(), context.getClass()],
     );
 
-    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
-
-    if (!requiredRoles || isPublic) return true;
+    if (!requiredRoles) return true;
 
     const { user } = context.switchToHttp().getRequest();
 

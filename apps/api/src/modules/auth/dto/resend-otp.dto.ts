@@ -1,11 +1,5 @@
 import { OtpTypeEnum } from '@/common/enums';
-import {
-  IsEmail,
-  IsEnum,
-  IsNotEmpty,
-  IsString,
-  ValidateIf,
-} from 'class-validator';
+import { IsEmail, IsEnum } from 'class-validator';
 
 export class ResendOtpDto {
   @IsEmail()
@@ -13,9 +7,4 @@ export class ResendOtpDto {
 
   @IsEnum(OtpTypeEnum)
   readonly type: OtpTypeEnum;
-
-  @ValidateIf((e) => e.type === OtpTypeEnum.SIGN_UP)
-  @IsString()
-  @IsNotEmpty()
-  readonly bookStoreId?: string;
 }

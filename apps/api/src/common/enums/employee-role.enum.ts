@@ -1,0 +1,7 @@
+export enum EmployeeRole {
+  STORE_MANAGER = 'STORE_MANAGER',
+  STAFF = 'STAFF',
+  CASHIER = 'CASHIER',
+  INVENTORY = 'INVENTORY',
+  ACCOUNTANT = 'ACCOUNTANT',
+}

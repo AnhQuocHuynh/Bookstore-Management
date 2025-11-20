@@ -1,4 +1,9 @@
-import { Transaction, User } from '@/database/tenant/entities';
+import {
+  AuthorizationCode,
+  Otp,
+  Transaction,
+  User,
+} from '@/database/tenant/entities';
 import {
   Column,
   CreateDateColumn,
@@ -14,6 +19,12 @@ import {
 export class Employee {
   @PrimaryColumn()
   userId: string;
+
+  @Column()
+  readonly password: string;
+
+  @Column({ default: true })
+  isActive: boolean;
 
   @Column({
     type: 'boolean',
@@ -43,4 +54,20 @@ export class Employee {
     cascade: true,
   })
   transactions: Transaction[];
+
+  @OneToMany(
+    () => AuthorizationCode,
+    (authorizationCode) => authorizationCode.employee,
+    {
+      cascade: true,
+      orphanedRowAction: 'delete',
+    },
+  )
+  authorizationCodes: AuthorizationCode[];
+
+  @OneToMany(() => Otp, (otp) => otp.employee, {
+    cascade: true,
+    orphanedRowAction: 'delete',
+  })
+  otps: Otp[];
 }

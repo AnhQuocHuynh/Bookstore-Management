@@ -1,5 +1,5 @@
 import { OtpTypeEnum } from '@/common/enums';
-import { User } from '@/database/tenant/entities/user.entity';
+import { Employee } from '@/database/tenant/entities/employee.entity';
 import {
   Column,
   CreateDateColumn,
@@ -43,12 +43,11 @@ export class Otp {
   })
   updatedAt: Date;
 
-  @ManyToOne(() => User, (user) => user.otps, {
+  @ManyToOne(() => Employee, (employee) => employee.otps, {
     onDelete: 'CASCADE',
-    onUpdate: 'CASCADE',
   })
   @JoinColumn({
-    name: 'user_id',
+    name: 'employee_id',
   })
-  user: User;
+  employee: Employee;
 }

@@ -1,3 +1,5 @@
+import { CustomerType } from '@/common/enums';
+import { CustomerCompany } from '@/database/tenant/entities';
 import {
   Column,
   CreateDateColumn,
@@ -14,6 +16,18 @@ export class Customer {
   @PrimaryColumn({ name: 'user_id' })
   userId: string;
 
+  @Column({
+    type: 'text',
+    nullable: true,
+  })
+  note?: string;
+
+  @Column({
+    type: 'enum',
+    enum: CustomerType,
+  })
+  customerType: CustomerType;
+
   @OneToOne(() => User, (user) => user.customer, {
     onDelete: 'CASCADE',
     eager: true,
@@ -22,18 +36,6 @@ export class Customer {
     name: 'user_id',
   })
   user: User;
-
-  @Column({
-    type: 'int',
-    default: 0,
-  })
-  loyaltyPoints: number;
-
-  @Column({
-    type: 'boolean',
-    default: false,
-  })
-  isEmailVerified: boolean;
 
   @CreateDateColumn({
     type: 'timestamp',
@@ -44,4 +46,9 @@ export class Customer {
     type: 'timestamp',
   })
   readonly updatedAt: Date;
+
+  @OneToOne(() => CustomerCompany, (cc) => cc.customer, {
+    cascade: true,
+  })
+  company: CustomerCompany;
 }

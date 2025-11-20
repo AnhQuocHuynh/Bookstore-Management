@@ -2,6 +2,7 @@ import {
   AuthorizationCode,
   BookStore,
   DatabaseConnection,
+  EmployeeMapping,
   Otp,
   RefreshToken,
   User,
@@ -9,6 +10,7 @@ import {
 import { MainAuthorizationCodeService } from '@/database/main/services/main-authorization-code.service';
 import { MainBookStoreService } from '@/database/main/services/main-bookstore.service';
 import { MainDatabaseConnectionService } from '@/database/main/services/main-database-connection.service';
+import { MainEmployeeMappingService } from '@/database/main/services/main-employee-mapping.service';
 import { MainOtpService } from '@/database/main/services/main-otp.service';
 import { MainRefreshTokenService } from '@/database/main/services/main-refresh-token.service';
 import { MainUserService } from '@/database/main/services/main-user.service';
@@ -47,6 +49,7 @@ import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
       RefreshToken,
       AuthorizationCode,
       DatabaseConnection,
+      EmployeeMapping,
     ]),
   ],
   providers: [
@@ -56,6 +59,7 @@ import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
     MainOtpService,
     MainRefreshTokenService,
     MainAuthorizationCodeService,
+    MainEmployeeMappingService,
   ],
   exports: [
     MainUserService,
@@ -64,6 +68,7 @@ import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
     MainOtpService,
     MainRefreshTokenService,
     MainAuthorizationCodeService,
+    MainEmployeeMappingService,
     TypeOrmModule,
   ],
 })

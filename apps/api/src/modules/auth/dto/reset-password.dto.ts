@@ -1,10 +1,4 @@
-import {
-  IsEmail,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  IsUUID,
-} from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
 
 export class ResetPasswordDto {
   @IsString()
@@ -17,8 +11,4 @@ export class ResetPasswordDto {
   @IsString()
   @IsNotEmpty()
   readonly newPassword: string;
-
-  @IsOptional()
-  @IsUUID()
-  readonly bookStoreId?: string;
 }
