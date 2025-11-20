@@ -197,12 +197,12 @@ export class AuthService {
         },
       });
 
-      if (!employee || (await verifyPassword(password, employee.password))) {
+      if (!employee || !(await verifyPassword(password, employee.password))) {
         throw new UnauthorizedException('Invalid credentails.');
       }
 
       userId = employee.userId;
-      profile = omit(employee, ['user.password']);
+      profile = omit(employee, ['password']);
       storeCode = seletecBookStore.code;
     }
 
@@ -215,8 +215,8 @@ export class AuthService {
     this.assignRefreshTokenToCookie(response, refreshToken);
 
     return {
-      profile,
       accessToken,
+      profile,
       storeCode,
       bookStoreId,
     };
