@@ -1,4 +1,3 @@
-import { UserTenantRole } from '@/common/enums';
 import { TUserSession } from '@/common/utils/types';
 import { MainUserService } from '@/database/main/services/main-user.service';
 import { User } from '@/database/tenant/entities';
@@ -31,17 +30,15 @@ export class UserService {
       const user = await userTenant.findOne({
         where: {
           id: userId,
-          role: role as unknown as UserTenantRole,
         },
         relations: {
           employee: role === UserRole.EMPLOYEE,
-          customer: role === UserRole.CUSTOMER,
         },
       });
 
       if (!user) throw new NotFoundException('Your profile not found.');
 
-      return omit(user, ['password']);
+      return omit(user, ['employee.password']);
     }
   }
 }
