@@ -213,6 +213,14 @@ export class InvitationService {
       bookStoreId,
     });
 
+    const bookStoreData = await this.mainBookStoreService.findBookStoreByField(
+      'id',
+      bookStoreId,
+    );
+
+    if (!bookStoreData)
+      throw new NotFoundException('Bookstore data not found.');
+
     const authCodeRepo = dataSource.getRepository(AuthorizationCode);
     const employeeRepo = dataSource.getRepository(Employee);
     const userTenantRepo = dataSource.getRepository(User);
@@ -265,12 +273,23 @@ export class InvitationService {
 
     const newEmployee = employeeRepo.create({
       isFirstLogin: false,
-      user: {
-        id: newUser.id,
-      },
+      user: newUser,
       userId: newUser.id,
     });
     await employeeRepo.save(newEmployee);
+
+    await this.emailService.handleSendEmail(
+      newUser.email,
+      EmailTemplateNameEnum.EMAIL_EMPLOYEE_ACCEPTED,
+      {
+        bookStoreName: bookStoreData.name,
+        employeeName: newEmployee.user.fullName,
+        role: UserRole.CUSTOMER,
+        inviterName: bookStoreData.user.fullName,
+        inviterEmail: bookStoreData.user.email,
+        loginUrl: '',
+      },
+    );
 
     return {
       message: 'Invitation accepted successfully.',
