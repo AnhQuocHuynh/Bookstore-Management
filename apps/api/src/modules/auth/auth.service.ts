@@ -398,6 +398,25 @@ export class AuthService {
         if (bookStore) {
           storeCode = bookStore.code;
         }
+
+        if (
+          type === OtpTypeEnum.SIGN_UP &&
+          user.role === UserRole.OWNER &&
+          bookStore
+        ) {
+          await this.emailService.handleSendEmail(
+            user.email,
+            EmailTemplateNameEnum.EMAIL_STORE_REGISTRATION,
+            {
+              ownerName: user.fullName,
+              storeName: bookStore.name,
+              storecode: bookStore.code,
+              address: bookStore.address,
+              phoneNumber: bookStore.phoneNumber,
+              dashboardUrl: '',
+            },
+          );
+        }
       }
 
       if (type === OtpTypeEnum.SIGN_UP) {
