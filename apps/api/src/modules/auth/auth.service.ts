@@ -52,6 +52,7 @@ import { addDays, addMinutes } from 'date-fns';
 import { Response } from 'express';
 import { omit } from 'lodash';
 import { MoreThan, Repository } from 'typeorm';
+import { DataSource } from 'typeorm/browser';
 @Injectable()
 export class AuthService {
   constructor(
@@ -114,7 +115,7 @@ export class AuthService {
         );
 
       if (user) {
-        if (bookStoreData?.user.id !== user.id) {
+        if (bookStoreData.user.id !== user.id) {
           throw new ForbiddenException(
             'You do not have permission to access this bookstore.',
           );
@@ -164,6 +165,14 @@ export class AuthService {
 
       if (!userTenant || !(await verifyPassword(password, userTenant.password)))
         throw new UnauthorizedException('Invalid credentials.');
+
+      if (
+        !userTenant?.customer?.isEmailVerified &&
+        userTenant?.role === UserRole.CUSTOMER
+      ) {
+        await this.processVerifyUserTenantEmail(userTenant, connection);
+        return { message: 'The OTP has been sent to your email.' };
+      }
 
       const { accessToken, refreshToken } = await this.generateTokens(
         userTenant.id,
@@ -225,11 +234,7 @@ export class AuthService {
         email,
       );
 
-      if (
-        existingEmail &&
-        existingEmail.isEmailVerified &&
-        existingEmail.isActive
-      )
+      if (existingEmail)
         throw new ConflictException(`This email has been registered.`);
 
       await this.mainBookStoreService.checkDuplicateField(
@@ -246,20 +251,12 @@ export class AuthService {
         'số điện thoại',
       );
 
-      const hasAlreadyRegistered =
-        (existingEmail &&
-          existingEmail.isEmailVerified &&
-          existingEmail.isActive) ??
-        false;
-
-      const newUser = hasAlreadyRegistered
-        ? existingEmail!
-        : await this.mainUserService.createNewUser({
-            email,
-            password,
-            fullName,
-            phoneNumber,
-          });
+      const newUser = await this.mainUserService.createNewUser({
+        email,
+        password,
+        fullName,
+        phoneNumber,
+      });
 
       const bookStoreData = await this.mainBookStoreService.createNewBookStore(
         createBookStoreDto,
@@ -1318,5 +1315,36 @@ export class AuthService {
     return {
       message: 'Mã OTP đã được gửi đến email của bạn.',
     };
+  }
+
+  async processVerifyUserTenantEmail(
+    userTenant: UserTenant,
+    dataSource: DataSource,
+    metadata?: Record<string, any>,
+  ) {
+    const otpRepo = dataSource.getRepository(Otp);
+    const otp = generateOtp(length);
+
+    const otpRecord = otpRepo.create({
+      otp: encryptPayload(otp, this.configService),
+      user: {
+        id: userTenant.id,
+      },
+      type: OtpTypeEnum.SIGN_UP,
+      expiresAt: addMinutes(new Date(), 10),
+      ...(metadata && {
+        metadata,
+      }),
+    });
+
+    await otpRepo.save(otpRecord);
+
+    await this.emailService.handleSendEmail(
+      userTenant.email,
+      EmailTemplateNameEnum.EMAIL_OTP_VERIFICATION,
+      {
+        otp,
+      },
+    );
   }
 }
