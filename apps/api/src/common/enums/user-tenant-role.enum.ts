@@ -4,5 +4,5 @@ export enum UserTenantRole {
   CASHIER = 'CASHIER',
   INVENTORY = 'INVENTORY',
   ACCOUNTANT = 'ACCOUNTANT',
-  EMPLOYEE = 'EMPLOYEE',
+  CUSTOMER = 'CUSTOMER',
 }
