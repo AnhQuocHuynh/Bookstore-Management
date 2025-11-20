@@ -26,6 +26,7 @@
   },
   "dependencies": {
     "@faker-js/faker": "^10.1.0",
+    "@golevelup/nestjs-common": "^3.0.0",
     "@kaidenki/nestjs-cloudinary": "^1.0.3",
     "@nestjs-modules/mailer": "^2.0.2",
     "@nestjs/bullmq": "^11.0.4",
@@ -45,6 +46,7 @@
     "cookie-parser": "^1.4.7",
     "date-fns": "^4.1.0",
     "decimal.js": "^10.6.0",
+    "ioredis": "^5.8.2",
     "lodash": "^4.17.21",
     "multer": "^2.0.2",
     "nodemailer": "^7.0.10",
