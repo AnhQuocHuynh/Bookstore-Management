@@ -65,6 +65,12 @@ export class InvitationService {
       bookStoreId,
     );
 
+    if (!bookStoreData) {
+      throw new NotFoundException(
+        `Bookstore with id ${bookStoreId} does not existed.`,
+      );
+    }
+
     const dataSource = await this.tenantService.getTenantConnection({
       bookStoreId,
     });

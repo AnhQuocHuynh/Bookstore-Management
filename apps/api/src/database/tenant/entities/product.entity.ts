@@ -1,0 +1,109 @@
+import { ProductType } from '@/common/enums';
+import { DecimalTransformer } from '@/common/transformers';
+import {
+  Book,
+  Category,
+  DisplayProduct,
+  Inventory,
+  Supplier,
+} from '@/database/tenant/entities';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  JoinColumn,
+  JoinTable,
+  ManyToMany,
+  ManyToOne,
+  OneToMany,
+  OneToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
+
+@Entity()
+export class Product {
+  @PrimaryGeneratedColumn('uuid')
+  readonly id: string;
+
+  @Column({
+    unique: true,
+  })
+  sku: string;
+
+  @Column()
+  name: string;
+
+  @Column({
+    nullable: true,
+  })
+  description: string;
+
+  @Column({
+    type: 'decimal',
+    precision: 12,
+    scale: 2,
+    transformer: DecimalTransformer,
+  })
+  price: number;
+
+  @Column({
+    type: 'enum',
+    enum: ProductType,
+  })
+  type: ProductType;
+
+  @Column({
+    type: 'boolean',
+    default: true,
+  })
+  isActive: boolean;
+
+  @CreateDateColumn({
+    type: 'timestamp',
+  })
+  readonly createdAt: Date;
+
+  @UpdateDateColumn({
+    type: 'timestamp',
+  })
+  readonly updatedAt: Date;
+
+  @ManyToOne(() => Supplier, (supplier) => supplier.products, {
+    onDelete: 'SET NULL',
+  })
+  @JoinColumn({
+    name: 'supplier_id',
+  })
+  supplier: Supplier;
+
+  @OneToOne(() => Inventory, (inventory) => inventory.product, {
+    onDelete: 'CASCADE',
+  })
+  @JoinColumn({
+    name: 'inventory_id',
+  })
+  inventory: Inventory;
+
+  @ManyToMany(() => Category, (category) => category.products)
+  @JoinTable({
+    name: 'product_category',
+    joinColumn: {
+      name: 'product_id',
+    },
+    inverseJoinColumn: {
+      name: 'category_id',
+    },
+  })
+  categories: Category[];
+
+  @OneToOne(() => Book, (book) => book.product, {
+    cascade: true,
+  })
+  book?: Book;
+
+  @OneToMany(() => DisplayProduct, (dp) => dp.product, {
+    cascade: true,
+  })
+  displayProducts: DisplayProduct[];
+}

@@ -1,5 +1,5 @@
 import { SupplyStatus } from '@/common/enums';
-import { Purchase } from '@/database/tenant/entities';
+import { Product, Purchase } from '@/database/tenant/entities';
 import {
   Column,
   CreateDateColumn,
@@ -56,4 +56,9 @@ export class Supplier {
     cascade: true,
   })
   purchases: Purchase[];
+
+  @OneToMany(() => Product, (product) => product.supplier, {
+    cascade: true,
+  })
+  products: Product[];
 }

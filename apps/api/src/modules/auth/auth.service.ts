@@ -108,8 +108,13 @@ export class AuthService {
           },
         );
 
+      if (!bookStoreData)
+        throw new NotFoundException(
+          `Book with code ${storeCode} does not existed.`,
+        );
+
       if (user) {
-        if (bookStoreData.user.id !== user.id) {
+        if (bookStoreData?.user.id !== user.id) {
           throw new ForbiddenException(
             'You do not have permission to access this bookstore.',
           );
@@ -227,6 +232,20 @@ export class AuthService {
       )
         throw new ConflictException(`This email has been registered.`);
 
+      await this.mainBookStoreService.checkDuplicateField(
+        'name',
+        createBookStoreDto.name,
+        email,
+        'tên',
+      );
+
+      await this.mainBookStoreService.checkDuplicateField(
+        'phoneNumber',
+        createBookStoreDto.phoneNumber,
+        email,
+        'số điện thoại',
+      );
+
       const hasAlreadyRegistered =
         (existingEmail &&
           existingEmail.isEmailVerified &&
@@ -254,6 +273,11 @@ export class AuthService {
     } else if (role === UserRole.CUSTOMER && bookStoreId?.trim()) {
       const bookStoreData =
         await this.mainBookStoreService.findBookStoreByField('id', bookStoreId);
+
+      if (!bookStoreData)
+        throw new NotFoundException(
+          `Bookstore with id ${bookStoreId} doés not existed.`,
+        );
 
       const dataSource = await this.tenantService.getTenantConnection({
         bookStoreId: bookStoreData.id,
@@ -360,18 +384,23 @@ export class AuthService {
       if (!validRecord)
         throw new UnauthorizedException('OTP has expired or invalid.');
 
+      let storeCode = '';
       if (
         type === OtpTypeEnum.SIGN_UP &&
         typeof validRecord?.metadata?.bookStoreId === 'string'
       ) {
         const { bookStoreId } = validRecord.metadata;
 
-        await this.mainBookStoreService.updateBookStore(
+        const bookStore = await this.mainBookStoreService.updateBookStore(
           {
             isActive: true,
           },
           bookStoreId,
         );
+
+        if (bookStore) {
+          storeCode = bookStore.code;
+        }
       }
 
       if (type === OtpTypeEnum.SIGN_UP) {
@@ -400,8 +429,16 @@ export class AuthService {
       );
 
       return {
-        message: `OTP has been verified successfully.`,
+        message:
+          type === OtpTypeEnum.SIGN_UP
+            ? 'Your account has been verified successfully. Registration completed.'
+            : `OTP has been verified successfully.`,
         ...(authCode?.trim() && { authCode }),
+        ...(type === OtpTypeEnum.SIGN_UP &&
+          storeCode?.trim() && {
+            bookStoreId: validRecord?.metadata?.bookStoreId ?? '',
+            storeCode,
+          }),
       };
     } else if (!user && bookStoreId?.trim()) {
       const dataSource = await this.tenantService.getTenantConnection({
@@ -904,7 +941,8 @@ export class AuthService {
 
     if (
       (user?.role === UserRole.OWNER || user?.role === UserRole.ADMIN) &&
-      bookStoreId?.trim()
+      bookStoreId?.trim() &&
+      type !== OtpTypeEnum.SIGN_UP
     )
       throw new BadRequestException(
         'Admin and owner accounts should not provide a bookstoreId when requesting to resend OTP.',
@@ -1169,6 +1207,12 @@ export class AuthService {
         bookStoreId,
       );
 
+      if (!bookStore) {
+        throw new NotFoundException(
+          `Bookstore with id ${bookStoreId} does not existed.`,
+        );
+      }
+
       const dataSource = await this.tenantService.getTenantConnection({
         bookStoreId,
       });
@@ -1229,6 +1273,13 @@ export class AuthService {
         'id',
         bookStoreId,
       );
+
+      if (!bookStore) {
+        throw new NotFoundException(
+          `Bookstore with id ${bookStoreId} does not existed.`,
+        );
+      }
+
       const user = await this.mainUserService.findUserByField('id', userId);
 
       if (!user)

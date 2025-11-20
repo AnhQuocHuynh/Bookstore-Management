@@ -1,7 +1,11 @@
-import { IsInt, IsPositive } from 'class-validator';
+import { IsInt, IsNumber, IsPositive } from 'class-validator';
 
 export class CreateInventoryDto {
   @IsInt()
   @IsPositive()
-  readonly quantity: number;
+  readonly stockQuantity: number;
+
+  @IsNumber()
+  @IsPositive()
+  readonly costPrice: number;
 }

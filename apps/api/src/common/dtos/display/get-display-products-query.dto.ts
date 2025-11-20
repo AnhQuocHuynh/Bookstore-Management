@@ -22,12 +22,12 @@ export class GetDisplayProductsQueryDto {
 
   @IsOptional()
   @IsUUID()
-  bookId?: string;
+  productId?: string;
 
   @IsOptional()
   @IsString()
   @IsNotEmpty()
-  bookTitle?: string;
+  productName?: string;
 
   @IsOptional()
   @IsEnum(DisplayProductStatus)

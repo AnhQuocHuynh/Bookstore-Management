@@ -1,12 +1,12 @@
 import { DisplayProductStatus } from '@/common/enums';
-import { Book } from '@/database/tenant/entities/book.entity';
-import { DisplayShelf } from '@/database/tenant/entities/display-shelf.entity';
+import { DisplayLog, DisplayShelf, Product } from '@/database/tenant/entities';
 import {
   Column,
   CreateDateColumn,
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -32,13 +32,13 @@ export class DisplayProduct {
   })
   status: DisplayProductStatus;
 
-  @ManyToOne(() => Book, (book) => book.displayProducts, {
+  @ManyToOne(() => Product, (product) => product.displayProducts, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({
-    name: 'book_id',
+    name: 'product_id',
   })
-  book: Book;
+  product: Product;
 
   @ManyToOne(
     () => DisplayShelf,
@@ -51,6 +51,11 @@ export class DisplayProduct {
     name: 'display_shelf_id',
   })
   displayShelf: DisplayShelf;
+
+  @OneToMany(() => DisplayLog, (dl) => dl.displayProduct, {
+    cascade: true,
+  })
+  logs: DisplayLog[];
 
   @CreateDateColumn({
     type: 'timestamp',

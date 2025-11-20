@@ -1,4 +1,7 @@
 import { Public, Roles, UserSession } from '@/common/decorators';
+import { TUserSession } from '@/common/utils';
+import { CreateBookStoreDto, UpdateBookStoreDto } from '@/database/main/dto';
+import { UserRole } from '@/modules/users/enums';
 import {
   Body,
   Controller,
@@ -9,9 +12,6 @@ import {
   Post,
 } from '@nestjs/common';
 import { BookStoreService } from './bookstore.service';
-import { UserRole } from '@/modules/users/enums';
-import { TUserSession } from '@/common/utils';
-import { CreateBookStoreDto, UpdateBookStoreDto } from '@/database/main/dto';
 
 @Controller('bookstores')
 export class BookStoreController {

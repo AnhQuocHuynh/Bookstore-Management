@@ -11,7 +11,7 @@ export class CreateDisplayProductDto {
   readonly displayOrder?: number;
 
   @IsUUID()
-  readonly bookId: string;
+  readonly productId: string;
 
   @IsUUID()
   readonly displayShelfId: string;

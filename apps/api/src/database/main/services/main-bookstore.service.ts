@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { omit } from 'lodash';
-import { FindOptionsRelations, Repository } from 'typeorm';
+import { FindOptionsRelations, FindOptionsWhere, Repository } from 'typeorm';
 
 @Injectable()
 export class MainBookStoreService {
@@ -19,9 +19,10 @@ export class MainBookStoreService {
     private readonly mainDatabaseConnectionService: MainDatabaseConnectionService,
   ) {}
 
-  async findBookStores() {
+  async findBookStores(condition?: FindOptionsWhere<BookStore>) {
     const bookStores = await this.bookStoreRepo.find({
-      where: {
+      ...(condition && { where: condition }),
+      relations: {
         user: true,
       },
     });
@@ -40,9 +41,7 @@ export class MainBookStoreService {
       ...(relations && { relations }),
     });
 
-    if (!bookStore) throw new NotFoundException(`Không tìm thấy cửa hàng.`);
-
-    return bookStore;
+    return bookStore ?? null;
   }
 
   async createNewBookStore(
@@ -57,16 +56,7 @@ export class MainBookStoreService {
         'Tất cả các cơ sở dữ liệu của hệ thống đã được sử dụng. Liên hệ với quản trị viên để được tư vấn.',
       );
 
-    const { name, phoneNumber } = createBookStoreDto;
-
-    await this.checkDuplicateField('name', name, userId, 'tên');
-
-    await this.checkDuplicateField(
-      'phoneNumber',
-      phoneNumber,
-      userId,
-      'số điện thoại',
-    );
+    const { name } = createBookStoreDto;
 
     const newBookStore = this.bookStoreRepo.create({
       ...createBookStoreDto,
@@ -74,19 +64,31 @@ export class MainBookStoreService {
       connection: {
         id: availableDbConnections[0].id,
       },
+      user: {
+        id: userId,
+      },
     });
+
+    await this.mainDatabaseConnectionService.updateDatabaseConnection(
+      {
+        isConnected: true,
+        lastConnectedAt: new Date(),
+      },
+      availableDbConnections[0].id,
+    );
 
     return this.bookStoreRepo.save(newBookStore);
   }
 
   async updateBookStore(data: Partial<BookStore>, bookStoreId: string) {
     await this.bookStoreRepo.update({ id: bookStoreId }, data);
+    return this.findBookStoreByField('id', bookStoreId);
   }
 
-  private async checkDuplicateField(
+  async checkDuplicateField(
     field: keyof BookStore,
     value: string,
-    userId: string,
+    email: string,
     fieldLabel: string,
   ) {
     const existing = await this.findBookStoreByField(field, value, {
@@ -95,7 +97,7 @@ export class MainBookStoreService {
 
     if (!existing) return;
 
-    if (existing.user.id === userId) {
+    if (existing.user.email === email) {
       throw new ConflictException(
         `Bạn đã tạo cửa hàng có ${fieldLabel} ${value} rồi.`,
       );

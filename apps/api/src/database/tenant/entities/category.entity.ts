@@ -1,6 +1,6 @@
 import { CategoryStatus } from '@/common/enums';
 import { DecimalTransformer } from '@/common/transformers';
-import { Book } from '@/database/tenant/entities';
+import { Product } from '@/database/tenant/entities';
 import {
   Column,
   CreateDateColumn,
@@ -67,6 +67,6 @@ export class Category {
   })
   updatedAt: Date;
 
-  @ManyToMany(() => Book, (book) => book.categories)
-  books: Book[];
+  @ManyToMany(() => Product, (product) => product.categories)
+  products: Product[];
 }

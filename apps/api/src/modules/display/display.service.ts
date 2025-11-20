@@ -22,6 +22,7 @@ import {
   DisplayShelf,
   Employee,
   Inventory,
+  Product,
 } from '@/database/tenant/entities';
 import { UserRole } from '@/modules/users/enums';
 import { TenantService } from '@/tenants/tenant.service';
@@ -90,43 +91,44 @@ export class DisplayService {
       bookStoreId,
     });
 
-    const { bookId, displayShelfId, quantity } = createDisplayProductDto;
+    const { productId, displayShelfId, quantity } = createDisplayProductDto;
     const displayProductRepo = dataSource.getRepository(DisplayProduct);
-    const bookRepo = dataSource.getRepository(Book);
+    const productRepo = dataSource.getRepository(Product);
     const displayShelfRepo = dataSource.getRepository(DisplayShelf);
     const inventoryRepo = dataSource.getRepository(Inventory);
     const displayLogRepo = dataSource.getRepository(DisplayLog);
 
-    const book = await bookRepo.findOne({
+    const product = await productRepo.findOne({
       where: {
-        id: bookId,
+        id: productId,
       },
       relations: {
         inventory: true,
       },
     });
 
-    if (!book) throw new NotFoundException(`Book with id ${bookId} not found.`);
+    if (!product)
+      throw new NotFoundException(`Product with id ${productId} not found.`);
 
-    if (book.status !== BookStatus.AVAILABLE) {
+    if (!product.isActive) {
       throw new BadRequestException(
-        'Cannot display a book that is not available',
+        'Cannot display a product that is not active.',
       );
     }
 
-    if (book.inventory.available < quantity) {
+    if (product.inventory.availableQuantity < quantity) {
       throw new BadRequestException('Not enough inventory to display.');
     }
 
     const existing = await displayProductRepo.findOne({
       where: {
-        book: { id: book.id },
+        product: { id: product.id },
         displayShelf: { id: displayShelfId },
       },
     });
 
     if (existing) {
-      throw new BadRequestException('Book already displayed on this shelf');
+      throw new BadRequestException('Product already displayed on this shelf');
     }
 
     const displayShelf = await this.findDisplayShelfByField(
@@ -142,17 +144,17 @@ export class DisplayService {
 
     const newDisplayProduct = displayProductRepo.create({
       ...createDisplayProductDto,
-      book,
+      product,
       displayShelf,
     });
     await displayProductRepo.save(newDisplayProduct);
 
-    book.inventory.available -= createDisplayProductDto.quantity;
-    await inventoryRepo.save(book.inventory);
+    product.inventory.availableQuantity -= createDisplayProductDto.quantity;
+    await inventoryRepo.save(product.inventory);
 
     await this.createNewDisplayLog(
       {
-        book,
+        displayProduct: newDisplayProduct,
         shelf: displayShelf,
         action: DisplayLogAction.ADD,
         actorId: userId,
@@ -199,7 +201,7 @@ export class DisplayService {
       },
       relations: {
         displayProducts: {
-          book: true,
+          product: true,
         },
       },
     });
@@ -272,7 +274,7 @@ export class DisplayService {
       },
       relations: {
         displayProducts: {
-          book: {
+          product: {
             inventory: true,
           },
         },
@@ -303,12 +305,12 @@ export class DisplayService {
       shelf.displayProducts.map(async (dp) => {
         const inventory = await inventoryRepo.findOne({
           where: {
-            id: dp.book.inventory.id,
+            id: dp.product.inventory.id,
           },
         });
 
         if (inventory) {
-          inventory.available += dp.quantity;
+          inventory.availableQuantity += dp.quantity;
           await inventoryRepo.save(inventory);
         }
       }),
@@ -329,12 +331,19 @@ export class DisplayService {
     const displayLogRepo = dataSource.getRepository(DisplayLog);
     const employeeRepo = dataSource.getRepository(Employee);
 
-    const { displayShelfName, bookTitle, bookId, actorId, type, from, to } =
-      getLogsQueryDto;
+    const {
+      displayShelfName,
+      productName,
+      productId,
+      actorId,
+      type,
+      from,
+      to,
+    } = getLogsQueryDto;
 
     const qb = displayLogRepo
       .createQueryBuilder('log')
-      .leftJoinAndSelect('log.book', 'book')
+      .leftJoinAndSelect('log.product', 'product')
       .leftJoinAndSelect('log.shelf', 'shelf')
       .orderBy('log.createdAt', 'DESC');
 
@@ -345,11 +354,11 @@ export class DisplayService {
         { displayShelfName: `%${displayShelfName}%` },
       ],
       [
-        bookTitle,
-        'book.title ILIKE :bookTitle',
-        { bookTitle: `%${bookTitle}%` },
+        productName,
+        'product.name ILIKE :productName',
+        { productName: `%${productName}%` },
       ],
-      [bookId, 'book.id = :bookId', { bookId }],
+      [productId, 'product.id = :productId', { productId }],
       [actorId, 'actor.id = :actorId', { actorId }],
       [type, 'log.type = :type', { type }],
       [from, 'log.createdAt >= :from', { from }],
@@ -414,7 +423,9 @@ export class DisplayService {
         id: logId,
       },
       relations: {
-        book: true,
+        displayProduct: {
+          product: true,
+        },
         shelf: true,
       },
     });
@@ -538,7 +549,7 @@ export class DisplayService {
         id: displayProductId,
       },
       relations: {
-        book: true,
+        product: true,
         displayShelf: true,
       },
     });
@@ -570,7 +581,7 @@ export class DisplayService {
         id: displayProductId,
       },
       relations: {
-        book: true,
+        product: true,
         displayShelf: true,
       },
     });
@@ -588,7 +599,7 @@ export class DisplayService {
 
     await this.createNewDisplayLog(
       {
-        book: displayProduct.book,
+        displayProduct,
         shelf: displayProduct.displayShelf,
         action: DisplayLogAction.ADJUST,
         actorId: userSession.userId,
@@ -625,7 +636,7 @@ export class DisplayService {
         id: displayProductId,
       },
       relations: {
-        book: true,
+        product: true,
         displayShelf: true,
       },
     });
@@ -639,20 +650,20 @@ export class DisplayService {
 
     const inventory = await inventoryRepo.findOne({
       where: {
-        book: {
-          id: displayProduct.book.id,
+        product: {
+          id: displayProduct.product.id,
         },
       },
     });
 
     if (inventory) {
-      inventory.available += displayProduct.quantity;
+      inventory.availableQuantity += displayProduct.quantity;
       await inventoryRepo.save(inventory);
     }
 
     await this.createNewDisplayLog(
       {
-        book: displayProduct.book,
+        displayProduct,
         shelf: displayProduct.displayShelf,
         action: DisplayLogAction.RETURN_TO_INVENTORY,
         actorId: userSession.userId,
@@ -660,7 +671,7 @@ export class DisplayService {
           userSession.role === UserRole.EMPLOYEE
             ? DisplayLogActorType.EMPLOYEE
             : DisplayLogActorType.OWNER,
-        note: `Returned all (${displayProduct.quantity}) copies of "${displayProduct.book.title}" from shelf "${displayProduct.displayShelf.name}" to inventory`,
+        note: `Returned all (${displayProduct.quantity}) copies of "${displayProduct.product.name}" from shelf "${displayProduct.displayShelf.name}" to inventory`,
         quantity: displayProduct.quantity,
       },
       dataSource.getRepository(DisplayLog),
@@ -690,7 +701,7 @@ export class DisplayService {
         id: displayProductId,
       },
       relations: {
-        book: true,
+        product: true,
         displayShelf: true,
       },
     });
@@ -716,20 +727,20 @@ export class DisplayService {
 
     const inventory = await inventoryRepo.findOne({
       where: {
-        book: {
-          id: displayProduct.book.id,
+        product: {
+          id: displayProduct.product.id,
         },
       },
     });
 
     if (!inventory) throw new NotFoundException('Inventory of book not found.');
 
-    inventory.available += reduceDisplayProductQuantityDto.quantity;
+    inventory.availableQuantity += reduceDisplayProductQuantityDto.quantity;
     await inventoryRepo.save(inventory);
 
     await this.createNewDisplayLog(
       {
-        book: displayProduct.book,
+        displayProduct,
         shelf: displayProduct.displayShelf,
         action: DisplayLogAction.RETURN_TO_INVENTORY,
         actorId: userSession.userId,
@@ -737,7 +748,7 @@ export class DisplayService {
           userSession.role === UserRole.EMPLOYEE
             ? DisplayLogActorType.EMPLOYEE
             : DisplayLogActorType.OWNER,
-        note: `Returned ${reduceDisplayProductQuantityDto.quantity} copies of "${displayProduct.book.title}" from shelf "${displayProduct.displayShelf.name}" to inventory`,
+        note: `Returned ${reduceDisplayProductQuantityDto.quantity} copies of "${displayProduct.product.name}" from shelf "${displayProduct.displayShelf.name}" to inventory`,
         quantity: reduceDisplayProductQuantityDto.quantity,
       },
       dataSource.getRepository(DisplayLog),
@@ -767,7 +778,7 @@ export class DisplayService {
         id: displayProductId,
       },
       relations: {
-        book: {
+        product: {
           inventory: true,
         },
         displayShelf: true,
@@ -802,7 +813,7 @@ export class DisplayService {
     const moveQty = quantity ?? displayProduct.quantity;
 
     let targetDP = targetShelf.displayProducts.find(
-      (dp) => dp.book.id === displayProduct.book.id,
+      (dp) => dp.product.id === displayProduct.product.id,
     );
 
     if (targetDP) {
@@ -810,7 +821,7 @@ export class DisplayService {
       await displayProductRepo.save(targetDP);
     } else {
       const newDP = displayProductRepo.create({
-        book: displayProduct.book,
+        product: displayProduct.product,
         displayShelf: targetShelf,
         quantity: moveQty,
         status: displayProduct.status,
@@ -830,7 +841,7 @@ export class DisplayService {
     await this.createNewDisplayLog(
       {
         quantity: moveQty,
-        book: displayProduct.book,
+        displayProduct,
         shelf: targetShelf,
         action: DisplayLogAction.MOVE,
         actorId: userSession.userId,
@@ -838,7 +849,7 @@ export class DisplayService {
           userSession.role === UserRole.EMPLOYEE
             ? DisplayLogActorType.EMPLOYEE
             : DisplayLogActorType.OWNER,
-        note: `Moved ${moveQty} copies of "${displayProduct.book.title}" from shelf "${displayProduct.displayShelf.name}" to shelf "${targetShelf.name}"`,
+        note: `Moved ${moveQty} copies of "${displayProduct.product.name}" from shelf "${displayProduct.displayShelf.name}" to shelf "${targetShelf.name}"`,
       },
       dataSource.getRepository(DisplayLog),
     );

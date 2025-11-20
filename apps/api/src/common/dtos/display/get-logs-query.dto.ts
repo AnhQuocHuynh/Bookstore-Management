@@ -17,11 +17,11 @@ export class GetLogsQueryDto {
   @IsOptional()
   @IsString()
   @IsNotEmpty()
-  readonly bookTitle?: string;
+  readonly productName?: string;
 
   @IsOptional()
   @IsUUID()
-  readonly bookId?: string;
+  readonly productId?: string;
 
   @IsOptional()
   @IsUUID()

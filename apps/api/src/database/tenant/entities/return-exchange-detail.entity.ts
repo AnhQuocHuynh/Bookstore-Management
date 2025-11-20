@@ -7,34 +7,16 @@ import {
   Column,
   CreateDateColumn,
   Entity,
-  JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { Book } from './book.entity';
-import { Order } from './order.entity';
 
 @Entity()
 export class ReturnExchangeDetail {
   @PrimaryGeneratedColumn('uuid')
   readonly id: string;
-
-  @ManyToOne(() => Order, (order) => order.returnExchangeDetails, {
-    onDelete: 'CASCADE',
-  })
-  @JoinColumn({
-    name: 'order_id',
-  })
-  order: Order;
-
-  @ManyToOne(() => Book, (book) => book.returnExchangeDetails, {
-    onDelete: 'CASCADE',
-  })
-  @JoinColumn({
-    name: 'book_id',
-  })
-  book: Book;
 
   @Column({ type: 'int', default: 1 })
   quantity: number;

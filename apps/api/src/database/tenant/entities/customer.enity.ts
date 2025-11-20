@@ -1,10 +1,8 @@
-import { Order } from '@/database/tenant/entities';
 import {
   Column,
   CreateDateColumn,
   Entity,
   JoinColumn,
-  OneToMany,
   OneToOne,
   PrimaryColumn,
   UpdateDateColumn,
@@ -36,11 +34,6 @@ export class Customer {
     default: false,
   })
   isEmailVerified: boolean;
-
-  @OneToMany(() => Order, (order) => order.customer, {
-    cascade: true,
-  })
-  orders: Order[];
 
   @CreateDateColumn({
     type: 'timestamp',

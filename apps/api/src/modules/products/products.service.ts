@@ -1,0 +1,175 @@
+import { CreateProductDto } from '@/common/dtos/products';
+import {
+  InventoryLogAction,
+  InventoryLogActorType,
+  ProductType,
+} from '@/common/enums';
+import { TUserSession } from '@/common/utils';
+import {
+  Category,
+  InventoryLog,
+  Product,
+  Supplier,
+} from '@/database/tenant/entities';
+import { BooksService } from '@/modules/books/books.service';
+import { CategoriesService } from '@/modules/categories/categories.service';
+import { InventoriesService } from '@/modules/inventories/inventories.service';
+import { SupplierService } from '@/modules/suppliers/supplier.service';
+import { UserRole } from '@/modules/users/enums';
+import { TenantService } from '@/tenants/tenant.service';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { FindOptionsRelations, Repository } from 'typeorm';
+
+@Injectable()
+export class ProductsService {
+  constructor(
+    private readonly tenantService: TenantService,
+    private readonly booksService: BooksService,
+    private readonly supplierService: SupplierService,
+    private readonly categoriesService: CategoriesService,
+    private readonly inventoriesService: InventoriesService,
+  ) {}
+
+  async findProductByField(
+    field: keyof Product,
+    value: string,
+    repo: Repository<Product>,
+    relations?: FindOptionsRelations<Product> | undefined,
+  ) {
+    return (
+      repo.findOne({
+        where: {
+          [field]: value,
+        },
+        ...(relations && { relations }),
+      }) ?? null
+    );
+  }
+
+  async createProduct(
+    userSession: TUserSession,
+    createProductDto: CreateProductDto,
+  ) {
+    const { bookStoreId } = userSession;
+
+    const dataSource = await this.tenantService.getTenantConnection({
+      bookStoreId,
+    });
+
+    return dataSource.transaction(async (manager) => {
+      const productRepo = manager.getRepository(Product);
+      const supplierRepo = manager.getRepository(Supplier);
+      const categoryRepo = manager.getRepository(Category);
+      const inventoryLogRepo = manager.getRepository(InventoryLog);
+
+      const {
+        createInventoryDto,
+        createBookDto,
+        type,
+        categoryIds,
+        supplierId,
+        ...res
+      } = createProductDto;
+
+      const existingName = await this.findProductByField(
+        'name',
+        res.name,
+        productRepo,
+      );
+
+      if (existingName) {
+        throw new ConflictException(`Product ${res.name} has been existed.`);
+      }
+
+      const supplier = await this.supplierService.findSupplierByField(
+        'id',
+        supplierId,
+        supplierRepo,
+      );
+
+      if (!supplier)
+        throw new NotFoundException(`Supplier ${supplierId} not found.`);
+
+      const newProduct = productRepo.create({
+        ...res,
+        type,
+        sku: await this.generateUniqueSKU(type, productRepo),
+      });
+
+      await productRepo.save(newProduct);
+
+      await this.categoriesService.assignCategoriesToProduct(
+        categoryIds,
+        newProduct.id,
+        productRepo,
+        categoryRepo,
+      );
+
+      if (
+        type === ProductType.BOOK &&
+        createBookDto &&
+        Object.keys(createBookDto).length > 0
+      ) {
+        const newBook = await this.booksService.createBook(
+          createBookDto,
+          manager,
+        );
+        newProduct.book = newBook;
+        await productRepo.save(newProduct);
+      }
+
+      const inventory = await this.inventoriesService.createNewInventory(
+        createInventoryDto,
+        manager,
+      );
+
+      newProduct.inventory = inventory;
+      await productRepo.save(newProduct);
+
+      await this.inventoriesService.createNewInventoryLog(
+        {
+          inventory,
+          quantityChange: createInventoryDto.stockQuantity,
+          action: InventoryLogAction.PURCHASE,
+          actorType:
+            userSession.role === UserRole.OWNER
+              ? InventoryLogActorType.OWNER
+              : InventoryLogActorType.EMPLOYEE,
+          actorId: userSession.userId,
+          note: 'Restocked product from purchase',
+        },
+        inventoryLogRepo,
+      );
+
+      return {
+        message: 'Product created successfully.',
+        data: await this.findProductByField('id', newProduct.id, productRepo, {
+          inventory: true,
+          categories: true,
+          book: type === ProductType.BOOK,
+          supplier: true,
+        }),
+      };
+    });
+  }
+
+  private async generateUniqueSKU(
+    type: ProductType,
+    repo: Repository<Product>,
+  ): Promise<string> {
+    const prefix = type === ProductType.BOOK ? 'BOOK' : 'STA';
+    while (true) {
+      const sku = `${prefix}-${Date.now().toString().slice(-5)}-${Math.floor(
+        100 + Math.random() * 900,
+      )}`;
+      const exists = await repo.exists({
+        where: { sku },
+      });
+      if (!exists) return sku;
+    }
+  }
+}
