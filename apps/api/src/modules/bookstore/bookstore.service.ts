@@ -1,6 +1,6 @@
+import { GetBookStoresQueryDto } from '@/common/dtos/bookstores';
 import { TUserSession } from '@/common/utils';
 import { CreateBookStoreDto, UpdateBookStoreDto } from '@/database/main/dto';
-import { BookStore } from '@/database/main/entities';
 import { MainBookStoreService } from '@/database/main/services/main-bookstore.service';
 import { Employee } from '@/database/tenant/entities';
 import { UserRole } from '@/modules/users/enums';
@@ -61,7 +61,7 @@ export class BookStoreService {
     if (role === UserRole.OWNER)
       return this.mainBookStoreService.getBookStoresOfUser(userId);
 
-    const allBookStores = await this.getBookStores();
+    const allBookStores = await this.mainBookStoreService.findBookStores();
 
     const bookStores = (
       await Promise.all(

@@ -16,6 +16,13 @@ export class MainDatabaseConnectionService {
     private readonly configService: ConfigService,
   ) {}
 
+  async updateDatabaseConnection(
+    data: Partial<DatabaseConnection>,
+    dbConnectionId: string,
+  ) {
+    return this.dbConnectionRepo.update({ id: dbConnectionId }, data);
+  }
+
   async findAvailableDbConnections() {
     return this.dbConnectionRepo.find({
       where: {

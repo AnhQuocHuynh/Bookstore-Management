@@ -1,9 +1,11 @@
-import { Book } from '@/database/tenant/entities';
+import { DecimalTransformer } from '@/common/transformers';
+import { InventoryLog, Product } from '@/database/tenant/entities';
 import {
   BeforeInsert,
   Column,
   CreateDateColumn,
   Entity,
+  OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
@@ -14,19 +16,33 @@ export class Inventory {
   @PrimaryGeneratedColumn('uuid')
   readonly id: string;
 
-  @OneToOne(() => Book, (book) => book.inventory, {
+  @OneToOne(() => Product, (product) => product.inventory, {
     cascade: true,
   })
-  book: Book;
+  product: Product;
 
-  @Column({ type: 'int' })
-  quantity: number;
+  @OneToMany(() => InventoryLog, (log) => log.inventory, {
+    cascade: true,
+  })
+  logs: Inventory[];
 
   @Column({ type: 'int', default: 0 })
-  reserved: number;
+  stockQuantity: number;
 
-  @Column({ type: 'int' })
-  available: number;
+  @Column({ type: 'int', default: 0 })
+  displayQuantity: number;
+
+  @Column({ type: 'int', default: 0 })
+  availableQuantity: number;
+
+  @Column({
+    type: 'decimal',
+    precision: 12,
+    scale: 2,
+    default: 0,
+    transformer: DecimalTransformer,
+  })
+  costPrice: number;
 
   @CreateDateColumn({ type: 'timestamp' })
   readonly createdAt: Date;
@@ -36,8 +52,11 @@ export class Inventory {
 
   @BeforeInsert()
   setAvailable() {
-    if (this.available === undefined || this.available === null) {
-      this.available = this.quantity || 0;
+    if (
+      this.availableQuantity === undefined ||
+      this.availableQuantity === null
+    ) {
+      this.availableQuantity = this.stockQuantity || 0;
     }
   }
 }

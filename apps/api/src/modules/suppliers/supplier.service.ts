@@ -8,10 +8,25 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class SupplierService {
   constructor(private readonly tenantService: TenantService) {}
+
+  async findSupplierByField(
+    field: keyof Supplier,
+    value: string,
+    repo: Repository<Supplier>,
+  ) {
+    return (
+      repo.findOne({
+        where: {
+          [field]: value,
+        },
+      }) ?? null
+    );
+  }
 
   async createSupplier(
     createSupplierDto: CreateSupplierDto,

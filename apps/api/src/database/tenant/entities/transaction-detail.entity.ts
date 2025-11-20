@@ -1,5 +1,5 @@
 import { DecimalTransformer } from '@/common/transformers';
-import { Book, Cart } from '@/database/tenant/entities';
+import { Transaction } from '@/database/tenant/entities';
 import {
   Column,
   CreateDateColumn,
@@ -11,12 +11,13 @@ import {
 } from 'typeorm';
 
 @Entity()
-export class CartItem {
+export class TransactionDetail {
   @PrimaryGeneratedColumn('uuid')
   readonly id: string;
 
   @Column({
     type: 'int',
+    default: 1,
   })
   quantity: number;
 
@@ -26,31 +27,40 @@ export class CartItem {
     scale: 2,
     transformer: DecimalTransformer,
   })
-  price: number;
+  unitPrice: number;
+
+  @Column({
+    type: 'decimal',
+    precision: 12,
+    scale: 2,
+    default: 0,
+    transformer: DecimalTransformer,
+  })
+  discount: number;
+
+  @Column({
+    type: 'decimal',
+    precision: 12,
+    scale: 2,
+    transformer: DecimalTransformer,
+  })
+  totalPrice: number;
 
   @CreateDateColumn({
     type: 'timestamp',
   })
-  createdAt: Date;
+  readonly createdAt: Date;
 
   @UpdateDateColumn({
     type: 'timestamp',
   })
-  updatedAt: Date;
+  readonly updatedAt: Date;
 
-  @ManyToOne(() => Cart, (cart) => cart.cartItems, {
+  @ManyToOne(() => Transaction, (transaction) => transaction, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({
-    name: 'cart_id',
+    name: 'transaction_id',
   })
-  cart: Cart;
-
-  @ManyToOne(() => Book, (book) => book.cartItems, {
-    onDelete: 'CASCADE',
-  })
-  @JoinColumn({
-    name: 'book_id',
-  })
-  book: Book;
+  transaction: Transaction;
 }

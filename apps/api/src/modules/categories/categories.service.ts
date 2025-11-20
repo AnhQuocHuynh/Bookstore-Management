@@ -1,6 +1,6 @@
 import { CreateCategoryDto } from '@/common/dtos';
 import { TUserSession } from '@/common/utils';
-import { Book, Category } from '@/database/tenant/entities';
+import { Book, Category, Product } from '@/database/tenant/entities';
 import { TenantService } from '@/tenants/tenant.service';
 import {
   ConflictException,
@@ -94,4 +94,11 @@ export class CategoriesService {
       data: newCategory,
     };
   }
+
+  async assignCategoriesToProduct(
+    categoryIds: string[],
+    productId: string,
+    productRepo: Repository<Product>,
+    categoryRepo: Repository<Category>,
+  ) {}
 }

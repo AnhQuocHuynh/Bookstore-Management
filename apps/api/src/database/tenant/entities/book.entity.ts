@@ -1,20 +1,10 @@
 import { BookStatus } from '@/common/enums';
-import {
-  CartItem,
-  DisplayLog,
-  DisplayProduct,
-  Inventory,
-  Publisher,
-  ReturnExchangeDetail,
-} from '@/database/tenant/entities';
-import { OrderDetail } from '@/database/tenant/entities/order-detail.entity';
+import { Product, Publisher } from '@/database/tenant/entities';
 import {
   Column,
   CreateDateColumn,
   Entity,
   JoinColumn,
-  JoinTable,
-  ManyToMany,
   ManyToOne,
   OneToMany,
   OneToOne,
@@ -22,9 +12,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { Author } from './author.entity';
-import { Category } from './category.entity';
 import { PurchaseDetail } from './purchase-detail.entity';
-import { DecimalTransformer } from '@/common/transformers';
 
 @Entity()
 export class Book {
@@ -33,22 +21,6 @@ export class Book {
 
   @Column({ unique: true })
   isbn: string;
-
-  @Column({
-    unique: true,
-  })
-  title: string;
-
-  @Column({ type: 'text', nullable: true })
-  description?: string;
-
-  @Column({
-    type: 'decimal',
-    precision: 12,
-    scale: 2,
-    transformer: DecimalTransformer,
-  })
-  price: number;
 
   @Column({ type: 'date', nullable: true })
   publicationDate?: Date;
@@ -80,12 +52,6 @@ export class Book {
   })
   publisher: Publisher;
 
-  @ManyToMany(() => Category, (category) => category.books)
-  @JoinTable({
-    name: 'category_book',
-  })
-  categories: Category[];
-
   @OneToMany(() => PurchaseDetail, (pd) => pd.book)
   purchaseDetails: PurchaseDetail[];
 
@@ -106,38 +72,11 @@ export class Book {
   })
   updatedAt: Date;
 
-  @OneToMany(() => OrderDetail, (orderDetail) => orderDetail.book, {
-    cascade: true,
-  })
-  orderDetails: OrderDetail[];
-
-  @OneToMany(
-    () => ReturnExchangeDetail,
-    (returnExchangeDetail) => returnExchangeDetail.book,
-    {
-      cascade: true,
-    },
-  )
-  returnExchangeDetails: ReturnExchangeDetail[];
-
-  @OneToOne(() => Inventory, (inventory) => inventory.book, {
+  @OneToOne(() => Product, (product) => product.book, {
     onDelete: 'CASCADE',
   })
-  @JoinColumn({ name: 'inventory_id' })
-  inventory: Inventory;
-
-  @OneToMany(() => DisplayProduct, (dp) => dp.book, {
-    cascade: true,
+  @JoinColumn({
+    name: 'product_id',
   })
-  displayProducts: DisplayProduct[];
-
-  @OneToMany(() => DisplayLog, (dl) => dl.book, {
-    cascade: true,
-  })
-  displayLogs: DisplayLog[];
-
-  @OneToMany(() => CartItem, (cartItem) => cartItem.book, {
-    cascade: true,
-  })
-  cartItems: CartItem[];
+  product: Product;
 }

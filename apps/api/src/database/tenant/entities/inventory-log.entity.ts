@@ -1,9 +1,5 @@
-import { DisplayLogAction, DisplayLogActorType } from '@/common/enums';
-import {
-  Product,
-  DisplayProduct,
-  DisplayShelf,
-} from '@/database/tenant/entities';
+import { InventoryLogAction, InventoryLogActorType } from '@/common/enums';
+import { Inventory, Product } from '@/database/tenant/entities';
 import {
   Column,
   CreateDateColumn,
@@ -15,37 +11,32 @@ import {
 } from 'typeorm';
 
 @Entity()
-export class DisplayLog {
+export class InventoryLog {
   @PrimaryGeneratedColumn('uuid')
   readonly id: string;
 
-  @ManyToOne(() => DisplayProduct, (dp) => dp.logs, {
+  @ManyToOne(() => Inventory, (inventory) => inventory.logs, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({
-    name: 'display_product_id',
+    name: 'inventory_id',
   })
-  displayProduct: DisplayProduct;
+  inventory: Inventory;
 
-  @ManyToOne(() => DisplayShelf, (ds) => ds.displayLogs, {
-    onDelete: 'RESTRICT',
-  })
-  shelf: DisplayShelf;
-
-  @Column({ type: 'int', nullable: true })
-  quantity?: number;
+  @Column({ type: 'int' })
+  quantityChange: number;
 
   @Column({
     type: 'enum',
-    enum: DisplayLogAction,
+    enum: InventoryLogAction,
   })
-  action: DisplayLogAction;
+  action: InventoryLogAction;
 
   @Column({
     type: 'enum',
-    enum: DisplayLogActorType,
+    enum: InventoryLogActorType,
   })
-  actorType: DisplayLogActorType;
+  actorType: InventoryLogActorType;
 
   @Column({
     type: 'uuid',

@@ -9,7 +9,6 @@ import { EmailModule } from '@/modules/email/email.module';
 import { FilesModule } from '@/modules/files/files.module';
 import { InventoriesModule } from '@/modules/inventories/inventories.module';
 import { InvitationModule } from '@/modules/invitations/invitation.module';
-import { InvoicesModule } from '@/modules/invoices/invoices.module';
 import { SupplierModule } from '@/modules/suppliers/supplier.module';
 import { UserModule } from '@/modules/users/user.module';
 import { TenantModule } from '@/tenants/tenant.module';
@@ -63,7 +62,6 @@ import { PublishersModule } from './modules/publishers/publishers.module';
     CategoriesModule,
     DisplayModule,
     InventoriesModule,
-    InvoicesModule,
   ],
 })
 export class AppModule {}
