@@ -13,7 +13,7 @@ import { User } from './user.entity';
 
 @Entity()
 export class Customer {
-  @PrimaryColumn({ name: 'user_id' })
+  @PrimaryColumn({ name: 'user_id', type: 'uuid' })
   userId: string;
 
   @Column({

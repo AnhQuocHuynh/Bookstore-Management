@@ -54,7 +54,6 @@ export class InvitationService {
     createInvitationDto: CreateInvitationDto,
     userSession: TUserSession,
   ) {
-    console.log(userSession);
     const { email, role } = createInvitationDto;
     const { userId, bookStoreId } = userSession;
 
@@ -222,6 +221,9 @@ export class InvitationService {
     const bookStoreData = await this.mainBookStoreService.findBookStoreByField(
       'id',
       bookStoreId,
+      {
+        user: true,
+      },
     );
 
     if (!bookStoreData)
