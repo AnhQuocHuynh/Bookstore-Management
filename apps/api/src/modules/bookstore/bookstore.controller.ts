@@ -10,8 +10,13 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import { BookStoreService } from './bookstore.service';
+import {
+  GetEmployeesOfBookStoreQueryDto,
+  GetMyBookStoresQueryDto,
+} from '@/common/dtos/bookstores';
 
 @Controller('bookstores')
 export class BookStoreController {
@@ -23,9 +28,23 @@ export class BookStoreController {
     return this.bookStoreService.getBookStores();
   }
 
-  @Get(':id')
+  @Get('detail/:id')
   async getBookStore(@Param('id', ParseUUIDPipe) id: string) {
     return this.bookStoreService.getBookStore(id);
+  }
+
+  @Get(':id/employees')
+  @Roles(UserRole.OWNER)
+  async getEmployeesOfBookStore(
+    @Param('id', ParseUUIDPipe) bookStoreId: string,
+    @Query() getEmployeesOfBookStoreQueryDto: GetEmployeesOfBookStoreQueryDto,
+    @UserSession() userSession: TUserSession,
+  ) {
+    return this.bookStoreService.getEmployeesOfBookStore(
+      userSession,
+      bookStoreId,
+      getEmployeesOfBookStoreQueryDto,
+    );
   }
 
   @Post()
@@ -45,16 +64,24 @@ export class BookStoreController {
   async updateBookStore(
     @Param('id', ParseUUIDPipe) bookStoreId: string,
     @Body() updateBookStoreDto: UpdateBookStoreDto,
+    @UserSession() userSession: TUserSession,
   ) {
     return this.bookStoreService.updateBookStore(
       bookStoreId,
       updateBookStoreDto,
+      userSession,
     );
   }
 
   @Get('my')
   @Roles(UserRole.OWNER, UserRole.EMPLOYEE)
-  async getMyBookStores(@UserSession() userSession: TUserSession) {
-    return this.bookStoreService.getMyBookStores(userSession);
+  async getMyBookStores(
+    @UserSession() userSession: TUserSession,
+    @Query() getMyBookStoresQueryDto: GetMyBookStoresQueryDto,
+  ) {
+    return this.bookStoreService.getMyBookStores(
+      userSession,
+      getMyBookStoresQueryDto,
+    );
   }
 }
