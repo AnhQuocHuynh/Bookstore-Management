@@ -17,7 +17,9 @@ import {
 
 @Entity()
 export class Employee {
-  @PrimaryColumn()
+  @PrimaryColumn({
+    type: 'uuid',
+  })
   userId: string;
 
   @Column()
