@@ -24,4 +24,7 @@ export default () => ({
     api_key: process.env.CLOUDINARY_API_KEY || '',
     api_secret: process.env.CLOUDINARY_API_SECRET || '',
   },
+  redis_url: process.env.BULLMQ_CONNECTION_URL || '',
+  tenant_config_ttl_second:
+    parseInt(process.env.TENANT_CONFIG_TTL_SECOND || '3600', 10) || 3600,
 });

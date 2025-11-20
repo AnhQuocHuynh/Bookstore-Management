@@ -2,6 +2,7 @@ export * from './book-store-id.decorator';
 export * from './is-strong-password.decorator';
 export * from './is-vietnamese-phone-number.decorator';
 export * from './public.decorator';
+export * from './redis-client.decorator';
 export * from './refresh-token.decorator';
 export * from './role.decorator';
 export * from './store-code.decorator';
