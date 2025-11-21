@@ -5,7 +5,8 @@ export class ChangePasswordDto {
   @IsStrongPassword()
   readonly newPassword: string;
 
-  @IsStrongPassword()
+  @IsString()
+  @IsNotEmpty()
   readonly currentPassword: string;
 
   @IsString()

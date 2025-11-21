@@ -72,10 +72,14 @@ export class AuthService {
       );
     }
 
-    if (role === UserRole.ADMIN) {
-      if (!user || (user && !(await verifyPassword(password, user.password))))
-        throw new UnauthorizedException('Invalid credentials.');
+    if (
+      !user ||
+      (user && !(await verifyPassword(password, user.password))) ||
+      (user && user.role !== role)
+    )
+      throw new UnauthorizedException('Invalid credentials.');
 
+    if (role === UserRole.ADMIN) {
       const { accessToken, refreshToken } = await this.generateTokens(
         user.id,
         user.role,
