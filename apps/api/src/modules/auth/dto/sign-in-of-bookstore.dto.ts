@@ -1,8 +1,20 @@
-import { IsEmail, IsNotEmpty, IsString, IsUUID } from 'class-validator';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+} from 'class-validator';
 
 export class SignInOfBookStoreDto {
+  @IsOptional()
   @IsEmail()
-  readonly email: string;
+  readonly email?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  readonly username?: string;
 
   @IsString()
   @IsNotEmpty()

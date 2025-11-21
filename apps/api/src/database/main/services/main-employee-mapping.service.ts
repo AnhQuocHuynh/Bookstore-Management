@@ -10,10 +10,10 @@ export class MainEmployeeMappingService {
     private readonly employeeMappingRepo: Repository<EmployeeMapping>,
   ) {}
 
-  async findBookStoresOfEmployee(email: string) {
+  async findBookStoresOfEmployee(username: string) {
     return this.employeeMappingRepo.find({
       where: {
-        email,
+        username,
       },
       relations: {
         bookstore: true,

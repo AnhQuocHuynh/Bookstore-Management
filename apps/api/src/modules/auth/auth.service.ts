@@ -26,6 +26,7 @@ import {
   ResetPasswordDto,
   SignInDto,
   SignInOfBookStoreDto,
+  SignInOfEmployeeDto,
   SignUpDto,
   VerifyOtpDto,
 } from '@/modules/auth/dto';
@@ -66,9 +67,10 @@ export class AuthService {
     const { email, password, role } = signInDto;
     const user = await this.mainUserService.findUserByField('email', email);
 
-    if (role === UserRole.CUSTOMER) {
+    if (role === UserRole.CUSTOMER || role === UserRole.EMPLOYEE) {
+      const isCustomer = role === UserRole.CUSTOMER;
       throw new ForbiddenException(
-        'Customer is not allowed to perform this action.',
+        `${isCustomer ? 'Customer' : 'Employee'} is not allowed to perform this action.`,
       );
     }
 
@@ -93,8 +95,6 @@ export class AuthService {
       };
     }
 
-    const isOwner = role === UserRole.OWNER && user !== null;
-
     const payload = {
       role,
       email,
@@ -107,9 +107,7 @@ export class AuthService {
 
     return {
       token,
-      data: isOwner
-        ? await this.mainBookStoreService.getBookStoresOfUser(user.id)
-        : await this.mainEmployeeMappingService.findBookStoresOfEmployee(email),
+      data: await this.mainBookStoreService.getBookStoresOfUser(user.id),
     };
   }
 
@@ -118,37 +116,46 @@ export class AuthService {
     token: string,
     response: Response,
   ) {
+    const { email, password, bookStoreId, username } = signInOfBookStoreDto;
     let isOwner = false;
+    let payload: any = null;
 
     try {
-      const payload = this.jwtService.verify<{ role: UserRole; email: string }>(
-        token,
-        {
-          secret: this.configService.get('jwt_secret'),
-        },
-      );
+      payload = this.jwtService.verify<{
+        role: UserRole;
+        email?: string;
+        username?: string;
+      }>(token, {
+        secret: this.configService.get('jwt_secret'),
+      });
 
       const isValidRole = [UserRole.EMPLOYEE, UserRole.OWNER].includes(
         payload.role,
       );
-      const isValidEmail = payload.email === signInOfBookStoreDto.email;
 
-      if (!isValidRole || !isValidEmail) {
-        throw new UnauthorizedException('Invalid token.');
-      }
+      if (!isValidRole) throw new Error('Invalid token.');
 
       isOwner = payload.role === UserRole.OWNER;
-    } catch {
-      throw new GoneException('Invalid or expired token.');
+    } catch (error) {
+      throw new UnauthorizedException('Invalid or expired token.');
     }
 
-    const { email, password, bookStoreId } = signInOfBookStoreDto;
+    if (payload?.role === UserRole.OWNER && username?.trim())
+      throw new BadRequestException('Owner should not provide a username.');
+
+    if (payload?.role === UserRole.EMPLOYEE && email?.trim())
+      throw new BadRequestException('Employee should not provide an email.');
+
     let userId: string = '';
     let profile: any = null;
     let storeCode: string = '';
 
     if (isOwner) {
+      if (!email)
+        throw new BadRequestException('Owner must be provide an email.');
+
       const user = await this.mainUserService.findUserByField('email', email);
+
       if (!user || (user && !(await verifyPassword(password, user.password))))
         throw new UnauthorizedException('Invalid credentials.');
 
@@ -167,12 +174,17 @@ export class AuthService {
       profile = omit(user, ['password']);
       storeCode = bookStore.code;
     } else {
+      if (!username?.trim())
+        throw new BadRequestException('Employee must be provide a username.');
+
       const employeeMappings =
-        await this.mainEmployeeMappingService.findBookStoresOfEmployee(email);
+        await this.mainEmployeeMappingService.findBookStoresOfEmployee(
+          username,
+        );
 
       const bookStores = employeeMappings.map((em) => em.bookstore);
-
       let seletecBookStore: BookStore | null = null;
+
       for (const bs of bookStores) {
         if (bs.id === bookStoreId) {
           seletecBookStore = bs;
@@ -192,7 +204,7 @@ export class AuthService {
 
       const employee = await employeeRepo.findOne({
         where: {
-          email,
+          username,
         },
       });
 
@@ -218,6 +230,28 @@ export class AuthService {
       profile,
       storeCode,
       bookStoreId,
+    };
+  }
+
+  async signInOfEmployee(signInOfEmployeeDto: SignInOfEmployeeDto) {
+    const { username } = signInOfEmployeeDto;
+
+    const employeeMappings =
+      await this.mainEmployeeMappingService.findBookStoresOfEmployee(username);
+
+    const payload = {
+      role: UserRole.EMPLOYEE,
+      username,
+    };
+
+    const token = this.jwtService.sign(payload, {
+      secret: this.configService.get('jwt_secret'),
+      expiresIn: this.configService.get('jwt_expiration_time', '120s'),
+    });
+
+    return {
+      token,
+      data: employeeMappings.map((em) => em.bookstore),
     };
   }
 

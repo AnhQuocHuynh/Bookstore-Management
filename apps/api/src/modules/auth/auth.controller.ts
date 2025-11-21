@@ -8,6 +8,7 @@ import {
   ResetPasswordDto,
   SignInDto,
   SignInOfBookStoreDto,
+  SignInOfEmployeeDto,
   SignUpDto,
   VerifyOtpDto,
 } from '@/modules/auth/dto';
@@ -37,6 +38,12 @@ export class AuthController {
     @Res({ passthrough: true }) response: Response,
   ) {
     return this.authService.signIn(signInDto, response);
+  }
+
+  @Public()
+  @Post('sign-in/employee')
+  async signInOfEmployee(@Body() signInOfEmployeeDto: SignInOfEmployeeDto) {
+    return this.authService.signInOfEmployee(signInOfEmployeeDto);
   }
 
   @Public()
