@@ -9,3 +9,5 @@ export const SUBJECT_EMAIL_MAP = {
 };
 export const ALGORITHM = 'aes-256-cbc';
 export const IV_LENGTH = 16;
+export const CHARS =
+  'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+';
