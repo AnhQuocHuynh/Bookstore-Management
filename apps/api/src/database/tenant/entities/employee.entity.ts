@@ -1,29 +1,36 @@
+import { EmployeeRole } from '@/common/enums';
 import {
   AuthorizationCode,
   Otp,
   Transaction,
-  User,
 } from '@/database/tenant/entities';
 import {
   Column,
   CreateDateColumn,
   Entity,
-  JoinColumn,
   OneToMany,
-  OneToOne,
-  PrimaryColumn,
+  PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 
 @Entity()
 export class Employee {
-  @PrimaryColumn({
-    type: 'uuid',
+  @PrimaryGeneratedColumn('uuid')
+  readonly id: string;
+
+  @Column({
+    unique: true,
+    nullable: true,
   })
-  userId: string;
+  email?: string;
+
+  @Column({
+    unique: true,
+  })
+  username: string;
 
   @Column()
-  readonly password: string;
+  password: string;
 
   @Column({ default: true })
   isActive: boolean;
@@ -34,6 +41,20 @@ export class Employee {
   })
   isFirstLogin: boolean;
 
+  @Column({
+    type: 'enum',
+    enum: EmployeeRole,
+  })
+  role: EmployeeRole;
+
+  @Column()
+  fullName: string;
+
+  @Column({
+    unique: true,
+  })
+  phoneNumber: string;
+
   @CreateDateColumn({
     type: 'timestamp',
   })
@@ -43,14 +64,6 @@ export class Employee {
     type: 'timestamp',
   })
   readonly updatedAt: Date;
-
-  @OneToOne(() => User, (user) => user.employee, {
-    onDelete: 'CASCADE',
-  })
-  @JoinColumn({
-    name: 'user_id',
-  })
-  user: User;
 
   @OneToMany(() => Transaction, (transasction) => transasction.cashier, {
     cascade: true,

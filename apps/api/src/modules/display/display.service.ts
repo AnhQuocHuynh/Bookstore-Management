@@ -8,15 +8,10 @@ import {
   UpdateDisplayProductDto,
   UpdateDisplayShelfDto,
 } from '@/common/dtos';
-import {
-  BookStatus,
-  DisplayLogAction,
-  DisplayLogActorType,
-} from '@/common/enums';
+import { DisplayLogAction, DisplayLogActorType } from '@/common/enums';
 import { TUserSession } from '@/common/utils';
 import { MainUserService } from '@/database/main/services/main-user.service';
 import {
-  Book,
   DisplayLog,
   DisplayProduct,
   DisplayShelf,
@@ -397,7 +392,7 @@ export class DisplayService {
 
     const employeeMap: { [id: string]: Employee } = {};
     for (const employee of employees) {
-      employeeMap[employee.userId] = employee;
+      employeeMap[employee.id] = employee;
     }
 
     return logs.map((l) => ({
@@ -405,7 +400,7 @@ export class DisplayService {
       actorName:
         l.actorType === DisplayLogActorType.OWNER
           ? (ownerMap[l.actorId]?.fullName ?? 'Unknown')
-          : (employeeMap[l.actorId]?.user?.fullName ?? 'Unknown'),
+          : (employeeMap[l.actorId]?.fullName ?? 'Unknown'),
     }));
   }
 
@@ -444,7 +439,7 @@ export class DisplayService {
         .where('employee.id = :id', { id: log.actorId })
         .getOne();
 
-      actorName = employee?.user?.fullName ?? 'Unknown';
+      actorName = employee?.fullName ?? 'Unknown';
     }
 
     return {

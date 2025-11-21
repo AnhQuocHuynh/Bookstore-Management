@@ -1,4 +1,4 @@
-import { ALGORITHM, IV_LENGTH } from '@/common/constants';
+import { ALGORITHM, CHARS, IV_LENGTH } from '@/common/constants';
 import { ConfigService } from '@nestjs/config';
 import * as bcryptjs from 'bcryptjs';
 import crypto from 'crypto';
@@ -96,17 +96,6 @@ export function setCookie(
   });
 }
 
-export function generateTempPassword(length = 8) {
-  const chars =
-    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
-  let password = '';
-  for (let i = 0; i < length; i++) {
-    const index = crypto.randomInt(0, chars.length);
-    password += chars[index];
-  }
-  return password;
-}
-
 export function generateSecureToken(sizeBytes = 32) {
   const buf = crypto.randomBytes(sizeBytes);
   return buf
@@ -142,4 +131,18 @@ export function calculateMoney(...values: (string | number)[]): number {
   return values
     .reduce((acc, val) => acc.plus(new Decimal(val)), new Decimal(0))
     .toNumber();
+}
+
+export function generateUsername(prefix = 'emp') {
+  const random = Math.random().toString(36).substring(2, 8);
+  return `${prefix}_${random}`;
+}
+
+export function generateSecurePassword(length = 12) {
+  let password = '';
+  for (let i = 0; i < length; i++) {
+    const index = crypto.randomInt(0, CHARS.length);
+    password += CHARS[index];
+  }
+  return password;
 }

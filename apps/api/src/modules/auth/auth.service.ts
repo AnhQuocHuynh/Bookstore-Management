@@ -188,12 +188,7 @@ export class AuthService {
 
       const employee = await employeeRepo.findOne({
         where: {
-          user: {
-            employee: true,
-          },
-        },
-        relations: {
-          user: true,
+          email,
         },
       });
 
@@ -201,7 +196,7 @@ export class AuthService {
         throw new UnauthorizedException('Invalid credentails.');
       }
 
-      userId = employee.userId;
+      userId = employee.id;
       profile = omit(employee, ['password']);
       storeCode = seletecBookStore.code;
     }
@@ -465,7 +460,7 @@ export class AuthService {
 
       const refreshTokens = await refreshTokenRepo.find({
         where: {
-          user: {
+          emplee: {
             id: userId,
           },
           expiresAt: MoreThan(new Date()),
@@ -561,7 +556,7 @@ export class AuthService {
   ) {
     const newRT = repo.create({
       token: encryptPayload(token, this.configService),
-      user: {
+      emplee: {
         id: userId,
       },
       expiresAt,

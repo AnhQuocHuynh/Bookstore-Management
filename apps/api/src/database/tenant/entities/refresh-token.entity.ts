@@ -1,4 +1,4 @@
-import { User } from '@/database/tenant/entities/user.entity';
+import { Employee } from '@/database/tenant/entities';
 import {
   Column,
   CreateDateColumn,
@@ -19,11 +19,11 @@ export class RT {
   @Column()
   token: string;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => Employee)
   @JoinColumn({
-    name: 'user_id',
+    name: 'employee_id',
   })
-  user: User;
+  emplee: Employee;
 
   @Column({
     type: 'timestamp',
