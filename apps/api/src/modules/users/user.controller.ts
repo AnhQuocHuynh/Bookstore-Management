@@ -1,9 +1,12 @@
-import { Roles, UserSession } from '@/common/decorators';
+import { Public, Roles, UserSession } from '@/common/decorators';
 import { TUserSession } from '@/common/utils/types';
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Post } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UserRole } from '@/modules/users/enums';
-import { CreateEmployeeByOwnerDto } from '@/modules/users/dto';
+import {
+  CreateEmployeeByOwnerDto,
+  UpdateOwnPasswordDto,
+} from '@/modules/users/dto';
 
 @Controller('users')
 export class UserController {
@@ -24,5 +27,11 @@ export class UserController {
       userSession,
       createEmployeeByOwnerDto,
     );
+  }
+
+  @Patch('me/password')
+  @Public()
+  async updateOwnPassword(@Body() updateOwnPasswordDto: UpdateOwnPasswordDto) {
+    return this.userService.updateOwnPassword(updateOwnPasswordDto);
   }
 }

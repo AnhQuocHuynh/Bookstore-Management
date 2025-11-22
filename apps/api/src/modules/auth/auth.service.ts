@@ -212,6 +212,20 @@ export class AuthService {
         throw new UnauthorizedException('Invalid credentails.');
       }
 
+      if (employee.isFirstLogin) {
+        const token = await this.jwtService.signAsync({
+          username: employee.username,
+          bookStoreId,
+        });
+
+        return {
+          token,
+          message:
+            'Welcome! Since this is your first login, please change your password.',
+          isFirstLogin: true,
+        };
+      }
+
       userId = employee.id;
       profile = omit(employee, ['password']);
       storeCode = seletecBookStore.code;
