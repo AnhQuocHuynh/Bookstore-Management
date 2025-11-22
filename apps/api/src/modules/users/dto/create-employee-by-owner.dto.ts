@@ -1,6 +1,7 @@
 import { IsVietnamesePhoneNumber } from '@/common/decorators';
 import { EmployeeRole } from '@/common/enums';
-import { IsEnum, IsNotEmpty, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsDate, IsEmail, IsEnum, IsNotEmpty, IsString } from 'class-validator';
 
 export class CreateEmployeeByOwnerDto {
   @IsString()
@@ -12,4 +13,11 @@ export class CreateEmployeeByOwnerDto {
 
   @IsEnum(EmployeeRole)
   readonly role: EmployeeRole;
+
+  @IsEmail()
+  readonly employeeEmail: string;
+
+  @Type(() => Date)
+  @IsDate()
+  readonly birthDate: Date;
 }

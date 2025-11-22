@@ -20,9 +20,8 @@ export class Employee {
 
   @Column({
     unique: true,
-    nullable: true,
   })
-  email?: string;
+  email: string;
 
   @Column({
     unique: true,
@@ -54,6 +53,17 @@ export class Employee {
     unique: true,
   })
   phoneNumber: string;
+
+  @Column({
+    type: 'timestamp',
+  })
+  birthDate: Date;
+
+  @Column({
+    type: 'text',
+    nullable: true,
+  })
+  logoUrl?: string;
 
   @CreateDateColumn({
     type: 'timestamp',

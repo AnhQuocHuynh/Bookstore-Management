@@ -4,8 +4,7 @@ export const SUBJECT_EMAIL_MAP = {
   'email-invite-employee': `You're Invited to Join Our Bookstore Team`,
   'email-request-change-password-otp': 'Confirm Your Password Change Request',
   'email-store-registration': 'Your Bookstore Has Been Successfully Registered',
-  'email-employee-accepted':
-    'Your Employee Account Has Been Successfully Activated',
+  'email-employee-account-info': 'Your Employee Account Information',
 };
 export const ALGORITHM = 'aes-256-cbc';
 export const IV_LENGTH = 16;

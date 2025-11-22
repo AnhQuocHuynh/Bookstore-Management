@@ -133,9 +133,34 @@ export function calculateMoney(...values: (string | number)[]): number {
     .toNumber();
 }
 
-export function generateUsername(prefix = 'emp') {
-  const random = Math.random().toString(36).substring(2, 8);
-  return `${prefix}_${random}`;
+export function generateUsername(fullName: string, birthDate: string): string {
+  const normalized = fullName
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+
+  const names = normalized.split(' ').filter((n) => n.length > 0);
+  if (names.length === 0) return '';
+
+  const lastName = names[names.length - 1];
+  const initials = names
+    .slice(0, -1)
+    .map((n) => n[0])
+    .join('');
+  let username = lastName + initials;
+
+  const datePart = birthDate.replace(/-/g, '').substring(0, 6);
+  username += datePart;
+
+  const chars = CHARS.split('');
+  const randomLength = Math.floor(Math.random() * 2) + 5;
+
+  for (let i = 0; i < randomLength; i++) {
+    const randomChar = chars[Math.floor(Math.random() * chars.length)];
+    username += randomChar;
+  }
+
+  return username;
 }
 
 export function generateSecurePassword(length = 12) {
