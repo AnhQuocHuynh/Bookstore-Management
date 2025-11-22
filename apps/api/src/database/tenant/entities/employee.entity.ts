@@ -50,6 +50,11 @@ export class Employee {
   fullName: string;
 
   @Column({
+    nullable: true,
+  })
+  address: string;
+
+  @Column({
     unique: true,
   })
   phoneNumber: string;

@@ -1,9 +1,21 @@
 import { CreateBookStoreDto } from '@/database/main/dto';
-import { SignInDto } from '@/modules/auth/dto/sign-in.dto';
 import { Type } from 'class-transformer';
-import { IsNotEmpty, IsString, ValidateNested } from 'class-validator';
+import {
+  IsDate,
+  IsEmail,
+  IsNotEmpty,
+  IsString,
+  ValidateNested,
+} from 'class-validator';
 
-export class SignUpDto extends SignInDto {
+export class SignUpDto {
+  @IsEmail()
+  readonly email: string;
+
+  @IsString()
+  @IsNotEmpty()
+  readonly password: string;
+
   @IsString()
   @IsNotEmpty()
   readonly fullName: string;
@@ -11,6 +23,14 @@ export class SignUpDto extends SignInDto {
   @IsString()
   @IsNotEmpty()
   readonly phoneNumber: string;
+
+  @Type(() => Date)
+  @IsDate()
+  readonly birthDate: Date;
+
+  @IsString()
+  @IsNotEmpty()
+  readonly address: string;
 
   @IsNotEmpty()
   @Type(() => CreateBookStoreDto)

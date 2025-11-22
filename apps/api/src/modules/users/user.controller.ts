@@ -6,6 +6,7 @@ import { UserRole } from '@/modules/users/enums';
 import {
   CreateEmployeeByOwnerDto,
   UpdateOwnPasswordDto,
+  UpdateProfileDto,
 } from '@/modules/users/dto';
 
 @Controller('users')
@@ -33,5 +34,14 @@ export class UserController {
   @Public()
   async updateOwnPassword(@Body() updateOwnPasswordDto: UpdateOwnPasswordDto) {
     return this.userService.updateOwnPassword(updateOwnPasswordDto);
+  }
+
+  @Patch('me')
+  @Roles(UserRole.EMPLOYEE, UserRole.OWNER)
+  async updateProfile(
+    @UserSession() userSession: TUserSession,
+    @Body() updateProfileDto: UpdateProfileDto,
+  ) {
+    return this.userService.updateProfile(userSession, updateProfileDto);
   }
 }

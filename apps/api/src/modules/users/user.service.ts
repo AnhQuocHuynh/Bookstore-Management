@@ -14,6 +14,7 @@ import { EmailService } from '@/modules/email/email.service';
 import {
   CreateEmployeeByOwnerDto,
   UpdateOwnPasswordDto,
+  UpdateProfileDto,
 } from '@/modules/users/dto';
 import { UserRole } from '@/modules/users/enums';
 import { TenantService } from '@/tenants/tenant.service';
@@ -217,6 +218,62 @@ export class UserService {
 
     return {
       message: 'Password updated successfully.',
+    };
+  }
+
+  async updateProfile(
+    userSession: TUserSession,
+    updateProfileDto: UpdateProfileDto,
+  ) {
+    const { bookStoreId, role, userId } = userSession;
+    const { phoneNumber } = updateProfileDto;
+
+    if (role === UserRole.OWNER) {
+      if (phoneNumber) {
+        const existingPhoneNumber = await this.mainUserService.findUserByField(
+          'phoneNumber',
+          phoneNumber,
+        );
+
+        if (existingPhoneNumber && existingPhoneNumber.id !== userId) {
+          throw new ConflictException('This phone number is already in use.');
+        }
+      }
+
+      await this.mainUserService.updateUser(updateProfileDto, userId);
+    } else {
+      const dataSource = await this.tenantService.getTenantConnection({
+        bookStoreId,
+      });
+
+      const employeeRepo = dataSource.getRepository(Employee);
+
+      if (phoneNumber) {
+        const existingPhoneNumber = await employeeRepo.findOne({
+          where: {
+            phoneNumber,
+          },
+        });
+
+        if (existingPhoneNumber && existingPhoneNumber.id !== userId) {
+          throw new ConflictException('This phone number is already in use.');
+        }
+      }
+
+      const employee = await employeeRepo.findOne({
+        where: {
+          id: userId,
+        },
+      });
+
+      if (!employee) throw new NotFoundException('Your profile not found.');
+
+      Object.assign(employee, updateProfileDto);
+      await employeeRepo.save(employee);
+    }
+
+    return {
+      message: 'Your profile updated successfully.',
     };
   }
 }
