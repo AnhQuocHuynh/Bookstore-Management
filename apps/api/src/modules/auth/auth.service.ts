@@ -270,8 +270,15 @@ export class AuthService {
   }
 
   async signUp(signUpDto: SignUpDto) {
-    const { email, password, fullName, createBookStoreDto, phoneNumber } =
-      signUpDto;
+    const {
+      email,
+      password,
+      fullName,
+      createBookStoreDto,
+      phoneNumber,
+      birthDate,
+      address,
+    } = signUpDto;
 
     const existingEmail = await this.mainUserService.findUserByField(
       'email',
@@ -300,6 +307,8 @@ export class AuthService {
       password,
       fullName,
       phoneNumber,
+      address,
+      birthDate,
     });
 
     const bookStoreData = await this.mainBookStoreService.createNewBookStore(

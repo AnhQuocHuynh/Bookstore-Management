@@ -27,6 +27,20 @@ export class User {
   phoneNumber: string;
 
   @Column({
+    type: 'text',
+    nullable: true,
+  })
+  logoUrl?: string;
+
+  @Column({
+    type: 'timestamp',
+  })
+  birthDate?: Date;
+
+  @Column()
+  address?: string;
+
+  @Column({
     type: 'boolean',
     default: false,
   })
