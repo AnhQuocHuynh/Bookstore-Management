@@ -84,4 +84,18 @@ export class BookStoreController {
       getMyBookStoresQueryDto,
     );
   }
+
+  @Patch(':bookStoreId/employees/:employeeId/password/reset')
+  @Roles(UserRole.OWNER)
+  async updateEmployeePassword(
+    @UserSession() userSession: TUserSession,
+    @Param('bookStoreId', ParseUUIDPipe) bookStoreId: string,
+    @Param('employeeId', ParseUUIDPipe) employeeId: string,
+  ) {
+    return this.bookStoreService.updateEmployeePassword(
+      userSession,
+      bookStoreId,
+      employeeId,
+    );
+  }
 }
