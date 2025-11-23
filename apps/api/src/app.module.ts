@@ -11,6 +11,7 @@ import { InventoriesModule } from '@/modules/inventories/inventories.module';
 import { SupplierModule } from '@/modules/suppliers/supplier.module';
 import { UserModule } from '@/modules/users/user.module';
 import { TenantModule } from '@/tenants/tenant.module';
+import { EmployeeModule } from '@/modules/employee/employee.module';
 import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -60,6 +61,7 @@ import { PublishersModule } from './modules/publishers/publishers.module';
     CategoriesModule,
     DisplayModule,
     InventoriesModule,
+    EmployeeModule,
   ],
 })
 export class AppModule {}
