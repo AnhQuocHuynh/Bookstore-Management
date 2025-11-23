@@ -1,6 +1,6 @@
 import { BookStoreId } from '@/common/decorators';
+import { GetEmployeeQueryDto, GetEmployeesQueryDto } from '@/common/dtos';
 import { Controller, Get, Query } from '@nestjs/common';
-import { GetEmployeeQueryDto, GetEmployeesQueryDto } from './dto';
 import { EmployeeService } from './employee.service';
 
 @Controller('employee')
