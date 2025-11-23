@@ -5,6 +5,8 @@ export const SUBJECT_EMAIL_MAP = {
   'email-request-change-password-otp': 'Confirm Your Password Change Request',
   'email-store-registration': 'Your Bookstore Has Been Successfully Registered',
   'email-employee-account-info': 'Your Employee Account Information',
+  'email-employee-password-reset':
+    'Your Employee Account Password Has Been Reset',
 };
 export const ALGORITHM = 'aes-256-cbc';
 export const IV_LENGTH = 16;

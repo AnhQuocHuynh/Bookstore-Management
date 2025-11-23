@@ -2,11 +2,17 @@ import {
   GetEmployeesOfBookStoreQueryDto,
   GetMyBookStoresQueryDto,
 } from '@/common/dtos/bookstores';
-import { TUserSession } from '@/common/utils';
+import { EmailTemplateNameEnum } from '@/common/enums';
+import {
+  generateSecurePassword,
+  hashPassword,
+  TUserSession,
+} from '@/common/utils';
 import { CreateBookStoreDto, UpdateBookStoreDto } from '@/database/main/dto';
 import { MainBookStoreService } from '@/database/main/services/main-bookstore.service';
 import { MainEmployeeMappingService } from '@/database/main/services/main-employee-mapping.service';
 import { Employee } from '@/database/tenant/entities';
+import { EmailService } from '@/modules/email/email.service';
 import { UserRole } from '@/modules/users/enums';
 import { TenantService } from '@/tenants/tenant.service';
 import {
@@ -16,6 +22,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { omit } from 'lodash';
 
 @Injectable()
@@ -24,6 +31,8 @@ export class BookStoreService {
     private readonly mainBookStoreService: MainBookStoreService,
     private readonly tenantService: TenantService,
     private readonly mainEmployeeMappingService: MainEmployeeMappingService,
+    private readonly emailService: EmailService,
+    private readonly configService: ConfigService,
   ) {}
 
   async getBookStores() {
@@ -142,7 +151,7 @@ export class BookStoreService {
     bookStoreId: string,
     getEmployeesOfBookStoreQueryDto: GetEmployeesOfBookStoreQueryDto,
   ) {
-    const {} = userSession;
+    const { userId } = userSession;
 
     const bookStore = await this.mainBookStoreService.findBookStoreByField(
       'id',
@@ -157,7 +166,7 @@ export class BookStoreService {
         `Bookstore with id ${bookStoreId} not found.`,
       );
 
-    if (bookStore.user.id !== userSession.userId)
+    if (bookStore.user.id !== userId)
       throw new ForbiddenException(
         'You are only allowed to update the store you own.',
       );
@@ -171,12 +180,10 @@ export class BookStoreService {
 
     const employeeRepo = dataSource.getRepository(Employee);
 
-    const qb = employeeRepo
-      .createQueryBuilder('employee')
-      .leftJoinAndSelect('employee.user', 'user');
+    const qb = employeeRepo.createQueryBuilder('employee');
 
     if (employeeRole) {
-      qb.andWhere('user.role = :employeeRole', { employeeRole });
+      qb.andWhere('employee.role = :employeeRole', { employeeRole });
     }
 
     if (typeof isActive === 'boolean') {
@@ -190,5 +197,67 @@ export class BookStoreService {
     const employees = await qb.getMany();
 
     return employees.map((e) => omit(e, ['password']));
+  }
+
+  async updateEmployeePassword(
+    userSession: TUserSession,
+    bookStoreId: string,
+    employeeId: string,
+  ) {
+    const { userId } = userSession;
+
+    const bookStore = await this.mainBookStoreService.findBookStoreByField(
+      'id',
+      bookStoreId,
+      {
+        user: true,
+      },
+    );
+
+    if (!bookStore)
+      throw new NotFoundException(
+        `Bookstore with id ${bookStoreId} not found.`,
+      );
+
+    if (bookStore.user.id !== userId)
+      throw new ForbiddenException(
+        'You are not allowed to perform actions on a bookstore you do not own.',
+      );
+
+    const dataSource = await this.tenantService.getTenantConnection({
+      bookStoreId,
+    });
+
+    const employeeRepo = dataSource.getRepository(Employee);
+
+    const employee = await employeeRepo.findOne({
+      where: {
+        id: employeeId,
+      },
+    });
+
+    if (!employee) throw new NotFoundException(`Employee info not found.`);
+
+    const newRandomPassword = generateSecurePassword();
+
+    employee.password = await hashPassword(newRandomPassword);
+    employee.isFirstLogin = true;
+    await employeeRepo.save(employee);
+
+    await this.emailService.handleSendEmail(
+      employee.email,
+      EmailTemplateNameEnum.EMAIL_EMPLOYEE_PASSWORD_RESET,
+      {
+        bookStoreName: bookStore.name,
+        fullName: employee.fullName,
+        username: employee.username,
+        password: newRandomPassword,
+        loginUrl: `${this.configService.get<string>('frontend_url', '')}/auth/login`,
+      },
+    );
+
+    return {
+      message: 'Employee password has been reset successfully.',
+    };
   }
 }
