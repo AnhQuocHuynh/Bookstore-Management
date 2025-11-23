@@ -1,5 +1,10 @@
 import { PurchaseStatus } from '@/common/enums';
-import { Supplier } from '@/database/tenant/entities';
+import { DecimalTransformer } from '@/common/transformers';
+import {
+  Employee,
+  PurchaseOrderDetail,
+  Supplier,
+} from '@/database/tenant/entities';
 import {
   Column,
   CreateDateColumn,
@@ -10,15 +15,13 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { PurchaseDetail } from './purchase-detail.entity';
-import { DecimalTransformer } from '@/common/transformers';
 
 @Entity()
-export class Purchase {
+export class PurchaseOrder {
   @PrimaryGeneratedColumn('uuid')
   readonly id: string;
 
-  @ManyToOne(() => Supplier, (supplier) => supplier.purchases, {
+  @ManyToOne(() => Supplier, (supplier) => supplier.purchaseOrders, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({
@@ -26,10 +29,13 @@ export class Purchase {
   })
   supplier: Supplier;
 
-  @Column({
-    type: 'uuid',
+  @ManyToOne(() => Employee, (employee) => employee.purchaseOrders, {
+    onDelete: 'CASCADE',
   })
-  managerId: string;
+  @JoinColumn({
+    name: 'employee_id',
+  })
+  employee: Employee;
 
   @Column({
     type: 'decimal',
@@ -53,10 +59,10 @@ export class Purchase {
   @Column({ type: 'text', nullable: true })
   note?: string;
 
-  @OneToMany(() => PurchaseDetail, (detail) => detail.purchase, {
+  @OneToMany(() => PurchaseOrderDetail, (pod) => pod.purchaseOrder, {
     cascade: true,
   })
-  details: PurchaseDetail[];
+  details: PurchaseOrderDetail[];
 
   @CreateDateColumn({
     type: 'timestamp',

@@ -1,6 +1,10 @@
 import { PaymentMethod } from '@/common/enums';
 import { DecimalTransformer } from '@/common/transformers';
-import { Employee, TransactionDetail } from '@/database/tenant/entities';
+import {
+  Employee,
+  ReturnOrder,
+  TransactionDetail,
+} from '@/database/tenant/entities';
 import {
   Column,
   CreateDateColumn,
@@ -86,4 +90,9 @@ export class Transaction {
     type: 'timestamp',
   })
   readonly updatedAt: Date;
+
+  @OneToMany(() => ReturnOrder, (ro) => ro.transaction, {
+    cascade: true,
+  })
+  returnOrders: ReturnOrder[];
 }

@@ -1,3 +1,5 @@
+import { DecimalTransformer } from '@/common/transformers';
+import { Product, PurchaseOrder } from '@/database/tenant/entities';
 import {
   Column,
   CreateDateColumn,
@@ -7,30 +9,27 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { Book } from './book.entity';
-import { Purchase } from './purchase.entity';
-import { DecimalTransformer } from '@/common/transformers';
 
 @Entity()
-export class PurchaseDetail {
+export class PurchaseOrderDetail {
   @PrimaryGeneratedColumn('uuid')
   readonly id: string;
 
-  @ManyToOne(() => Purchase, (purchase) => purchase.details, {
+  @ManyToOne(() => PurchaseOrder, (po) => po.details, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({
     name: 'purchase_id',
   })
-  purchase: Purchase;
+  purchaseOrder: PurchaseOrder;
 
-  @ManyToOne(() => Book, (book) => book.purchaseDetails, {
+  @ManyToOne(() => Product, (product) => product.purchaseOrderDetails, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({
-    name: 'book_id',
+    name: 'product_id',
   })
-  book: Book;
+  product: Product;
 
   @Column({ type: 'int' })
   quantity: number;
