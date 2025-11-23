@@ -2,6 +2,8 @@ import { EmployeeRole } from '@/common/enums';
 import {
   AuthorizationCode,
   Otp,
+  PurchaseOrder,
+  ReturnOrder,
   Transaction,
 } from '@/database/tenant/entities';
 import {
@@ -100,4 +102,14 @@ export class Employee {
     orphanedRowAction: 'delete',
   })
   otps: Otp[];
+
+  @OneToMany(() => PurchaseOrder, (po) => po.employee, {
+    cascade: true,
+  })
+  purchaseOrders: PurchaseOrder[];
+
+  @OneToMany(() => ReturnOrder, (ro) => ro.employee, {
+    cascade: true,
+  })
+  returnOrders: ReturnOrder[];
 }

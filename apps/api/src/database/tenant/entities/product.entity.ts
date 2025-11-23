@@ -5,6 +5,8 @@ import {
   Category,
   DisplayProduct,
   Inventory,
+  PurchaseOrderDetail,
+  ReturnOrderDetail,
   Supplier,
 } from '@/database/tenant/entities';
 import {
@@ -106,4 +108,14 @@ export class Product {
     cascade: true,
   })
   displayProducts: DisplayProduct[];
+
+  @OneToMany(() => PurchaseOrderDetail, (pod) => pod.product, {
+    cascade: true,
+  })
+  purchaseOrderDetails: PurchaseOrderDetail[];
+
+  @OneToMany(() => ReturnOrderDetail, (rod) => rod.newProduct, {
+    cascade: true,
+  })
+  returnOrderDetails: ReturnOrderDetail[];
 }

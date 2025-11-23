@@ -3,18 +3,20 @@ import {
   ReturnExchangeDetailType,
 } from '@/common/enums';
 import { DecimalTransformer } from '@/common/transformers';
+import { Product } from '@/database/tenant/entities/product.entity';
+import { ReturnOrder } from '@/database/tenant/entities/return-order.entity';
 import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { Book } from './book.entity';
 
 @Entity()
-export class ReturnExchangeDetail {
+export class ReturnOrderDetail {
   @PrimaryGeneratedColumn('uuid')
   readonly id: string;
 
@@ -27,8 +29,13 @@ export class ReturnExchangeDetail {
   })
   type: ReturnExchangeDetailType;
 
-  @ManyToOne(() => Book, { nullable: true })
-  newBook?: Book;
+  @ManyToOne(() => Product, (product) => product.returnOrderDetails, {
+    onDelete: 'CASCADE',
+  })
+  @JoinColumn({
+    name: 'new_product_id',
+  })
+  newProduct?: Product;
 
   @Column({
     type: 'decimal',
@@ -58,4 +65,12 @@ export class ReturnExchangeDetail {
     type: 'timestamp',
   })
   updatedAt: Date;
+
+  @ManyToOne(() => ReturnOrder, (ro) => ro.details, {
+    onDelete: 'CASCADE',
+  })
+  @JoinColumn({
+    name: 'return_order_id',
+  })
+  returnOrder: ReturnOrder;
 }

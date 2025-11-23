@@ -1,9 +1,10 @@
 import { CustomerType } from '@/common/enums';
-import { CustomerCompany } from '@/database/tenant/entities';
+import { CustomerCompany, ReturnOrder } from '@/database/tenant/entities';
 import {
   Column,
   CreateDateColumn,
   Entity,
+  OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
@@ -56,4 +57,9 @@ export class Customer {
     cascade: true,
   })
   company: CustomerCompany;
+
+  @OneToMany(() => ReturnOrder, (ro) => ro.customer, {
+    cascade: true,
+  })
+  returnOrders: ReturnOrder[];
 }
