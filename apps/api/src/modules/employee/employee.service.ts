@@ -1,8 +1,15 @@
-import { GetEmployeeQueryDto, GetEmployeesQueryDto } from '@/common/dtos';
+import { assignDefined } from '@/common/utils';
+import {
+  GetEmployeeQueryDto,
+  GetEmployeesQueryDto,
+  UpdateEmployeeDto,
+  ToggleEmployeeStatusDto,
+} from '@/common/dtos';
 import { Employee } from '@/database/tenant/entities';
 import { TenantService } from '@/tenants/tenant.service';
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -104,5 +111,74 @@ export class EmployeeService {
     }
 
     return employee;
+  }
+
+  async updateEmployee(
+    id: string,
+    updateEmployeeDto: UpdateEmployeeDto,
+    bookStoreId: string,
+  ) {
+    const dataSource = await this.tenantService.getTenantConnection({
+      bookStoreId,
+    });
+
+    const employeeRepo = dataSource.getRepository(Employee);
+
+    const employee = await this.getEmployee(bookStoreId, { id });
+
+    if (updateEmployeeDto.email && updateEmployeeDto.email !== employee.email) {
+      const existingEmployee = await employeeRepo.findOne({
+        where: {
+          email: updateEmployeeDto.email,
+        },
+      });
+
+      if (existingEmployee) {
+        throw new ConflictException(
+          'An employee with this email already exists.',
+        );
+      }
+    }
+
+    if (
+      updateEmployeeDto.phoneNumber &&
+      updateEmployeeDto.phoneNumber !== employee.phoneNumber
+    ) {
+      const existingEmployee = await employeeRepo.findOne({
+        where: {
+          phoneNumber: updateEmployeeDto.phoneNumber,
+        },
+      });
+
+      if (existingEmployee) {
+        throw new ConflictException(
+          'An employee with this phone number already exists.',
+        );
+      }
+    }
+
+    assignDefined(employee, updateEmployeeDto);
+    await employeeRepo.save(employee);
+
+    return this.getEmployee(bookStoreId, { id });
+  }
+
+  async toggleEmployeeStatus(
+    id: string,
+    toggleEmployeeStatusDto: ToggleEmployeeStatusDto,
+    bookStoreId: string,
+  ) {
+    const dataSource = await this.tenantService.getTenantConnection({
+      bookStoreId,
+    });
+
+    const employeeRepo = dataSource.getRepository(Employee);
+
+    const employee = await this.getEmployee(bookStoreId, { id });
+
+    employee.isActive = toggleEmployeeStatusDto.isActive;
+    await employeeRepo.save(employee);
+
+    return this.getEmployee(bookStoreId, { id });
   }
 }
