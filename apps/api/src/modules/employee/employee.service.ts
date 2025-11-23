@@ -1,7 +1,4 @@
-import {
-  GetEmployeeQueryDto,
-  GetEmployeesQueryDto,
-} from '@/common/dtos';
+import { GetEmployeeQueryDto, GetEmployeesQueryDto } from '@/common/dtos';
 import { Employee } from '@/database/tenant/entities';
 import { TenantService } from '@/tenants/tenant.service';
 import {
