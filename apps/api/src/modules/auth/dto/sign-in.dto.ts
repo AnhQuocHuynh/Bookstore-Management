@@ -8,7 +8,4 @@ export class SignInDto {
   @IsString()
   @IsNotEmpty()
   readonly password: string;
-
-  @IsEnum(UserRole)
-  readonly role: UserRole;
 }
