@@ -64,24 +64,13 @@ export class AuthService {
   ) {}
 
   async signIn(signInDto: SignInDto, response: Response) {
-    const { email, password, role } = signInDto;
+    const { email, password } = signInDto;
     const user = await this.mainUserService.findUserByField('email', email);
 
-    if (role === UserRole.CUSTOMER || role === UserRole.EMPLOYEE) {
-      const isCustomer = role === UserRole.CUSTOMER;
-      throw new ForbiddenException(
-        `${isCustomer ? 'Customer' : 'Employee'} is not allowed to perform this action.`,
-      );
-    }
-
-    if (
-      !user ||
-      (user && !(await verifyPassword(password, user.password))) ||
-      (user && user.role !== role)
-    )
+    if (!user || (user && !(await verifyPassword(password, user.password))))
       throw new UnauthorizedException('Invalid credentials.');
 
-    if (role === UserRole.ADMIN) {
+    if (user.role === UserRole.ADMIN) {
       const { accessToken, refreshToken } = await this.generateTokens(
         user.id,
         user.role,
@@ -96,7 +85,7 @@ export class AuthService {
     }
 
     const payload = {
-      role,
+      role: user.role,
       email,
     };
 
