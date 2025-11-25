@@ -1,6 +1,8 @@
 import { EmployeeRole } from '@/common/enums';
 import {
   AuthorizationCode,
+  DisplayLog,
+  InventoryLog,
   Otp,
   PurchaseOrder,
   ReturnOrder,
@@ -70,7 +72,7 @@ export class Employee {
     type: 'text',
     nullable: true,
   })
-  logoUrl?: string;
+  avatarUrl?: string;
 
   @CreateDateColumn({
     type: 'timestamp',
@@ -112,4 +114,14 @@ export class Employee {
     cascade: true,
   })
   returnOrders: ReturnOrder[];
+
+  @OneToMany(() => DisplayLog, (dl) => dl.employee, {
+    cascade: true,
+  })
+  displayLogs: DisplayLog[];
+
+  @OneToMany(() => InventoryLog, (il) => il.employee, {
+    cascade: true,
+  })
+  inventoryLogs: InventoryLog[];
 }

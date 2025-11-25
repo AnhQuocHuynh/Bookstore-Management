@@ -46,7 +46,9 @@ export class Supplier {
   @Column({ nullable: true, type: 'text' })
   note?: string;
 
-  @CreateDateColumn({ type: 'timestamp' })
+  @CreateDateColumn({
+    type: 'timestamp',
+  })
   readonly createdAt: Date;
 
   @UpdateDateColumn({

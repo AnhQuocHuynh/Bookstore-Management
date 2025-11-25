@@ -29,7 +29,7 @@ export class Customer {
   phoneNumber: string;
 
   @Column()
-  readonly address: string;
+  address: string;
 
   @Column({
     type: 'text',

@@ -1,5 +1,5 @@
-import { InventoryLogAction, InventoryLogActorType } from '@/common/enums';
-import { Inventory, Product } from '@/database/tenant/entities';
+import { InventoryLogAction } from '@/common/enums';
+import { Employee, Inventory } from '@/database/tenant/entities';
 import {
   Column,
   CreateDateColumn,
@@ -32,17 +32,6 @@ export class InventoryLog {
   })
   action: InventoryLogAction;
 
-  @Column({
-    type: 'enum',
-    enum: InventoryLogActorType,
-  })
-  actorType: InventoryLogActorType;
-
-  @Column({
-    type: 'uuid',
-  })
-  actorId: string;
-
   @Column({ type: 'text', nullable: true })
   note?: string;
 
@@ -55,4 +44,12 @@ export class InventoryLog {
     type: 'timestamp',
   })
   readonly updatedAt: Date;
+
+  @ManyToOne(() => Employee, (employee) => employee.inventoryLogs, {
+    onDelete: 'CASCADE',
+  })
+  @JoinColumn({
+    name: 'employee_id',
+  })
+  employee: Employee;
 }

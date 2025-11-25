@@ -1,8 +1,8 @@
-import { DisplayLogAction, DisplayLogActorType } from '@/common/enums';
+import { DisplayLogAction } from '@/common/enums';
 import {
-  Product,
   DisplayProduct,
   DisplayShelf,
+  Employee,
 } from '@/database/tenant/entities';
 import {
   Column,
@@ -30,27 +30,27 @@ export class DisplayLog {
   @ManyToOne(() => DisplayShelf, (ds) => ds.displayLogs, {
     onDelete: 'RESTRICT',
   })
+  @JoinColumn({
+    name: 'display_shelf_id',
+  })
   shelf: DisplayShelf;
 
   @Column({ type: 'int', nullable: true })
   quantity?: number;
+
+  @ManyToOne(() => Employee, (employee) => employee.displayLogs, {
+    onDelete: 'CASCADE',
+  })
+  @JoinColumn({
+    name: 'employee_id',
+  })
+  employee: Employee;
 
   @Column({
     type: 'enum',
     enum: DisplayLogAction,
   })
   action: DisplayLogAction;
-
-  @Column({
-    type: 'enum',
-    enum: DisplayLogActorType,
-  })
-  actorType: DisplayLogActorType;
-
-  @Column({
-    type: 'uuid',
-  })
-  actorId: string;
 
   @Column({ type: 'text', nullable: true })
   note?: string;

@@ -1,12 +1,9 @@
 import { CreateProductDto } from '@/common/dtos/products';
-import {
-  InventoryLogAction,
-  InventoryLogActorType,
-  ProductType,
-} from '@/common/enums';
+import { InventoryLogAction, ProductType } from '@/common/enums';
 import { TUserSession } from '@/common/utils';
 import {
   Category,
+  Employee,
   InventoryLog,
   Product,
   Supplier,
@@ -65,6 +62,15 @@ export class ProductsService {
       const supplierRepo = manager.getRepository(Supplier);
       const categoryRepo = manager.getRepository(Category);
       const inventoryLogRepo = manager.getRepository(InventoryLog);
+      const employeeRepo = manager.getRepository(Employee);
+
+      const employee = await employeeRepo.findOne({
+        where: {
+          id: userSession.userId,
+        },
+      });
+
+      if (!employee) throw new NotFoundException('Your profile not found.');
 
       const {
         createInventoryDto,
@@ -135,11 +141,7 @@ export class ProductsService {
           inventory,
           quantityChange: createInventoryDto.stockQuantity,
           action: InventoryLogAction.PURCHASE,
-          actorType:
-            userSession.role === UserRole.OWNER
-              ? InventoryLogActorType.OWNER
-              : InventoryLogActorType.EMPLOYEE,
-          actorId: userSession.userId,
+          employee,
           note: 'Restocked product from purchase',
         },
         inventoryLogRepo,

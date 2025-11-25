@@ -19,7 +19,7 @@ export class PurchaseOrderDetail {
     onDelete: 'CASCADE',
   })
   @JoinColumn({
-    name: 'purchase_id',
+    name: 'purchase_order_id',
   })
   purchaseOrder: PurchaseOrder;
 

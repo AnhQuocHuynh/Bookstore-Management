@@ -10,7 +10,7 @@ export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
   @Post()
-  @Roles(UserRole.OWNER)
+  @Roles(UserRole.EMPLOYEE)
   async createProduct(
     @UserSession() userSession: TUserSession,
     @Body() createProductDto: CreateProductDto,

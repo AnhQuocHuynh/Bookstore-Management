@@ -510,7 +510,7 @@ export class AuthService {
 
       const refreshTokens = await refreshTokenRepo.find({
         where: {
-          emplee: {
+          employee: {
             id: userId,
           },
           expiresAt: MoreThan(new Date()),
@@ -606,7 +606,7 @@ export class AuthService {
   ) {
     const newRT = repo.create({
       token: encryptPayload(token, this.configService),
-      emplee: {
+      employee: {
         id: userId,
       },
       expiresAt,

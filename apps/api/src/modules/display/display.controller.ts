@@ -29,7 +29,7 @@ export class DisplayController {
   constructor(private readonly displayService: DisplayService) {}
 
   @Post('shelf')
-  @Roles(UserRole.OWNER)
+  @Roles(UserRole.EMPLOYEE)
   async createDisplayShelf(
     @Body() createDisplaySelfDto: CreateDisplayShelfDto,
     @UserSession() userSession: TUserSession,
@@ -41,7 +41,7 @@ export class DisplayController {
   }
 
   @Post('product')
-  @Roles(UserRole.EMPLOYEE, UserRole.OWNER)
+  @Roles(UserRole.EMPLOYEE)
   async createDisplayProduct(
     @Body() createDisplayProductDto: CreateDisplayProductDto,
     @UserSession() userSession: TUserSession,
@@ -53,13 +53,13 @@ export class DisplayController {
   }
 
   @Get('/shelfs')
-  @Roles(UserRole.OWNER)
+  @Roles(UserRole.OWNER, UserRole.EMPLOYEE)
   async getShelfs(@UserSession() userSession: TUserSession) {
     return this.displayService.getShelfs(userSession);
   }
 
   @Get('/shelf/:shelfId')
-  @Roles(UserRole.OWNER)
+  @Roles(UserRole.OWNER, UserRole.EMPLOYEE)
   async getShelfDetail(
     @UserSession() userSession: TUserSession,
     @Param('shelfId', ParseUUIDPipe) shelfId: string,
@@ -68,7 +68,7 @@ export class DisplayController {
   }
 
   @Patch('/shelf/:shelfId')
-  @Roles(UserRole.OWNER, UserRole.EMPLOYEE)
+  @Roles(UserRole.EMPLOYEE)
   async updateShelf(
     @UserSession() userSession: TUserSession,
     @Param('shelfId', ParseUUIDPipe) shelfId: string,
@@ -82,7 +82,7 @@ export class DisplayController {
   }
 
   @Delete('/shelf/:shelfId')
-  @Roles(UserRole.OWNER)
+  @Roles(UserRole.EMPLOYEE)
   async deleteShelf(
     @UserSession() userSession: TUserSession,
     @Param('shelfId', ParseUUIDPipe) shelfId: string,
@@ -91,7 +91,7 @@ export class DisplayController {
   }
 
   @Get('/logs')
-  @Roles(UserRole.OWNER)
+  @Roles(UserRole.OWNER, UserRole.EMPLOYEE)
   async getLogs(
     @UserSession() userSession: TUserSession,
     @Query() getLogsQueryDto: GetLogsQueryDto,
@@ -100,7 +100,7 @@ export class DisplayController {
   }
 
   @Get('/logs/:logId')
-  @Roles(UserRole.OWNER)
+  @Roles(UserRole.OWNER, UserRole.EMPLOYEE)
   async getLogDetail(
     @UserSession() userSession: TUserSession,
     @Param('logId', ParseUUIDPipe) logId: string,
@@ -109,7 +109,7 @@ export class DisplayController {
   }
 
   @Get('/products')
-  @Roles(UserRole.OWNER)
+  @Roles(UserRole.OWNER, UserRole.EMPLOYEE)
   async getDisplayProducts(
     @UserSession() userSession: TUserSession,
     @Query()
@@ -122,7 +122,7 @@ export class DisplayController {
   }
 
   @Get('/products/:displayProductId')
-  @Roles(UserRole.OWNER)
+  @Roles(UserRole.OWNER, UserRole.EMPLOYEE)
   async getDisplayProductDetail(
     @Param('displayProductId', ParseUUIDPipe) displayProductId: string,
     @UserSession() userSession: TUserSession,
@@ -148,7 +148,7 @@ export class DisplayController {
   }
 
   @Delete('/products/:displayProductId')
-  @Roles(UserRole.OWNER, UserRole.EMPLOYEE)
+  @Roles(UserRole.EMPLOYEE)
   async deleteDisplayProductFromShelf(
     @UserSession() userSession: TUserSession,
     @Param('displayProductId', ParseUUIDPipe) displayProductId: string,
@@ -160,7 +160,7 @@ export class DisplayController {
   }
 
   @Patch('/products/:displayProductId/reduce')
-  @Roles(UserRole.OWNER, UserRole.EMPLOYEE)
+  @Roles(UserRole.EMPLOYEE)
   async reduceDisplayProductQuantity(
     @UserSession() userSession: TUserSession,
     @Param('displayProductId', ParseUUIDPipe) displayProductId: string,
@@ -174,7 +174,7 @@ export class DisplayController {
   }
 
   @Post('/products/:displayProductId/move')
-  @Roles(UserRole.EMPLOYEE, UserRole.OWNER)
+  @Roles(UserRole.EMPLOYEE)
   async moveDisplayProduct(
     @UserSession() userSession: TUserSession,
     @Param('displayProductId', ParseUUIDPipe) displayProductId: string,

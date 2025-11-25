@@ -59,12 +59,12 @@ export class ReturnOrderDetail {
   @CreateDateColumn({
     type: 'timestamp',
   })
-  createdAt: Date;
+  readonly createdAt: Date;
 
   @UpdateDateColumn({
     type: 'timestamp',
   })
-  updatedAt: Date;
+  readonly updatedAt: Date;
 
   @ManyToOne(() => ReturnOrder, (ro) => ro.details, {
     onDelete: 'CASCADE',
