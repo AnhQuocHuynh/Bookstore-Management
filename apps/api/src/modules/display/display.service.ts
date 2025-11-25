@@ -8,7 +8,7 @@ import {
   UpdateDisplayProductDto,
   UpdateDisplayShelfDto,
 } from '@/common/dtos';
-import { DisplayLogAction, DisplayLogActorType } from '@/common/enums';
+import { DisplayLogAction } from '@/common/enums';
 import { TUserSession } from '@/common/utils';
 import { MainUserService } from '@/database/main/services/main-user.service';
 import {
@@ -19,7 +19,6 @@ import {
   Inventory,
   Product,
 } from '@/database/tenant/entities';
-import { UserRole } from '@/modules/users/enums';
 import { TenantService } from '@/tenants/tenant.service';
 import {
   BadRequestException,
@@ -27,6 +26,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { omit } from 'lodash';
 import { Repository } from 'typeorm';
 
 @Injectable()
@@ -87,11 +87,20 @@ export class DisplayService {
     });
 
     const { productId, displayShelfId, quantity } = createDisplayProductDto;
+    const employeeRepo = dataSource.getRepository(Employee);
     const displayProductRepo = dataSource.getRepository(DisplayProduct);
     const productRepo = dataSource.getRepository(Product);
     const displayShelfRepo = dataSource.getRepository(DisplayShelf);
     const inventoryRepo = dataSource.getRepository(Inventory);
     const displayLogRepo = dataSource.getRepository(DisplayLog);
+
+    const employee = await employeeRepo.findOne({
+      where: {
+        id: userId,
+      },
+    });
+
+    if (!employee) throw new NotFoundException('Your profile not found.');
 
     const product = await productRepo.findOne({
       where: {
@@ -152,11 +161,7 @@ export class DisplayService {
         displayProduct: newDisplayProduct,
         shelf: displayShelf,
         action: DisplayLogAction.ADD,
-        actorId: userId,
-        actorType:
-          role === UserRole.EMPLOYEE
-            ? DisplayLogActorType.EMPLOYEE
-            : DisplayLogActorType.OWNER,
+        employee,
         note: 'Create new display product',
         quantity: createDisplayProductDto.quantity,
       },
@@ -219,6 +224,15 @@ export class DisplayService {
 
     const shelfRepo = dataSource.getRepository(DisplayShelf);
     const displayLogRepo = dataSource.getRepository(DisplayLog);
+    const employeeRepo = dataSource.getRepository(Employee);
+
+    const employee = await employeeRepo.findOne({
+      where: {
+        id: userSession.userId,
+      },
+    });
+
+    if (!employee) throw new NotFoundException(`Your profile not found.`);
 
     const shelf = await shelfRepo.findOne({
       where: {
@@ -237,11 +251,7 @@ export class DisplayService {
       {
         shelf,
         action: DisplayLogAction.ADJUST,
-        actorId: userSession.userId,
-        actorType:
-          userSession.role === UserRole.EMPLOYEE
-            ? DisplayLogActorType.EMPLOYEE
-            : DisplayLogActorType.OWNER,
+        employee,
         note: 'Update display shelf',
       },
       displayLogRepo,
@@ -262,6 +272,15 @@ export class DisplayService {
     const shelfRepo = dataSource.getRepository(DisplayShelf);
     const displayLogRepo = dataSource.getRepository(DisplayLog);
     const inventoryRepo = dataSource.getRepository(Inventory);
+    const employeeRepo = dataSource.getRepository(Employee);
+
+    const employee = await employeeRepo.findOne({
+      where: {
+        id: userSession.userId,
+      },
+    });
+
+    if (!employee) throw new NotFoundException(`Your profile not found.`);
 
     const shelf = await shelfRepo.findOne({
       where: {
@@ -286,11 +305,7 @@ export class DisplayService {
       {
         shelf,
         action: DisplayLogAction.REMOVE,
-        actorId: userSession.userId,
-        actorType:
-          userSession.role === UserRole.EMPLOYEE
-            ? DisplayLogActorType.EMPLOYEE
-            : DisplayLogActorType.OWNER,
+        employee,
         note: 'Delete shelf',
       },
       displayLogRepo,
@@ -324,22 +339,23 @@ export class DisplayService {
     });
 
     const displayLogRepo = dataSource.getRepository(DisplayLog);
-    const employeeRepo = dataSource.getRepository(Employee);
 
     const {
       displayShelfName,
       productName,
       productId,
-      actorId,
-      type,
+      action,
       from,
       to,
+      employeeId,
+      employeeName,
     } = getLogsQueryDto;
 
     const qb = displayLogRepo
       .createQueryBuilder('log')
       .leftJoinAndSelect('log.product', 'product')
       .leftJoinAndSelect('log.shelf', 'shelf')
+      .leftJoinAndSelect('log.employee', 'employee')
       .orderBy('log.createdAt', 'DESC');
 
     const conditions = [
@@ -354,10 +370,15 @@ export class DisplayService {
         { productName: `%${productName}%` },
       ],
       [productId, 'product.id = :productId', { productId }],
-      [actorId, 'actor.id = :actorId', { actorId }],
-      [type, 'log.type = :type', { type }],
+      [action, 'log.action = :action', { action }],
       [from, 'log.createdAt >= :from', { from }],
       [to, 'log.createdAt <= :to', { to }],
+      [employeeId, 'employee.id = :employeeId', { employeeId }],
+      [
+        employeeName,
+        'employee.fullName ILIKE :employeeName',
+        { employeeName: `%${employeeName}%` },
+      ],
     ];
 
     conditions.forEach(
@@ -368,39 +389,9 @@ export class DisplayService {
 
     const logs = await qb.getMany();
 
-    const ownerIds = logs
-      .filter((l) => l.actorType === DisplayLogActorType.OWNER)
-      .map((l) => l.actorId);
-
-    const employeeIds = logs
-      .filter((l) => l.actorType === DisplayLogActorType.EMPLOYEE)
-      .map((l) => l.actorId);
-
-    const ownerMap =
-      ownerIds.length > 0
-        ? await this.mainUserService.getUseByIds(ownerIds)
-        : {};
-
-    let employees: Employee[] = [];
-    if (employeeIds.length > 0) {
-      employees = await employeeRepo
-        .createQueryBuilder('employee')
-        .where('employee.id IN (:...employeeIds)', { employeeIds })
-        .leftJoinAndSelect('employee.user', 'user')
-        .getMany();
-    }
-
-    const employeeMap: { [id: string]: Employee } = {};
-    for (const employee of employees) {
-      employeeMap[employee.id] = employee;
-    }
-
     return logs.map((l) => ({
       ...l,
-      actorName:
-        l.actorType === DisplayLogActorType.OWNER
-          ? (ownerMap[l.actorId]?.fullName ?? 'Unknown')
-          : (employeeMap[l.actorId]?.fullName ?? 'Unknown'),
+      employee: omit(l.employee, ['password']),
     }));
   }
 
@@ -422,30 +413,13 @@ export class DisplayService {
           product: true,
         },
         shelf: true,
+        employee: true,
       },
     });
 
     if (!log) throw new NotFoundException(`Log ${logId} not found.`);
 
-    let actorName = 'Unknown';
-    if (log.actorType === DisplayLogActorType.OWNER) {
-      const owner = await this.mainUserService.getUseByIds([log.actorId]);
-      actorName = owner[log.actorId]?.fullName ?? 'Unknown';
-    } else if (log.actorType === DisplayLogActorType.EMPLOYEE) {
-      const employee = await dataSource
-        .getRepository(Employee)
-        .createQueryBuilder('employee')
-        .leftJoinAndSelect('employee.user', 'user')
-        .where('employee.id = :id', { id: log.actorId })
-        .getOne();
-
-      actorName = employee?.fullName ?? 'Unknown';
-    }
-
-    return {
-      ...log,
-      actorName,
-    };
+    return omit(log, ['employee.password']);
   }
 
   async getDisplayProducts(
@@ -570,6 +544,15 @@ export class DisplayService {
 
     const displayProductRepo = dataSource.getRepository(DisplayProduct);
     const displayLogRepo = dataSource.getRepository(DisplayLog);
+    const employeeRepo = dataSource.getRepository(Employee);
+
+    const employee = await employeeRepo.findOne({
+      where: {
+        id: userSession.userId,
+      },
+    });
+
+    if (!employee) throw new NotFoundException(`Your profile not found.`);
 
     const displayProduct = await displayProductRepo.findOne({
       where: {
@@ -597,11 +580,7 @@ export class DisplayService {
         displayProduct,
         shelf: displayProduct.displayShelf,
         action: DisplayLogAction.ADJUST,
-        actorId: userSession.userId,
-        actorType:
-          userSession.role === UserRole.EMPLOYEE
-            ? DisplayLogActorType.EMPLOYEE
-            : DisplayLogActorType.OWNER,
+        employee,
         note: 'Update display product',
         ...(updateDisplayProductDto?.quantity && {
           quantity: updateDisplayProductDto.quantity,
@@ -625,6 +604,15 @@ export class DisplayService {
 
     const displayProductRepo = dataSource.getRepository(DisplayProduct);
     const inventoryRepo = dataSource.getRepository(Inventory);
+    const employeeRepo = dataSource.getRepository(Employee);
+
+    const employee = await employeeRepo.findOne({
+      where: {
+        id: userSession.userId,
+      },
+    });
+
+    if (!employee) throw new NotFoundException(`Your profile not found.`);
 
     const displayProduct = await displayProductRepo.findOne({
       where: {
@@ -661,11 +649,7 @@ export class DisplayService {
         displayProduct,
         shelf: displayProduct.displayShelf,
         action: DisplayLogAction.RETURN_TO_INVENTORY,
-        actorId: userSession.userId,
-        actorType:
-          userSession.role === UserRole.EMPLOYEE
-            ? DisplayLogActorType.EMPLOYEE
-            : DisplayLogActorType.OWNER,
+        employee,
         note: `Returned all (${displayProduct.quantity}) copies of "${displayProduct.product.name}" from shelf "${displayProduct.displayShelf.name}" to inventory`,
         quantity: displayProduct.quantity,
       },
@@ -690,6 +674,15 @@ export class DisplayService {
 
     const displayProductRepo = dataSource.getRepository(DisplayProduct);
     const inventoryRepo = dataSource.getRepository(Inventory);
+    const employeeRepo = dataSource.getRepository(Employee);
+
+    const employee = await employeeRepo.findOne({
+      where: {
+        id: userSession.userId,
+      },
+    });
+
+    if (!employee) throw new NotFoundException(`Your profile not found.`);
 
     const displayProduct = await displayProductRepo.findOne({
       where: {
@@ -738,11 +731,7 @@ export class DisplayService {
         displayProduct,
         shelf: displayProduct.displayShelf,
         action: DisplayLogAction.RETURN_TO_INVENTORY,
-        actorId: userSession.userId,
-        actorType:
-          userSession.role === UserRole.EMPLOYEE
-            ? DisplayLogActorType.EMPLOYEE
-            : DisplayLogActorType.OWNER,
+        employee,
         note: `Returned ${reduceDisplayProductQuantityDto.quantity} copies of "${displayProduct.product.name}" from shelf "${displayProduct.displayShelf.name}" to inventory`,
         quantity: reduceDisplayProductQuantityDto.quantity,
       },
@@ -767,6 +756,15 @@ export class DisplayService {
 
     const displayProductRepo = dataSource.getRepository(DisplayProduct);
     const displayShelfRepo = dataSource.getRepository(DisplayShelf);
+    const employeeRepo = dataSource.getRepository(Employee);
+
+    const employee = await employeeRepo.findOne({
+      where: {
+        id: userSession.userId,
+      },
+    });
+
+    if (!employee) throw new NotFoundException(`Your profile not found.`);
 
     const displayProduct = await displayProductRepo.findOne({
       where: {
@@ -839,11 +837,7 @@ export class DisplayService {
         displayProduct,
         shelf: targetShelf,
         action: DisplayLogAction.MOVE,
-        actorId: userSession.userId,
-        actorType:
-          userSession.role === UserRole.EMPLOYEE
-            ? DisplayLogActorType.EMPLOYEE
-            : DisplayLogActorType.OWNER,
+        employee,
         note: `Moved ${moveQty} copies of "${displayProduct.product.name}" from shelf "${displayProduct.displayShelf.name}" to shelf "${targetShelf.name}"`,
       },
       dataSource.getRepository(DisplayLog),

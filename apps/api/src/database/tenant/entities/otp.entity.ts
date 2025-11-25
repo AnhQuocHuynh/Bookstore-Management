@@ -35,13 +35,15 @@ export class Otp {
   })
   metadata?: any;
 
-  @CreateDateColumn({ type: 'timestamp' })
-  createdAt: Date;
+  @CreateDateColumn({
+    type: 'timestamp',
+  })
+  readonly createdAt: Date;
 
   @UpdateDateColumn({
     type: 'timestamp',
   })
-  updatedAt: Date;
+  readonly updatedAt: Date;
 
   @ManyToOne(() => Employee, (employee) => employee.otps, {
     onDelete: 'CASCADE',

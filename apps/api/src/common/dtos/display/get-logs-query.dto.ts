@@ -1,4 +1,4 @@
-import { DisplayLogActorType } from '@/common/enums';
+import { DisplayLogAction } from '@/common/enums';
 import { TransformToDate } from '@/common/transformers';
 import {
   IsEnum,
@@ -24,12 +24,17 @@ export class GetLogsQueryDto {
   readonly productId?: string;
 
   @IsOptional()
-  @IsUUID()
-  readonly actorId?: string;
+  @IsEnum(DisplayLogAction)
+  readonly action?: DisplayLogAction;
 
   @IsOptional()
-  @IsEnum(DisplayLogActorType)
-  readonly type?: DisplayLogActorType;
+  @IsUUID()
+  readonly employeeId?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  readonly employeeName?: string;
 
   @IsOptional()
   @TransformToDate()

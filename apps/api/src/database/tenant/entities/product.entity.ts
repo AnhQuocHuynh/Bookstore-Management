@@ -39,7 +39,7 @@ export class Product {
   @Column({
     nullable: true,
   })
-  description: string;
+  description?: string;
 
   @Column({
     type: 'decimal',

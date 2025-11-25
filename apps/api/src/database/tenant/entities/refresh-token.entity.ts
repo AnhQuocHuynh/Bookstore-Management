@@ -23,7 +23,7 @@ export class RT {
   @JoinColumn({
     name: 'employee_id',
   })
-  emplee: Employee;
+  employee: Employee;
 
   @Column({
     type: 'timestamp',
@@ -36,10 +36,10 @@ export class RT {
   @CreateDateColumn({
     type: 'timestamp',
   })
-  createdAt: Date;
+  readonly createdAt: Date;
 
   @UpdateDateColumn({
     type: 'timestamp',
   })
-  updatedAt: Date;
+  readonly updatedAt: Date;
 }

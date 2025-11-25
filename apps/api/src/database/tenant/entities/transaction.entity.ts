@@ -25,7 +25,7 @@ export class Transaction {
     onDelete: 'SET NULL',
   })
   @JoinColumn({
-    name: 'cashier',
+    name: 'cashier_id',
   })
   cashier: Employee;
 
