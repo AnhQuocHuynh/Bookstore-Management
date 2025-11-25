@@ -375,7 +375,8 @@ export class AuthService {
           {
             ownerName: user.fullName,
             storeName: bookStore.name,
-            storecode: bookStore.code,
+            ownerEmail: user.email,
+            storeCode: bookStore.code,
             address: bookStore.address,
             phoneNumber: bookStore.phoneNumber,
             dashboardUrl: '',
