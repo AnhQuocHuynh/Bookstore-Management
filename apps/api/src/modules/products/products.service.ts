@@ -1,4 +1,4 @@
-import { CreateProductDto } from '@/common/dtos/products';
+import { CreateProductDto, GetProductsQueryDto } from '@/common/dtos/products';
 import { InventoryLogAction, ProductType } from '@/common/enums';
 import { TUserSession } from '@/common/utils';
 import {
@@ -12,7 +12,6 @@ import { BooksService } from '@/modules/books/books.service';
 import { CategoriesService } from '@/modules/categories/categories.service';
 import { InventoriesService } from '@/modules/inventories/inventories.service';
 import { SupplierService } from '@/modules/suppliers/supplier.service';
-import { UserRole } from '@/modules/users/enums';
 import { TenantService } from '@/tenants/tenant.service';
 import {
   ConflictException,
@@ -173,5 +172,87 @@ export class ProductsService {
       });
       if (!exists) return sku;
     }
+  }
+
+  async getProducts(
+    getProductsQueryDto: GetProductsQueryDto,
+    userSession: TUserSession,
+  ) {
+    const { bookStoreId } = userSession;
+
+    const dataSource = await this.tenantService.getTenantConnection({
+      bookStoreId,
+    });
+
+    const productRepo = dataSource.getRepository(Product);
+    const qb = productRepo
+      .createQueryBuilder('product')
+      .leftJoinAndSelect('product.categories', 'categories')
+      .leftJoinAndSelect('product.supplier', 'supplier')
+      .leftJoinAndSelect('product.book', 'book')
+      .leftJoinAndSelect('product.inventory', 'inventory');
+
+    const {
+      name,
+      sku,
+      type,
+      categoryName,
+      categorySlug,
+      supplierName,
+      isActive,
+      sortBy,
+      sortOrder,
+    } = getProductsQueryDto;
+
+    const exactFilters: Record<string, any> = {
+      sku,
+      type,
+      isActive,
+    };
+
+    Object.entries(exactFilters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        qb.andWhere(`product.${key} = :${key}`, { [key]: value });
+      }
+    });
+
+    const ilikeFilters: Record<string, string | undefined> = {
+      name,
+    };
+
+    Object.entries(ilikeFilters).forEach(([key, value]) => {
+      if (value) {
+        qb.andWhere(`product.${key} ILIKE :${key}`, { [key]: `%${value}%` });
+      }
+    });
+
+    if (categoryName?.trim() || categorySlug?.trim()) {
+      if (categoryName?.trim()) {
+        qb.andWhere('category.name ILIKE :categoryName', {
+          categoryName: `%${categoryName?.trim()}%`,
+        });
+      }
+
+      if (categorySlug?.trim()) {
+        qb.andWhere('category.slug = :categorySlug', {
+          categorySlug: categorySlug?.trim(),
+        });
+      }
+    }
+
+    if (supplierName?.trim()) {
+      qb.andWhere('supplier.name ILIKE :supplierName', {
+        supplierName,
+      });
+    }
+
+    if (sortBy?.trim() && sortOrder?.trim()) {
+      qb.orderBy(
+        `product.${sortBy?.trim()}`,
+        sortOrder?.trim().toUpperCase() as 'ASC' | 'DESC',
+      );
+    }
+
+    return qb.getMany();
   }
 }

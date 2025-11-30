@@ -1,9 +1,9 @@
-import { Body, Controller, Post } from '@nestjs/common';
-import { ProductsService } from './products.service';
 import { Roles, UserSession } from '@/common/decorators';
-import { UserRole } from '@/modules/users/enums';
+import { CreateProductDto, GetProductsQueryDto } from '@/common/dtos/products';
 import { TUserSession } from '@/common/utils';
-import { CreateProductDto } from '@/common/dtos/products';
+import { UserRole } from '@/modules/users/enums';
+import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { ProductsService } from './products.service';
 
 @Controller('products')
 export class ProductsController {
@@ -16,5 +16,14 @@ export class ProductsController {
     @Body() createProductDto: CreateProductDto,
   ) {
     return this.productsService.createProduct(userSession, createProductDto);
+  }
+
+  @Get()
+  @Roles(UserRole.EMPLOYEE, UserRole.OWNER)
+  async getProducts(
+    @Query() getProductsQueryDto: GetProductsQueryDto,
+    @UserSession() userSession: TUserSession,
+  ) {
+    return this.productsService.getProducts(getProductsQueryDto, userSession);
   }
 }
