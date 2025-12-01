@@ -25,20 +25,23 @@ export class CategoriesController {
   constructor(private readonly categoriesService: CategoriesService) {}
 
   @Get()
-  @Roles(UserRole.OWNER, UserRole.EMPLOYEE, UserRole.CUSTOMER)
-  async getCategories(@UserSession() userSession: TUserSession) {
-    return this.categoriesService.getCategories(userSession);
+  async getCategories(
+    @UserSession() userSession: TUserSession,
+    @Query() getCategoriesQueryDto: GetCategoriesQueryDto,
+  ) {
+    return this.categoriesService.getCategories(
+      userSession,
+      getCategoriesQueryDto,
+    );
   }
 
-  @Post()
-  async createCategory(
-    @Body() createCategoryDto: CreateCategoryDto,
+  @Get(':id')
+  @Roles(UserRole.OWNER, UserRole.EMPLOYEE, UserRole.CUSTOMER)
+  async getCategory(
+    @Param('id', ParseUUIDPipe) id: string,
     @UserSession() userSession: TUserSession,
   ) {
-    return this.categoriesService.createNewCategory(
-      createCategoryDto,
-      userSession,
-    );
+    return this.categoriesService.getCategoryById(userSession, id);
   }
 
   @Patch(':id')

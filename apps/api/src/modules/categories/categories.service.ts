@@ -19,8 +19,12 @@ import { Repository } from 'typeorm';
 export class CategoriesService {
   constructor(private readonly tenantsService: TenantService) {}
 
-  async getCategories(userSession: TUserSession) {
+  async getCategories(
+    userSession: TUserSession,
+    getCategoriesQueryDto: GetCategoriesQueryDto,
+  ) {
     const { bookStoreId } = userSession;
+    const { page = 1, limit = 10, status, parentId } = getCategoriesQueryDto;
 
     const dataSource = await this.tenantsService.getTenantConnection({
       bookStoreId,
@@ -28,7 +32,34 @@ export class CategoriesService {
 
     const categoryRepo = dataSource.getRepository(Category);
 
-    return categoryRepo.find();
+    const where: any = {};
+    if (status) {
+      where.status = status;
+    } else {
+      where.status = CategoryStatus.ACTIVE;
+    }
+    if (parentId) {
+      where.parent = { id: parentId };
+    }
+
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await categoryRepo.findAndCount({
+      where,
+      relations: parentId ? [] : ['parent'],
+      skip,
+      take: limit,
+      order: {
+        createdAt: 'DESC',
+      },
+    });
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+    };
   }
 
   async findCategoryByField(
