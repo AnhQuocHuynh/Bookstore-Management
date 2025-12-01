@@ -96,7 +96,7 @@ export class AuthService {
 
     return {
       token,
-      data: await this.mainBookStoreService.getBookStoresOfUser(user.id),
+      profile: omit(user, ['password']),
     };
   }
 

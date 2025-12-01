@@ -1,4 +1,5 @@
 import {
+  GetBookStoresQueryDto,
   GetEmployeesOfBookStoreQueryDto,
   GetMyBookStoresQueryDto,
 } from '@/common/dtos/bookstores';
@@ -21,8 +22,10 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
 import { omit } from 'lodash';
 
 @Injectable()
@@ -33,9 +36,46 @@ export class BookStoreService {
     private readonly mainEmployeeMappingService: MainEmployeeMappingService,
     private readonly emailService: EmailService,
     private readonly configService: ConfigService,
+    private readonly jwtService: JwtService,
   ) {}
 
-  async getBookStores() {
+  async getBookStores(getBookStoresQueryDto: GetBookStoresQueryDto) {
+    const { token } = getBookStoresQueryDto;
+
+    if (token?.trim()) {
+      try {
+        const payload = await this.jwtService.verifyAsync<{
+          role: UserRole;
+          email?: string;
+          username?: string;
+        }>(token, {
+          secret: this.configService.get('jwt_secret'),
+        });
+
+        const { role, email, username } = payload;
+
+        if (email?.trim() && role === UserRole.OWNER) {
+          const bookStores = await this.mainBookStoreService.findBookStores({
+            user: {
+              email,
+            },
+          });
+          return bookStores.map((b) => omit(b, ['user']));
+        }
+
+        if (username?.trim() && role === UserRole.EMPLOYEE) {
+          const employeeMappings =
+            await this.mainEmployeeMappingService.findBookStoresOfEmployee(
+              username,
+            );
+          return employeeMappings.map((em) => em.bookstore);
+        }
+      } catch (errror) {
+        console.error('Error verify token: ', errror);
+        throw new UnauthorizedException('Invalid or expired token.');
+      }
+    }
+
     return this.mainBookStoreService.findBookStores();
   }
 

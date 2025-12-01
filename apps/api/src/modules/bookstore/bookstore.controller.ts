@@ -14,6 +14,7 @@ import {
 } from '@nestjs/common';
 import { BookStoreService } from './bookstore.service';
 import {
+  GetBookStoresQueryDto,
   GetEmployeesOfBookStoreQueryDto,
   GetMyBookStoresQueryDto,
 } from '@/common/dtos/bookstores';
@@ -24,8 +25,8 @@ export class BookStoreController {
 
   @Public()
   @Get()
-  async getBookStores() {
-    return this.bookStoreService.getBookStores();
+  async getBookStores(@Query() getBookStoresQueryDto: GetBookStoresQueryDto) {
+    return this.bookStoreService.getBookStores(getBookStoresQueryDto);
   }
 
   @Get('detail/:id')
