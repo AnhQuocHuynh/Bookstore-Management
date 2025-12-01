@@ -1,8 +1,22 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { CategoriesService } from './categories.service';
 import { Roles, UserSession } from '@/common/decorators';
 import { UserRole } from '@/modules/users/enums';
-import { CreateCategoryDto } from '@/common/dtos';
+import {
+  CreateCategoryDto,
+  GetCategoriesQueryDto,
+  UpdateCategoryDto,
+} from '@/common/dtos';
 import { TUserSession } from '@/common/utils';
 
 @Controller('categories')
@@ -25,5 +39,26 @@ export class CategoriesController {
       createCategoryDto,
       userSession,
     );
+  }
+
+  @Patch(':id')
+  async updateCategory(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updateCategoryDto: UpdateCategoryDto,
+    @UserSession() userSession: TUserSession,
+  ) {
+    return this.categoriesService.updateCategory(
+      userSession,
+      id,
+      updateCategoryDto,
+    );
+  }
+
+  @Delete(':id')
+  async deleteCategory(
+    @Param('id', ParseUUIDPipe) id: string,
+    @UserSession() userSession: TUserSession,
+  ) {
+    return this.categoriesService.deleteCategory(userSession, id);
   }
 }
