@@ -3,10 +3,21 @@ import {
   CreateProductDto,
   GetProductDetailQueryDto,
   GetProductsQueryDto,
+  UpdateProductDto,
 } from '@/common/dtos/products';
 import { TUserSession } from '@/common/utils';
 import { UserRole } from '@/modules/users/enums';
-import { Body, Controller, Delete, Get, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { ProductsService } from './products.service';
 
 @Controller('products')
@@ -50,5 +61,19 @@ export class ProductsController {
     @BookStoreId() bookStoreId: string,
   ) {
     return this.productsService.deleteProduct(getProductsQueryDto, bookStoreId);
+  }
+
+  @Patch(':id')
+  @Roles(UserRole.OWNER, UserRole.EMPLOYEE)
+  async updateProduct(
+    @Param('id', ParseUUIDPipe) productId: string,
+    @BookStoreId() bookStoreId: string,
+    @Body() updateProductDto: UpdateProductDto,
+  ) {
+    return this.productsService.updateProduct(
+      productId,
+      bookStoreId,
+      updateProductDto,
+    );
   }
 }

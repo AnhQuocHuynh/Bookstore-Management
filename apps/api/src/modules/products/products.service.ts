@@ -2,6 +2,7 @@ import {
   CreateProductDto,
   GetProductDetailQueryDto,
   GetProductsQueryDto,
+  UpdateProductDto,
 } from '@/common/dtos/products';
 import { InventoryLogAction, ProductType } from '@/common/enums';
 import { TUserSession } from '@/common/utils';
@@ -323,5 +324,56 @@ export class ProductsService {
       message: 'Product deleted successfully.',
       success: true,
     };
+  }
+
+  async updateProduct(
+    id: string,
+    bookStoreId: string,
+    updateProductDto: UpdateProductDto,
+  ) {
+    if (Object.keys(updateProductDto).length <= 0)
+      throw new BadRequestException('Must be provide dto');
+
+    const dataSource = await this.tenantService.getTenantConnection({
+      bookStoreId,
+    });
+
+    const productRepo = dataSource.getRepository(Product);
+
+    const product = await productRepo.findOne({
+      where: {
+        id,
+      },
+    });
+
+    if (!product) throw new NotFoundException('Product not found.');
+
+    const { sku, name } = updateProductDto;
+
+    if (sku?.trim()) {
+      const existing = await this.findProductByField('sku', sku, productRepo);
+
+      if (existing && existing.id !== product.id)
+        throw new ConflictException(`Product with sku ${sku} already exists.`);
+    }
+
+    if (name?.trim()) {
+      const existing = await this.findProductByField('name', name, productRepo);
+
+      if (existing && existing.id !== product.id)
+        throw new ConflictException(
+          `Product with name ${name} already exists.`,
+        );
+    }
+
+    Object.assign(product, updateProductDto);
+    await productRepo.save(product);
+
+    return this.getProductDetail(
+      {
+        id,
+      },
+      bookStoreId,
+    );
   }
 }
