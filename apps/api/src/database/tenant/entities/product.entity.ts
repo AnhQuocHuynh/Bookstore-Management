@@ -12,6 +12,7 @@ import {
 import {
   Column,
   CreateDateColumn,
+  DeleteDateColumn,
   Entity,
   JoinColumn,
   JoinTable,
@@ -118,4 +119,9 @@ export class Product {
     cascade: true,
   })
   returnOrderDetails: ReturnOrderDetail[];
+
+  @DeleteDateColumn({
+    type: 'timestamp',
+  })
+  readonly deletedAt?: Date;
 }

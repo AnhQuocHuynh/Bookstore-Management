@@ -6,7 +6,7 @@ import {
 } from '@/common/dtos/products';
 import { TUserSession } from '@/common/utils';
 import { UserRole } from '@/modules/users/enums';
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Post, Query } from '@nestjs/common';
 import { ProductsService } from './products.service';
 
 @Controller('products')
@@ -41,5 +41,14 @@ export class ProductsController {
     @UserSession() userSession: TUserSession,
   ) {
     return this.productsService.getProducts(getProductsQueryDto, userSession);
+  }
+
+  @Delete('detail')
+  @Roles(UserRole.OWNER)
+  async deleteProduct(
+    @Query() getProductsQueryDto: GetProductsQueryDto,
+    @BookStoreId() bookStoreId: string,
+  ) {
+    return this.productsService.deleteProduct(getProductsQueryDto, bookStoreId);
   }
 }
