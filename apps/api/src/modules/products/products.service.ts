@@ -1,4 +1,8 @@
-import { CreateProductDto, GetProductsQueryDto } from '@/common/dtos/products';
+import {
+  CreateProductDto,
+  GetProductDetailQueryDto,
+  GetProductsQueryDto,
+} from '@/common/dtos/products';
 import { InventoryLogAction, ProductType } from '@/common/enums';
 import { TUserSession } from '@/common/utils';
 import {
@@ -14,6 +18,7 @@ import { InventoriesService } from '@/modules/inventories/inventories.service';
 import { SupplierService } from '@/modules/suppliers/supplier.service';
 import { TenantService } from '@/tenants/tenant.service';
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -254,5 +259,34 @@ export class ProductsService {
     }
 
     return qb.getMany();
+  }
+
+  async getProductDetail(
+    getProductDetailQueryDto: GetProductDetailQueryDto,
+    bookStoreId: string,
+  ) {
+    if (Object.keys(getProductDetailQueryDto)?.length <= 0)
+      throw new BadRequestException('Must be provide sku or id of product.');
+
+    const dataSource = await this.tenantService.getTenantConnection({
+      bookStoreId,
+    });
+
+    const productRepo = dataSource.getRepository(Product);
+    const { sku, id } = getProductDetailQueryDto;
+
+    const product = await productRepo.findOne({
+      where: {
+        ...(id?.trim() && { id }),
+        ...(sku?.trim() && { sku }),
+      },
+      relations: {
+        book: true,
+      },
+    });
+
+    if (!product) throw new NotFoundException('Product not found.');
+
+    return product;
   }
 }
