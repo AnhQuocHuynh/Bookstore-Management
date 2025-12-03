@@ -289,4 +289,39 @@ export class ProductsService {
 
     return product;
   }
+
+  async deleteProduct(
+    getProductDetailQueryDto: GetProductDetailQueryDto,
+    bookStoreId: string,
+  ) {
+    const { sku, id } = getProductDetailQueryDto;
+
+    if (!sku?.trim() && !id?.trim())
+      throw new BadRequestException('Must be provide sku or id of product');
+
+    const dataSource = await this.tenantService.getTenantConnection({
+      bookStoreId,
+    });
+
+    const productRepo = dataSource.getRepository(Product);
+
+    const product = await productRepo.findOne({
+      where: {
+        ...(id?.trim() && { id }),
+        ...(sku?.trim() && { sku }),
+      },
+      relations: {
+        book: true,
+      },
+    });
+
+    if (!product) throw new NotFoundException('Product not found.');
+
+    await productRepo.softRemove(product);
+
+    return {
+      message: 'Product deleted successfully.',
+      success: true,
+    };
+  }
 }
