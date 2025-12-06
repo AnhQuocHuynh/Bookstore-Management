@@ -14,3 +14,4 @@ export interface PaginatedResponse<T> {
 
 // Add more global types as needed
 
+

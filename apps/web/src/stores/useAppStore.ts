@@ -13,3 +13,4 @@ export const useAppStore = create<AppState>((set) => ({
   setLoading: (loading) => set({ isLoading: loading }),
 }));
 
+
