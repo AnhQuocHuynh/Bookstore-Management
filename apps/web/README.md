@@ -1,73 +1,197 @@
-# React + TypeScript + Vite
+# Bookstore Management System - Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Frontend application cho hệ thống quản lý nhà sách, được xây dựng trong môi trường **Turborepo Monorepo**.
 
-Currently, two official plugins are available:
+## 📋 Tech Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### Core Framework
+- **React 19** - UI Library
+- **Vite 7** - Build tool & Dev server
+- **TypeScript 5.9** - Type safety
 
-## React Compiler
+### UI & Styling
+- **Ant Design (Antd) 6** - Component library
+- **TailwindCSS 4** - Utility-first CSS framework
+- **Tailwind Merge** - Merge Tailwind classes
 
-The React Compiler is currently not compatible with SWC. See [this issue](https://github.com/vitejs/vite-plugin-react/issues/428) for tracking the progress.
+### State Management & Data Fetching
+- **Zustand 5** - Lightweight state management (với persist middleware)
+- **TanStack Query (React Query) v5** - Server state management
 
-## Expanding the ESLint configuration
+### Forms & Validation
+- **React Hook Form 7** - Form handling
+- **Zod 4** - Schema validation
+- **@hookform/resolvers** - Zod integration
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Routing & Network
+- **React Router DOM v7** - Client-side routing
+- **Axios** - HTTP client với interceptors
 
-```js
-export default defineConfig([
-  globalIgnores(["dist"]),
-  {
-    files: ["**/*.{ts,tsx}"],
-    extends: [
-      // Other configs...
+## 📁 Cấu trúc thư mục
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ["./tsconfig.node.json", "./tsconfig.app.json"],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-]);
+```
+apps/web/src/
+├── assets/          # Static assets (images, icons)
+├── components/      # Shared atomic components (Button, Input wrapper...)
+├── config/          # Antd theme config, Env vars
+├── hooks/           # Shared custom hooks
+├── layouts/         # MainLayout (Sidebar+Header), AuthLayout
+├── lib/             # axios.ts, react-query.ts
+├── routes/          # App routes, ProtectedRoute
+├── stores/          # useAuthStore.ts, useAppStore.ts
+├── types/           # Global TypeScript interfaces
+├── utils/           # Helper functions
+└── features/        # CORE BUSINESS LOGIC (Feature-based structure)
+    ├── auth/        # Login, ForgotPassword
+    ├── products/    # ProductList, ProductForm
+    ├── users/       # EmployeeList
+    ├── sales/       # POS Interface
+    └── inventory/   # PurchaseOrder
+    
+    (Mỗi feature có: components/, hooks/, api/, types/, index.ts)
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## 🚀 Getting Started
 
-```js
-// eslint.config.js
-import reactX from "eslint-plugin-react-x";
-import reactDom from "eslint-plugin-react-dom";
+> 📖 **Xem hướng dẫn setup chi tiết**: [SETUP.md](./SETUP.md)
 
-export default defineConfig([
-  globalIgnores(["dist"]),
-  {
-    files: ["**/*.{ts,tsx}"],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs["recommended-typescript"],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ["./tsconfig.node.json", "./tsconfig.app.json"],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-]);
+### Prerequisites
+- Node.js 18+
+- npm hoặc yarn hoặc pnpm
+
+### Quick Start
+
+```bash
+# 1. Cài đặt dependencies (từ root monorepo)
+npm install
+
+# 2. Chạy backend (từ apps/api)
+cd apps/api && npm run start:dev
+
+# 3. Chạy frontend (từ root hoặc apps/web)
+npm run dev --filter=web
 ```
+
+### Installation
+
+```bash
+# Cài đặt dependencies (từ root của monorepo)
+npm install
+
+# Hoặc từ thư mục apps/web
+cd apps/web
+npm install
+```
+
+### Environment Variables
+
+Tạo file `.env` trong `apps/web/` (chỉ cần cho production):
+
+```env
+# Chỉ cần thiết cho production build
+# Trong dev mode, Vite proxy sẽ tự động xử lý
+VITE_API_URL=http://localhost:3000/api
+```
+
+**Lưu ý về Proxy trong Development:**
+- Vite đã được cấu hình proxy để tránh lỗi CORS
+- Tất cả requests đến `/api` sẽ được proxy đến `http://localhost:3000`
+- Không cần cấu hình `VITE_API_URL` trong dev mode
+- Axios sẽ tự động sử dụng relative path `/api` trong dev mode
+
+### Development
+
+```bash
+# Chạy dev server
+npm run dev
+
+# Hoặc từ root monorepo
+npm run dev --filter=web
+```
+
+### Build
+
+```bash
+npm run build
+```
+
+### Type Checking
+
+```bash
+npm run check-types
+```
+
+## 🔧 Core Configuration
+
+### Axios Setup (`src/lib/axios.ts`)
+- **Development**: Sử dụng relative path `/api` để leverage Vite proxy (tránh CORS)
+- **Production**: Base URL từ `import.meta.env.VITE_API_URL`
+- Request interceptor: Tự động attach Bearer token từ Zustand store
+- Response interceptor: Xử lý 401 errors (redirect to /login)
+
+### Vite Proxy Setup (`vite.config.ts`)
+- Proxy `/api` requests đến `http://localhost:3000`
+- Tự động xử lý CORS trong development mode
+- Port: 5173 (frontend), 3000 (backend)
+
+### React Query Setup (`src/lib/react-query.ts`)
+- QueryClient với default options
+- Stale time: 5 minutes
+- Retry logic được cấu hình
+
+### Auth Store (`src/stores/useAuthStore.ts`)
+- Zustand store với persist middleware
+- Quản lý: `user`, `token`, `currentStore`
+- Methods: `setAuth`, `setCurrentStore`, `logout`
+
+### Ant Design Theme (`src/config/antd-theme.ts`)
+- Custom theme configuration
+- Color scheme và component styling
+
+## 🛣️ Routing
+
+- `/login` - Public route (AuthLayout)
+- `/dashboard` - Protected route (MainLayout)
+- `/products` - Protected route (MainLayout)
+- `/inventory` - Protected route (MainLayout)
+- `/staff` - Protected route (MainLayout)
+- `/suppliers` - Protected route (MainLayout)
+
+Protected routes được bảo vệ bởi `ProtectedRoute` component, tự động redirect về `/login` nếu chưa authenticated.
+
+## 📝 Development Guidelines
+
+### Feature Development
+1. Mỗi feature nằm trong `src/features/[feature-name]/`
+2. Mỗi feature có cấu trúc:
+   - `components/` - Feature-specific components
+   - `hooks/` - Custom hooks cho feature
+   - `api/` - API calls sử dụng axios instance
+   - `types/` - TypeScript types cho feature
+   - `index.ts` - Export barrel file
+
+### Code Style
+- Sử dụng TypeScript cho tất cả files
+- Follow React best practices
+- Sử dụng Ant Design components khi có thể
+- Combine TailwindCSS với Ant Design styling
+
+### State Management
+- **Server state**: Sử dụng TanStack Query
+- **Client state**: Sử dụng Zustand
+- **Form state**: Sử dụng React Hook Form
+
+## 🔗 Monorepo Integration
+
+Dự án này là một phần của Turborepo monorepo:
+- Backend API: `apps/api` (NestJS)
+- Frontend Web: `apps/web` (React + Vite)
+
+## 📚 Resources
+
+- [React Documentation](https://react.dev)
+- [Vite Documentation](https://vite.dev)
+- [Ant Design Documentation](https://ant.design)
+- [TanStack Query Documentation](https://tanstack.com/query)
+- [Zustand Documentation](https://zustand-demo.pmnd.rs)
+- [React Router Documentation](https://reactrouter.com)
