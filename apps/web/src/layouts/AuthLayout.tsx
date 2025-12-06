@@ -18,5 +18,3 @@ export const AuthLayout = ({ children }: AuthLayoutProps) => {
     </Layout>
   );
 };
-
-

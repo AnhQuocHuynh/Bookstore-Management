@@ -3,8 +3,10 @@ import {
   DashboardOutlined,
   ShoppingOutlined,
   InboxOutlined,
-  UserOutlined,
+  DollarOutlined,
   TeamOutlined,
+  UserOutlined,
+  ShopOutlined,
   LogoutOutlined,
   SettingOutlined,
 } from "@ant-design/icons";
@@ -31,19 +33,24 @@ const menuItems = [
     label: "Sản phẩm",
   },
   {
+    key: "/sales",
+    icon: <DollarOutlined />,
+    label: "Bán hàng",
+  },
+  {
     key: "/inventory",
     icon: <InboxOutlined />,
     label: "Kho hàng",
   },
   {
-    key: "/staff",
-    icon: <TeamOutlined />,
-    label: "Nhân viên",
+    key: "/partners",
+    icon: <ShopOutlined />,
+    label: "Đối tác",
   },
   {
-    key: "/suppliers",
-    icon: <UserOutlined />,
-    label: "Nhà cung cấp",
+    key: "/employees",
+    icon: <TeamOutlined />,
+    label: "Nhân viên",
   },
 ];
 
@@ -58,7 +65,7 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
 
   const handleLogout = () => {
     logout();
-    navigate("/login");
+    navigate("/auth/login");
   };
 
   const userMenuItems = [
@@ -90,6 +97,8 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
         width={250}
         theme="dark"
         className="fixed left-0 top-0 bottom-0"
+        breakpoint="lg"
+        collapsedWidth="0"
       >
         <div className="h-16 flex items-center justify-center border-b border-gray-700">
           <Text className="text-white text-lg font-bold">
@@ -106,7 +115,7 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
         />
       </Sider>
       
-      <Layout className="ml-[250px]">
+      <Layout className="ml-[250px] lg:ml-[250px]">
         <Header className="bg-white shadow-sm flex items-center justify-between px-6">
           <div>
             <Text strong className="text-lg">
@@ -120,7 +129,7 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
             arrow
           >
             <Space className="cursor-pointer hover:bg-gray-50 px-3 py-1 rounded">
-              <Avatar icon={<UserOutlined />} />
+              <Avatar icon={<UserOutlined />} src={user?.avatar} />
               <Text>{user?.name || "User"}</Text>
             </Space>
           </Dropdown>
@@ -133,5 +142,3 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
     </Layout>
   );
 };
-
-

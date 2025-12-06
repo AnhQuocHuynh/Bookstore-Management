@@ -1,33 +1,28 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
-import { useAuthStore } from "../stores/useAuthStore";
-
-// Determine base URL based on environment
-// In dev mode, use relative path to leverage Vite proxy
-// In production, use full API URL from env
-const getBaseURL = () => {
-  if (import.meta.env.DEV) {
-    // Development: Use proxy (relative path)
-    return "/api";
-  }
-  // Production: Use full URL from env
-  return import.meta.env.VITE_API_URL || "http://localhost:3000/api";
-};
 
 // Create axios instance
 export const apiClient = axios.create({
-  baseURL: getBaseURL(),
+  baseURL: import.meta.env.VITE_API_URL || "/api",
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-// Request interceptor: Attach Bearer token
+// Request interceptor: Attach Bearer token from localStorage
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = useAuthStore.getState().token;
-    
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`;
+    try {
+      const authStorage = localStorage.getItem("auth-storage");
+      if (authStorage) {
+        const authData = JSON.parse(authStorage);
+        const token = authData?.state?.accessToken;
+        
+        if (token && config.headers) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+      }
+    } catch (error) {
+      console.error("Error reading auth token:", error);
     }
     
     return config;
@@ -42,12 +37,12 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
     if (error.response?.status === 401) {
-      // Clear auth state
-      useAuthStore.getState().logout();
+      // Clear auth storage
+      localStorage.removeItem("auth-storage");
       
       // Redirect to login
-      if (window.location.pathname !== "/login") {
-        window.location.href = "/login";
+      if (window.location.pathname !== "/auth/login") {
+        window.location.href = "/auth/login";
       }
     }
     
@@ -56,4 +51,3 @@ apiClient.interceptors.response.use(
 );
 
 export default apiClient;
-

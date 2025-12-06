@@ -3,9 +3,9 @@
 @tailwind utilities;
 
 @layer base {
-  body {
+body {
     @apply antialiased;
-    margin: 0;
+  margin: 0;
     font-family: system-ui, -apple-system, sans-serif;
   }
 }

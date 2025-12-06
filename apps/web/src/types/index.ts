@@ -1,17 +1,2 @@
-// Global type definitions
-export interface ApiResponse<T> {
-  data: T;
-  message?: string;
-  success: boolean;
-}
-
-export interface PaginatedResponse<T> {
-  data: T[];
-  total: number;
-  page: number;
-  limit: number;
-}
-
-// Add more global types as needed
-
-
+// Re-export common types
+export * from "./common";

@@ -6,53 +6,53 @@ export interface User {
   email: string;
   name: string;
   role: string;
-  // Add other user fields as needed
+  avatar?: string;
 }
 
 export interface Store {
   id: string;
   name: string;
   address?: string;
-  // Add other store fields as needed
+  phone?: string;
 }
 
 interface AuthState {
   user: User | null;
-  token: string | null;
+  accessToken: string | null;
   currentStore: Store | null;
   isAuthenticated: boolean;
-  setAuth: (user: User, token: string) => void;
-  setCurrentStore: (store: Store) => void;
+  login: (user: User, accessToken: string) => void;
   logout: () => void;
+  setStore: (store: Store) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       user: null,
-      token: null,
+      accessToken: null,
       currentStore: null,
       isAuthenticated: false,
       
-      setAuth: (user, token) => {
+      login: (user, accessToken) => {
         set({
           user,
-          token,
+          accessToken,
           isAuthenticated: true,
         });
-      },
-      
-      setCurrentStore: (store) => {
-        set({ currentStore: store });
       },
       
       logout: () => {
         set({
           user: null,
-          token: null,
+          accessToken: null,
           currentStore: null,
           isAuthenticated: false,
         });
+      },
+      
+      setStore: (store) => {
+        set({ currentStore: store });
       },
     }),
     {
@@ -60,5 +60,3 @@ export const useAuthStore = create<AuthState>()(
     }
   )
 );
-
-
