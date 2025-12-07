@@ -1,16 +1,35 @@
-import { IsStrongPassword } from '@/common/decorators';
-import { IsNotEmpty, IsString, Length } from 'class-validator';
+import { IsNonEmptyString, IsStrongPassword } from '@/common/decorators';
+import { ApiProperty } from '@nestjs/swagger';
+import { Length } from 'class-validator';
 
 export class ChangePasswordDto {
-  @IsStrongPassword()
+  @ApiProperty({
+    description: 'Mật khẩu mới.',
+    example: 'newPassword123@',
+  })
+  @IsStrongPassword({
+    message: 'Mật khẩu mới chưa đủ mạnh.',
+  })
   readonly newPassword: string;
 
-  @IsString()
-  @IsNotEmpty()
+  @ApiProperty({
+    description: 'Mật khẩu hiện tại.',
+    example: 'currentPassword123',
+  })
+  @IsNonEmptyString({
+    message: 'Mật khẩu hiện tại không được để trống.',
+  })
   readonly currentPassword: string;
 
-  @IsString()
-  @IsNotEmpty()
-  @Length(6, 6)
+  @ApiProperty({
+    description: 'Mã OTP',
+    example: '123456',
+  })
+  @IsNonEmptyString({
+    message: 'Mã OTP không hợp lệ.',
+  })
+  @Length(6, 6, {
+    message: 'Mã OTP không hợp lệ.',
+  })
   readonly otp: string;
 }
