@@ -30,7 +30,7 @@ export class User {
     type: 'text',
     nullable: true,
   })
-  logoUrl?: string;
+  avatarUrl?: string;
 
   @Column({
     type: 'timestamp',
@@ -38,7 +38,7 @@ export class User {
   birthDate?: Date;
 
   @Column()
-  address?: string;
+  address: string;
 
   @Column({
     type: 'boolean',

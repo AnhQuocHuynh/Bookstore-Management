@@ -197,7 +197,14 @@ export class AuthService {
         },
       });
 
-      if (!employee || !(await verifyPassword(password, employee.password))) {
+      if (employee) {
+        console.log(await verifyPassword(password, employee.password));
+      }
+
+      if (
+        !employee ||
+        (employee && !(await verifyPassword(password, employee.password)))
+      ) {
         throw new UnauthorizedException('Invalid credentails.');
       }
 
@@ -254,7 +261,6 @@ export class AuthService {
 
     return {
       token,
-      data: employeeMappings.map((em) => em.bookstore),
     };
   }
 
@@ -311,7 +317,8 @@ export class AuthService {
     );
 
     return {
-      message: `The OTP has been sent to your email.`,
+      message:
+        'Mã OTP xác thực tài khoản đã được gửi đến email của bạn. Vui lòng kiểm tra để hoàn tất đăng ký.',
     };
   }
 
@@ -414,12 +421,13 @@ export class AuthService {
     return {
       message:
         type === OtpTypeEnum.SIGN_UP
-          ? 'Your account has been verified successfully. Registration completed.'
-          : `OTP has been verified successfully.`,
+          ? 'Tài khoản của bạn đã được xác thực thành công. Quá trình đăng ký đã hoàn tất.'
+          : 'OTP đã được xác thực thành công.',
       ...(authCode?.trim() && { authCode }),
       ...(type === OtpTypeEnum.SIGN_UP &&
-        storeCode?.trim() && {
-          bookStoreId: validRecord?.metadata?.bookStoreId ?? '',
+        storeCode?.trim() &&
+        validRecord?.metadata?.bookStoreId?.trim() && {
+          bookStoreId: validRecord?.metadata?.bookStoreId,
           storeCode,
         }),
     };
@@ -442,7 +450,7 @@ export class AuthService {
 
     await this.revokeRefreshToken(user.id, role, refreshToken, bookStoreId);
     return {
-      message: 'Signed out successfully.',
+      message: 'Đăng xuất tài khoản thành công.',
     };
   }
 
@@ -676,7 +684,7 @@ export class AuthService {
     );
 
     return {
-      message: `An OTP code has been sent to your email.`,
+      message: 'Mã OTP đã được gửi đến email của bạn.',
     };
   }
 
@@ -785,33 +793,7 @@ export class AuthService {
     }
 
     return {
-      message: `An OTP has been sent to your email.`,
-    };
-  }
-
-  private async issueOtp(
-    length = 6,
-    userId: string,
-    type: OtpTypeEnum,
-    expiresAt: Date,
-    repo: Repository<Otp>,
-    metadata?: Record<string, any>,
-  ) {
-    const otp = generateOtp(length);
-    const otpRecord = repo.create({
-      otp: encryptPayload(otp, this.configService),
-      user: {
-        id: userId,
-      },
-      type,
-      expiresAt,
-      ...(metadata && {
-        metadata,
-      }),
-    });
-    await repo.save(otpRecord);
-    return {
-      otp,
+      message: 'Mã OTP đã được gửi đến email của bạn.',
     };
   }
 
