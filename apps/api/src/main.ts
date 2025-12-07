@@ -26,6 +26,13 @@ async function bootstrap() {
 
   const configService = app.get(ConfigService);
 
+  app.enableCors({
+    origin: [configService.get<string>('frontend_url', '')],
+    credentials: true,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    allowedHeaders: 'Content-Type, Authorization',
+  });
+
   const config = new DocumentBuilder()
     .setTitle('API')
     .setVersion('1.0')
