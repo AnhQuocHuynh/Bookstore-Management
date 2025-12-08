@@ -24,6 +24,17 @@ import { TUserSession } from '@/common/utils';
 export class CategoriesController {
   constructor(private readonly categoriesService: CategoriesService) {}
 
+  @Post()
+  async createCategory(
+    @Body() createCategoryDto: CreateCategoryDto,
+    @UserSession() userSession: TUserSession,
+  ) {
+    return this.categoriesService.createNewCategory(
+      createCategoryDto,
+      userSession,
+    );
+  }
+
   @Get()
   async getCategories(
     @UserSession() userSession: TUserSession,

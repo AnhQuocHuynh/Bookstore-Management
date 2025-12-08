@@ -39,5 +39,3 @@ export const formatDateTime = (date: Date | string): string => {
     minute: "2-digit",
   }).format(new Date(date));
 };
-
-

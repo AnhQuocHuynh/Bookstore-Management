@@ -6,12 +6,14 @@ import { AuthModule } from '@/modules/auth/auth.module';
 import { BookStoreModule } from '@/modules/bookstore/bookstore.module';
 import { DisplayModule } from '@/modules/display/display.module';
 import { EmailModule } from '@/modules/email/email.module';
+import { EmployeeModule } from '@/modules/employee/employee.module';
 import { FilesModule } from '@/modules/files/files.module';
 import { InventoriesModule } from '@/modules/inventories/inventories.module';
+import { ProductsModule } from '@/modules/products/products.module';
+import { PurchaseOrdersModule } from '@/modules/purchase-orders/purchase-orders.module';
 import { SupplierModule } from '@/modules/suppliers/supplier.module';
 import { UserModule } from '@/modules/users/user.module';
 import { TenantModule } from '@/tenants/tenant.module';
-import { EmployeeModule } from '@/modules/employee/employee.module';
 import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -62,6 +64,8 @@ import { PublishersModule } from './modules/publishers/publishers.module';
     DisplayModule,
     InventoriesModule,
     EmployeeModule,
+    PurchaseOrdersModule,
+    ProductsModule,
   ],
 })
 export class AppModule {}

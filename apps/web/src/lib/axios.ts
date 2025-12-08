@@ -16,7 +16,7 @@ apiClient.interceptors.request.use(
       if (authStorage) {
         const authData = JSON.parse(authStorage);
         const token = authData?.state?.accessToken;
-        
+
         if (token && config.headers) {
           config.headers.Authorization = `Bearer ${token}`;
         }
@@ -24,12 +24,12 @@ apiClient.interceptors.request.use(
     } catch (error) {
       console.error("Error reading auth token:", error);
     }
-    
+
     return config;
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 // Response interceptor: Handle 401 errors
@@ -39,15 +39,15 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401) {
       // Clear auth storage
       localStorage.removeItem("auth-storage");
-      
+
       // Redirect to login
       if (window.location.pathname !== "/auth/login") {
         window.location.href = "/auth/login";
       }
     }
-    
+
     return Promise.reject(error);
-  }
+  },
 );
 
 export default apiClient;

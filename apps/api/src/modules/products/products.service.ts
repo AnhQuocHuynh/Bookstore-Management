@@ -109,15 +109,17 @@ export class ProductsService {
         ...res,
         type,
         sku: await this.generateUniqueSKU(type, productRepo),
+        supplier,
+        categories: [],
       });
 
       await productRepo.save(newProduct);
 
       await this.categoriesService.assignCategoriesToProduct(
         categoryIds,
-        newProduct.id,
-        productRepo,
+        newProduct,
         categoryRepo,
+        productRepo,
       );
 
       if (

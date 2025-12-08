@@ -197,10 +197,6 @@ export class AuthService {
         },
       });
 
-      if (employee) {
-        console.log(await verifyPassword(password, employee.password));
-      }
-
       if (
         !employee ||
         (employee && !(await verifyPassword(password, employee.password)))

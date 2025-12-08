@@ -90,7 +90,9 @@ export class Product {
   })
   inventory: Inventory;
 
-  @ManyToMany(() => Category, (category) => category.products)
+  @ManyToMany(() => Category, (category) => category.products, {
+    cascade: true,
+  })
   @JoinTable({
     name: 'product_category',
     joinColumn: {

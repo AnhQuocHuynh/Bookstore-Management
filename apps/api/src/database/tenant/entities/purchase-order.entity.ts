@@ -52,7 +52,7 @@ export class PurchaseOrder {
   @Column({
     type: 'enum',
     enum: PurchaseStatus,
-    default: PurchaseStatus.PENDING,
+    default: PurchaseStatus.DRAFT,
   })
   status: PurchaseStatus;
 
