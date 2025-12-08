@@ -5,25 +5,30 @@ Frontend application cho hệ thống quản lý nhà sách, được xây dựn
 ## 📋 Tech Stack
 
 ### Core Framework
+
 - **React 19** - UI Library
 - **Vite 7** - Build tool & Dev server
 - **TypeScript 5.9** - Type safety
 
 ### UI & Styling
+
 - **Ant Design (Antd) 6** - Component library
 - **TailwindCSS 4** - Utility-first CSS framework
 - **Tailwind Merge** - Merge Tailwind classes
 
 ### State Management & Data Fetching
+
 - **Zustand 5** - Lightweight state management (với persist middleware)
 - **TanStack Query (React Query) v5** - Server state management
 
 ### Forms & Validation
+
 - **React Hook Form 7** - Form handling
 - **Zod 4** - Schema validation
 - **@hookform/resolvers** - Zod integration
 
 ### Routing & Network
+
 - **React Router DOM v7** - Client-side routing
 - **Axios** - HTTP client với interceptors
 
@@ -47,7 +52,7 @@ apps/web/src/
     ├── users/       # EmployeeList
     ├── sales/       # POS Interface
     └── inventory/   # PurchaseOrder
-    
+
     (Mỗi feature có: components/, hooks/, api/, types/, index.ts)
 ```
 
@@ -56,6 +61,7 @@ apps/web/src/
 > 📖 **Xem hướng dẫn setup chi tiết**: [SETUP.md](./SETUP.md)
 
 ### Prerequisites
+
 - Node.js 18+
 - npm hoặc yarn hoặc pnpm
 
@@ -94,6 +100,7 @@ VITE_API_URL=http://localhost:3000/api
 ```
 
 **Lưu ý về Proxy trong Development:**
+
 - Vite đã được cấu hình proxy để tránh lỗi CORS
 - Tất cả requests đến `/api` sẽ được proxy đến `http://localhost:3000`
 - Không cần cấu hình `VITE_API_URL` trong dev mode
@@ -124,27 +131,32 @@ npm run check-types
 ## 🔧 Core Configuration
 
 ### Axios Setup (`src/lib/axios.ts`)
+
 - **Development**: Sử dụng relative path `/api` để leverage Vite proxy (tránh CORS)
 - **Production**: Base URL từ `import.meta.env.VITE_API_URL`
 - Request interceptor: Tự động attach Bearer token từ Zustand store
 - Response interceptor: Xử lý 401 errors (redirect to /login)
 
 ### Vite Proxy Setup (`vite.config.ts`)
+
 - Proxy `/api` requests đến `http://localhost:3000`
 - Tự động xử lý CORS trong development mode
 - Port: 5173 (frontend), 3000 (backend)
 
 ### React Query Setup (`src/lib/react-query.ts`)
+
 - QueryClient với default options
 - Stale time: 5 minutes
 - Retry logic được cấu hình
 
 ### Auth Store (`src/stores/useAuthStore.ts`)
+
 - Zustand store với persist middleware
 - Quản lý: `user`, `token`, `currentStore`
 - Methods: `setAuth`, `setCurrentStore`, `logout`
 
 ### Ant Design Theme (`src/config/antd-theme.ts`)
+
 - Custom theme configuration
 - Color scheme và component styling
 
@@ -162,6 +174,7 @@ Protected routes được bảo vệ bởi `ProtectedRoute` component, tự đ�
 ## 📝 Development Guidelines
 
 ### Feature Development
+
 1. Mỗi feature nằm trong `src/features/[feature-name]/`
 2. Mỗi feature có cấu trúc:
    - `components/` - Feature-specific components
@@ -171,12 +184,14 @@ Protected routes được bảo vệ bởi `ProtectedRoute` component, tự đ�
    - `index.ts` - Export barrel file
 
 ### Code Style
+
 - Sử dụng TypeScript cho tất cả files
 - Follow React best practices
 - Sử dụng Ant Design components khi có thể
 - Combine TailwindCSS với Ant Design styling
 
 ### State Management
+
 - **Server state**: Sử dụng TanStack Query
 - **Client state**: Sử dụng Zustand
 - **Form state**: Sử dụng React Hook Form
@@ -184,6 +199,7 @@ Protected routes được bảo vệ bởi `ProtectedRoute` component, tự đ�
 ## 🔗 Monorepo Integration
 
 Dự án này là một phần của Turborepo monorepo:
+
 - Backend API: `apps/api` (NestJS)
 - Frontend Web: `apps/web` (React + Vite)
 

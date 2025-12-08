@@ -260,8 +260,23 @@ export class CategoriesService {
 
   async assignCategoriesToProduct(
     categoryIds: string[],
-    productId: string,
-    productRepo: Repository<Product>,
+    product: Product,
     categoryRepo: Repository<Category>,
-  ) {}
+    productRepo: Repository<Product>,
+  ) {
+    await Promise.all(
+      categoryIds.map(async (categoryId) => {
+        const category = await categoryRepo.findOne({
+          where: {
+            id: categoryId,
+          },
+        });
+
+        if (category) {
+          product.categories.push(category);
+          await productRepo.save(product);
+        }
+      }),
+    );
+  }
 }

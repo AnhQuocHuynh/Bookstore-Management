@@ -33,7 +33,7 @@ export const useAuthStore = create<AuthState>()(
       accessToken: null,
       currentStore: null,
       isAuthenticated: false,
-      
+
       login: (user, accessToken) => {
         set({
           user,
@@ -41,7 +41,7 @@ export const useAuthStore = create<AuthState>()(
           isAuthenticated: true,
         });
       },
-      
+
       logout: () => {
         set({
           user: null,
@@ -50,13 +50,13 @@ export const useAuthStore = create<AuthState>()(
           isAuthenticated: false,
         });
       },
-      
+
       setStore: (store) => {
         set({ currentStore: store });
       },
     }),
     {
       name: "auth-storage", // localStorage key
-    }
-  )
+    },
+  ),
 );

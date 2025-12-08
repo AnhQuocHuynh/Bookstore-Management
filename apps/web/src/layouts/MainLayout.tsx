@@ -114,7 +114,7 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
           className="mt-4"
         />
       </Sider>
-      
+
       <Layout className="ml-[250px] lg:ml-[250px]">
         <Header className="bg-white shadow-sm flex items-center justify-between px-6">
           <div>
@@ -122,7 +122,7 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
               {currentStore?.name || "Chưa chọn cửa hàng"}
             </Text>
           </div>
-          
+
           <Dropdown
             menu={{ items: userMenuItems }}
             placement="bottomRight"
@@ -134,7 +134,7 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
             </Space>
           </Dropdown>
         </Header>
-        
+
         <Content className="p-6 bg-gray-50 min-h-[calc(100vh-64px)]">
           {children}
         </Content>

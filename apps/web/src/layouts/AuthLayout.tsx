@@ -11,9 +11,7 @@ export const AuthLayout = ({ children }: AuthLayoutProps) => {
   return (
     <Layout className="min-h-screen">
       <Content className="flex items-center justify-center bg-gray-50">
-        <div className="w-full max-w-md p-8">
-          {children}
-        </div>
+        <div className="w-full max-w-md p-8">{children}</div>
       </Content>
     </Layout>
   );

@@ -22,6 +22,7 @@ npm install
 ## 🔧 Bước 2: Kiểm tra cấu hình
 
 ### Kiểm tra các file cấu hình đã có:
+
 - ✅ `vite.config.ts` - Vite config với proxy setup
 - ✅ `tailwind.config.js` - TailwindCSS config
 - ✅ `postcss.config.js` - PostCSS config
@@ -33,6 +34,7 @@ npm install
 **Lưu ý**: Trong development mode, **KHÔNG CẦN** tạo file `.env` vì Vite proxy đã được cấu hình.
 
 Chỉ cần tạo `.env` nếu:
+
 - Build cho production
 - Cần override API URL
 - Cần cấu hình khác
@@ -79,28 +81,32 @@ Frontend sẽ chạy trên: **http://localhost:5173**
 ## 🔍 Troubleshooting
 
 ### Lỗi CORS
+
 - **Nguyên nhân**: Backend chưa chạy hoặc proxy chưa hoạt động
-- **Giải pháp**: 
+- **Giải pháp**:
   - Đảm bảo backend đang chạy trên port 3000
   - Kiểm tra `vite.config.ts` có cấu hình proxy đúng
   - Restart dev server
 
 ### Port đã được sử dụng
+
 - **Lỗi**: `Port 5173 is already in use`
-- **Giải pháp**: 
+- **Giải pháp**:
   - Đổi port trong `vite.config.ts`: `port: 5174`
   - Hoặc kill process đang dùng port 5173
 
 ### Dependencies chưa được cài
+
 - **Lỗi**: `Cannot find module 'xxx'`
-- **Giải pháp**: 
+- **Giải pháp**:
   ```bash
   npm install
   ```
 
 ### TypeScript errors
+
 - **Lỗi**: Type errors trong IDE
-- **Giải pháp**: 
+- **Giải pháp**:
   ```bash
   npm run check-types
   ```
@@ -128,6 +134,7 @@ apps/web/src/
 ### Ví dụ: Tạo feature mới
 
 1. **Tạo cấu trúc thư mục**:
+
 ```bash
 mkdir -p src/features/products/components
 mkdir -p src/features/products/hooks
@@ -136,6 +143,7 @@ mkdir -p src/features/products/types
 ```
 
 2. **Tạo API service** (`src/features/products/api/products.ts`):
+
 ```typescript
 import { apiClient } from "@/lib/axios";
 
@@ -147,6 +155,7 @@ export const productsApi = {
 ```
 
 3. **Tạo React Query hook** (`src/features/products/hooks/useProducts.ts`):
+
 ```typescript
 import { useQuery } from "@tanstack/react-query";
 import { productsApi } from "../api/products";
@@ -160,19 +169,21 @@ export const useProducts = () => {
 ```
 
 4. **Tạo component** (`src/features/products/components/ProductList.tsx`):
+
 ```typescript
 import { useProducts } from "../hooks/useProducts";
 
 export const ProductList = () => {
   const { data, isLoading } = useProducts();
-  
+
   if (isLoading) return <div>Loading...</div>;
-  
+
   return <div>{/* Render products */}</div>;
 };
 ```
 
 5. **Export từ index** (`src/features/products/index.ts`):
+
 ```typescript
 export { ProductList } from "./components/ProductList";
 export { useProducts } from "./hooks/useProducts";
@@ -196,5 +207,3 @@ export { useProducts } from "./hooks/useProducts";
 ---
 
 **Chúc bạn code vui vẻ! 🎉**
-
-
