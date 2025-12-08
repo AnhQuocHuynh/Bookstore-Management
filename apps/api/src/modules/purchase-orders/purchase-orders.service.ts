@@ -1,4 +1,7 @@
-import { CreatePurchaseOrderDto } from '@/common/dtos/purchase-orders';
+import {
+  CreatePurchaseOrderDto,
+  GetPurchaseOrdersQueryDto,
+} from '@/common/dtos/purchase-orders';
 import { TUserSession } from '@/common/utils';
 import {
   Product,
@@ -13,6 +16,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import Decimal from 'decimal.js';
+import { omit } from 'lodash';
 import { FindOptionsRelations, Repository } from 'typeorm';
 
 @Injectable()
@@ -123,5 +127,43 @@ export class PurchaseOrdersService {
 
       return updatedPurchaseOrder;
     });
+  }
+
+  async getPurchaseOrders(
+    getPurchaseOrdersQueryDto: GetPurchaseOrdersQueryDto,
+    bookStoreId: string,
+  ) {
+    const dataSource = await this.tenantService.getTenantConnection({
+      bookStoreId,
+    });
+
+    const purchaseOrderRepo = dataSource.getRepository(PurchaseOrder);
+    const { employeeId, employeeName, status } = getPurchaseOrdersQueryDto;
+
+    const qb = purchaseOrderRepo
+      .createQueryBuilder('po')
+      .leftJoinAndSelect('po.employee', 'employee');
+
+    if (employeeId?.trim()) {
+      qb.andWhere('employee.id = :employeeId', {
+        employeeId,
+      });
+    }
+
+    if (employeeName?.trim()) {
+      qb.andWhere('employee.fullName ILIKE :employeeName', {
+        employeeName: `%${employeeName}%`,
+      });
+    }
+
+    if (status?.trim()) {
+      qb.andWhere('po.status = :status', {
+        status,
+      });
+    }
+
+    const result = await qb.getMany();
+
+    return result.map((r) => omit(r, ['employee.password']));
   }
 }
