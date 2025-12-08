@@ -166,4 +166,29 @@ export class PurchaseOrdersService {
 
     return result.map((r) => omit(r, ['employee.password']));
   }
+
+  async getPurchaseOrderDetail(id: string, bookStoreId: string) {
+    const dataSource = await this.tenantService.getTenantConnection({
+      bookStoreId,
+    });
+
+    const purchaseOrderRepo = dataSource.getRepository(PurchaseOrder);
+
+    const purchaseOrder = await this.findPurchaseOrderByField(
+      purchaseOrderRepo,
+      'id',
+      id,
+      {
+        employee: true,
+        supplier: true,
+        details: true,
+      },
+    );
+
+    if (!purchaseOrder) {
+      throw new NotFoundException('Không tìm thấy thông tin đơn mua.');
+    }
+
+    return omit(purchaseOrder, ['employee.password']);
+  }
 }
