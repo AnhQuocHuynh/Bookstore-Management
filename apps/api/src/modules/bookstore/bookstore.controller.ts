@@ -25,9 +25,11 @@ import {
   ApiOperation,
   ApiParam,
   ApiResponse,
+  ApiTags,
 } from '@nestjs/swagger';
 
 @Controller('bookstores')
+@ApiTags('Nhà sách')
 export class BookStoreController {
   constructor(private readonly bookStoreService: BookStoreService) {}
 

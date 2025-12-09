@@ -1,4 +1,4 @@
-import { EmailTemplateNameEnum, EmployeeRole } from '@/common/enums';
+import { EmailTemplateNameEnum } from '@/common/enums';
 import {
   generateSecurePassword,
   generateUsername,
@@ -19,9 +19,9 @@ import {
 import { UserRole } from '@/modules/users/enums';
 import { TenantService } from '@/tenants/tenant.service';
 import {
-  BadRequestException,
   ConflictException,
   ForbiddenException,
+  GoneException,
   Injectable,
   NotFoundException,
   UnauthorizedException,
@@ -41,18 +41,15 @@ export class UserService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
   ) {}
+
   async getMe(userSession: TUserSession) {
     const { userId, bookStoreId, role } = userSession;
 
-    if (role === UserRole.CUSTOMER) {
-      throw new ForbiddenException(
-        'Customer is not allowed to perform this action.',
-      );
-    }
-
     if (!bookStoreId?.trim() || role === UserRole.OWNER) {
       const user = await this.mainUserService.findUserByField('id', userId);
-      if (!user) throw new NotFoundException('User not found.');
+
+      if (!user)
+        throw new NotFoundException('Không tìm thấy thông tin của bạn.');
 
       return omit(user, ['password']);
     } else {
@@ -68,7 +65,8 @@ export class UserService {
         },
       });
 
-      if (!employee) throw new NotFoundException('Your profile not found.');
+      if (!employee)
+        throw new NotFoundException('Không tìm thấy thông tin của bạn.');
 
       return omit(employee, ['password']);
     }
@@ -180,11 +178,11 @@ export class UserService {
         secret: this.configService.get<string>('jwt_secret', ''),
       });
     } catch {
-      throw new UnauthorizedException('Invalid or expired token.');
+      throw new GoneException('Token đã hết hạn hoặc không hợp lệ.');
     }
 
     if (!payload?.username?.trim() || !payload?.bookStoreId?.trim())
-      throw new UnauthorizedException('Invalid token.');
+      throw new GoneException('Token không hợp lệ hoặc đã hết hạn.');
 
     const { username, bookStoreId } = payload;
 
@@ -200,16 +198,17 @@ export class UserService {
       },
     });
 
-    if (!employee) throw new NotFoundException(`Your profile not found.`);
+    if (!employee)
+      throw new NotFoundException(`Không tìm thấy thông tin của bạn.`);
 
     if (!employee.isFirstLogin) {
       throw new ForbiddenException(
-        'This action can only be performed on first login.',
+        'Hành động này chỉ có thể thực hiện trong lần đăng nhập đầu tiên.',
       );
     }
 
     if (!(await verifyPassword(currentPassword, employee.password))) {
-      throw new UnauthorizedException(`Current password isn't correct.`);
+      throw new UnauthorizedException(`Mật khẩu hiện tại không khớp.`);
     }
 
     employee.password = await hashPassword(newPassword);
@@ -217,7 +216,7 @@ export class UserService {
     await employeeRepo.save(employee);
 
     return {
-      message: 'Password updated successfully.',
+      message: 'Mật khẩu đã được cập nhật thành công.',
     };
   }
 
@@ -273,7 +272,8 @@ export class UserService {
     }
 
     return {
-      message: 'Your profile updated successfully.',
+      message: 'Thông tin của bạn đã được cập nhật thành công.',
+      data: await this.getMe(userSession),
     };
   }
 }
