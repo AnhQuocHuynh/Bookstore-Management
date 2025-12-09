@@ -34,7 +34,8 @@ async function bootstrap() {
   });
 
   const config = new DocumentBuilder()
-    .setTitle('API')
+    .setTitle('BookStore Management Internal API')
+    .setDescription('API dành cho hệ thống quản lý nhà sách nội bộ.')
     .setVersion('1.0')
     .addBearerAuth()
     .build();

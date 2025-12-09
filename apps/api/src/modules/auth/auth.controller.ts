@@ -37,7 +37,7 @@ import {
 } from '@nestjs/swagger';
 
 @Controller('auth')
-@ApiTags('AuthController')
+@ApiTags('Xác thực')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 

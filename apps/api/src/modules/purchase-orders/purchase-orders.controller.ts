@@ -28,7 +28,7 @@ import {
 } from '@nestjs/swagger';
 
 @Controller('purchase-orders')
-@ApiTags('PurchaseOrdersController')
+@ApiTags('Phiếu nhập (Đơn mua)')
 @ApiBearerAuth()
 export class PurchaseOrdersController {
   constructor(private readonly purchaseOrdersService: PurchaseOrdersService) {}

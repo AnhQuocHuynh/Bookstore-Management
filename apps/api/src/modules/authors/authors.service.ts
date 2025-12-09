@@ -65,7 +65,7 @@ export class AuthorsService {
     const newAuthor = authorRepo.create(createAuthorDto);
 
     return {
-      message: 'New author created successfully.',
+      message: 'Thông tin tác giả được tạo thành công.',
       data: await authorRepo.save(newAuthor),
     };
   }
