@@ -227,7 +227,9 @@ export class PurchaseOrdersService {
     return dataSource.transaction(async (manager) => {
       const purchaseOrderRepo = manager.getRepository(PurchaseOrder);
       const supplierRepo = manager.getRepository(Supplier);
-
+      const productRepo = manager.getRepository(Product);
+      const purchaseOrderDetailRepo =
+        manager.getRepository(PurchaseOrderDetail);
       const findPurchase = await this.findPurchaseOrderByField(
         purchaseOrderRepo,
         'id',
@@ -267,6 +269,65 @@ export class PurchaseOrdersService {
         findPurchase.purchaseDate = new Date();
       }
 
+      if (updatePurchaseOrderDetailDtos?.length) {
+        for (const updatePurchaseOrderDetailDto of updatePurchaseOrderDetailDtos) {
+          const { productId, quantity, unitPrice } =
+            updatePurchaseOrderDetailDto;
+
+          const findProduct = await productRepo.findOne({
+            where: {
+              id: productId,
+            },
+          });
+
+          if (!findProduct) {
+            throw new NotFoundException(
+              'Không tìm thấy thông tin của sản phẩm.',
+            );
+          }
+
+          // Check if the purchase order already has a detail with this productId
+          const existingDetail = await purchaseOrderDetailRepo.findOne({
+            where: {
+              purchaseOrder: { id: findPurchase.id },
+              product: { id: productId },
+            },
+          });
+
+          const newSubTotal = new Decimal(unitPrice).mul(quantity).toNumber();
+
+          if (existingDetail) {
+            existingDetail.quantity = quantity;
+            existingDetail.unitPrice = unitPrice;
+            existingDetail.subTotal = newSubTotal;
+
+            await purchaseOrderDetailRepo.save(existingDetail);
+            continue;
+          }
+
+          const newPurchaseOrderDetail = purchaseOrderDetailRepo.create({
+            purchaseOrder: findPurchase,
+            subTotal: newSubTotal,
+            product: findProduct,
+            quantity,
+            unitPrice,
+          });
+
+          await purchaseOrderDetailRepo.save(newPurchaseOrderDetail);
+        }
+
+        const allDetails = await purchaseOrderDetailRepo.find({
+          where: {
+            purchaseOrder: { id: findPurchase.id },
+          },
+        });
+
+        findPurchase.totalAmount = allDetails.reduce(
+          (sum, detail) => new Decimal(sum).add(detail.subTotal).toNumber(),
+          0,
+        );
+      }
+
       await purchaseOrderRepo.save(findPurchase);
 
       const updated = await this.findPurchaseOrderByField(
@@ -287,6 +348,52 @@ export class PurchaseOrdersService {
       }
 
       return omit(updated, ['employee.password']);
+    });
+  }
+  async deletePurchaseOrder(id: string, userSession: TUserSession) {
+    const { bookStoreId, role } = userSession;
+
+    if (!bookStoreId?.trim()) {
+      throw new NotFoundException('Không tìm thấy mã nhà sách của bạn.');
+    }
+
+    if (role !== UserRole.OWNER) {
+      throw new ForbiddenException('Bạn không có quyền xóa đơn mua.');
+    }
+
+    const dataSource = await this.tenantService.getTenantConnection({
+      bookStoreId,
+    });
+
+    return dataSource.transaction(async (manager) => {
+      const purchaseOrderRepo = manager.getRepository(PurchaseOrder);
+      const findPurchase = await this.findPurchaseOrderByField(
+        purchaseOrderRepo,
+        'id',
+        id,
+      );
+
+      if (!findPurchase) {
+        throw new NotFoundException('Không tìm thấy thông tin đơn mua.');
+      }
+
+      const deletableStatuses = [
+        PurchaseStatus.DRAFT,
+        PurchaseStatus.PENDING_APPROVAL,
+        PurchaseStatus.SENT_TO_SUPPLIER,
+      ];
+
+      if (!deletableStatuses.includes(findPurchase.status)) {
+        throw new ForbiddenException(
+          'Đơn mua không ở trạng thái cho phép xóa.',
+        );
+      }
+
+      await purchaseOrderRepo.delete(id);
+
+      return {
+        message: 'Đơn mua đã được xóa thành công.',
+      };
     });
   }
 }

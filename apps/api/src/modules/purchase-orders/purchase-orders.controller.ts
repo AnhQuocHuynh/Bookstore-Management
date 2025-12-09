@@ -262,4 +262,11 @@ export class PurchaseOrdersController {
       userSession,
     );
   }
+
+  async deletePurchaseOrder(
+    @Param('id', ParseUUIDPipe) id: string,
+    @UserSession() userSession: TUserSession,
+  ) {
+    return this.purchaseOrdersService.deletePurchaseOrder(id, userSession);
+  }
 }
