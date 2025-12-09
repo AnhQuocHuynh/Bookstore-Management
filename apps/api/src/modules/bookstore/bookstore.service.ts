@@ -80,7 +80,19 @@ export class BookStoreService {
   }
 
   async getBookStore(id: string) {
-    return this.mainBookStoreService.findBookStoreByField('id', id);
+    const result = await this.mainBookStoreService.findBookStoreByField(
+      'id',
+      id,
+      {
+        user: true,
+      },
+    );
+
+    if (!result) {
+      throw new NotFoundException('Không tìm thấy thông tin nhà sách.');
+    }
+
+    return omit(result, ['user.password']);
   }
 
   async createBookStore(
@@ -97,9 +109,12 @@ export class BookStoreService {
       },
       bookStore.id,
     );
+
+    const newBookStore = await this.getBookStore(bookStore.id);
+
     return {
-      message: 'Bookstore created successfully.',
-      data: bookStore,
+      message: 'Đã tạo mới nhà sách thành công.',
+      data: newBookStore,
     };
   }
 
@@ -159,7 +174,8 @@ export class BookStoreService {
     );
 
     return {
-      message: 'Bookstore updated successfully.',
+      message: 'Thông tin nhà sách đã được cập nhật thành công.',
+      data: await this.getBookStore(bookStoreId),
     };
   }
 
@@ -297,7 +313,7 @@ export class BookStoreService {
     );
 
     return {
-      message: 'Employee password has been reset successfully.',
+      message: 'Mật khẩu của nhân viên đã được cập nhật thành công.',
     };
   }
 }
