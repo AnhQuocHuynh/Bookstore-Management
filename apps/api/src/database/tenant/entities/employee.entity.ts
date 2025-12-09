@@ -6,6 +6,7 @@ import {
   Otp,
   PurchaseOrder,
   ReturnOrder,
+  SchedulerEntry,
   Transaction,
 } from '@/database/tenant/entities';
 import {
@@ -124,4 +125,9 @@ export class Employee {
     cascade: true,
   })
   inventoryLogs: InventoryLog[];
+
+  @OneToMany(() => SchedulerEntry, (se) => se.employee, {
+    cascade: true,
+  })
+  entries: SchedulerEntry[];
 }

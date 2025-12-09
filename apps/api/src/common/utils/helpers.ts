@@ -2,6 +2,7 @@ import { ALGORITHM, CHARS, IV_LENGTH } from '@/common/constants';
 import { ConfigService } from '@nestjs/config';
 import * as bcryptjs from 'bcryptjs';
 import crypto from 'crypto';
+import { addDays } from 'date-fns';
 import Decimal from 'decimal.js';
 import { CookieOptions, Response } from 'express';
 
