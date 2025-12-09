@@ -18,6 +18,8 @@ export * from './purchase-order.entity';
 export * from './refresh-token.entity';
 export * from './return-order-detail.entity';
 export * from './return-order.entity';
+export * from './scheduler-entry.entity';
+export * from './shift.entity';
 export * from './supplier.entity';
 export * from './transaction-detail.entity';
 export * from './transaction.entity';

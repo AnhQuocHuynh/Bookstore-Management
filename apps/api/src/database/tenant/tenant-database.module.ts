@@ -17,6 +17,8 @@ import {
   ReturnOrder,
   ReturnOrderDetail,
   RT,
+  SchedulerEntry,
+  Shift,
   Supplier,
 } from '@/database/tenant/entities';
 import { Global, Module } from '@nestjs/common';
@@ -45,6 +47,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
       PurchaseOrderDetail,
       ReturnOrder,
       ReturnOrderDetail,
+      SchedulerEntry,
+      Shift,
     ]),
   ],
   exports: [TypeOrmModule],

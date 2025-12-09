@@ -11,6 +11,8 @@ import { FilesModule } from '@/modules/files/files.module';
 import { InventoriesModule } from '@/modules/inventories/inventories.module';
 import { ProductsModule } from '@/modules/products/products.module';
 import { PurchaseOrdersModule } from '@/modules/purchase-orders/purchase-orders.module';
+import { ScheduleModule } from '@/modules/schedule/schedule.module';
+import { ShiftModule } from '@/modules/shifts/shifts.module';
 import { SupplierModule } from '@/modules/suppliers/supplier.module';
 import { UserModule } from '@/modules/users/user.module';
 import { TenantModule } from '@/tenants/tenant.module';
@@ -18,7 +20,6 @@ import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
-import { BooksModule } from './modules/books/books.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { PublishersModule } from './modules/publishers/publishers.module';
 
@@ -59,13 +60,14 @@ import { PublishersModule } from './modules/publishers/publishers.module';
     PublishersModule,
     BookStoreModule,
     FilesModule,
-    BooksModule,
     CategoriesModule,
     DisplayModule,
     InventoriesModule,
     EmployeeModule,
     PurchaseOrdersModule,
     ProductsModule,
+    ShiftModule,
+    ScheduleModule,
   ],
 })
 export class AppModule {}

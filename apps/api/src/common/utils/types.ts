@@ -25,3 +25,29 @@ export type RawTenantConfig = {
   password: string;
   database: string;
 };
+
+export type EmployeeDto = {
+  id: string;
+  fullName: string;
+};
+
+export type ShiftScheduleDto = {
+  id: string;
+  name: string;
+  startTime: string;
+  endTime: string;
+  employees: EmployeeDto[];
+  key: string;
+};
+
+export type DayScheduleDto = {
+  date: string;
+  dayOfWeek: string;
+  shifts: ShiftScheduleDto[];
+};
+
+export type WeekScheduleDto = {
+  weekStart: string;
+  weekEnd: string;
+  schedule: DayScheduleDto[];
+};
