@@ -52,6 +52,11 @@ const menuItems = [
     icon: <TeamOutlined />,
     label: "Nhân viên",
   },
+  {
+    key: "/suppliers",
+    icon: <TeamOutlined />,
+    label: "Nhà cung cấp",
+  },
 ];
 
 export const MainLayout = ({ children }: MainLayoutProps) => {

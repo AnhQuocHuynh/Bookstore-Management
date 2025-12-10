@@ -5,6 +5,8 @@ import { PrivateRoute } from "./PrivateRoute";
 import { PublicRoute } from "./PublicRoute";
 import { DashboardPage } from "../features/dashboard/components/DashboardPage";
 import { ProductsPage } from "../features/products/components/ProductsPage";
+import { EmployeesPage } from "../features/employees/components/EmployeesPage";
+import { SuppliersPage } from "../features/suppliers/components/SuppliersPage";
 
 // Auth pages (placeholder)
 const LoginPage = () => (
@@ -40,13 +42,6 @@ const PartnersPage = () => (
   <div>
     <h1 className="text-2xl font-bold mb-6">Đối tác</h1>
     <p>Trang đối tác đang được phát triển...</p>
-  </div>
-);
-
-const EmployeesPage = () => (
-  <div>
-    <h1 className="text-2xl font-bold mb-6">Nhân viên</h1>
-    <p>Trang nhân viên đang được phát triển...</p>
   </div>
 );
 
@@ -128,6 +123,14 @@ export const AppRoutes = () => {
           element={
             <MainLayout>
               <EmployeesPage />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/suppliers"
+          element={
+            <MainLayout>
+              <SuppliersPage />
             </MainLayout>
           }
         />
