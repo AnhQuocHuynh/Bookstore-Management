@@ -6,11 +6,13 @@ import {
 import { PurchaseStatus } from '@/common/enums';
 import { TUserSession } from '@/common/utils';
 import {
+  Employee,
   Product,
   PurchaseOrder,
   PurchaseOrderDetail,
   Supplier,
 } from '@/database/tenant/entities';
+import { ProductsService } from '@/modules/products/products.service';
 import { UserRole } from '@/modules/users/enums';
 import { TenantService } from '@/tenants/tenant.service';
 import {
@@ -20,12 +22,15 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import Decimal from 'decimal.js';
-import { omit, update } from 'lodash';
+import { omit } from 'lodash';
 import { FindOptionsRelations, Repository } from 'typeorm';
 
 @Injectable()
 export class PurchaseOrdersService {
-  constructor(private readonly tenantService: TenantService) {}
+  constructor(
+    private readonly tenantService: TenantService,
+    private readonly productsService: ProductsService,
+  ) {}
 
   async findPurchaseOrderByField(
     repo: Repository<PurchaseOrder>,
@@ -60,7 +65,7 @@ export class PurchaseOrdersService {
       const purchaseOrderDetailRepo =
         manager.getRepository(PurchaseOrderDetail);
       const supplierRepo = manager.getRepository(Supplier);
-      const productRepo = manager.getRepository(Product);
+      const employeeRepo = manager.getRepository(Employee);
 
       const findSupplier = await supplierRepo.findOne({
         where: {
@@ -70,6 +75,16 @@ export class PurchaseOrdersService {
 
       if (!findSupplier) {
         throw new NotFoundException('Không tìm thấy thông tin nhà cung cấp.');
+      }
+
+      const employee = await employeeRepo.findOne({
+        where: {
+          id: userId,
+        },
+      });
+
+      if (!employee) {
+        throw new NotFoundException('Không tìm thấy thông tin của bạn.');
       }
 
       let newPurchaseOrder = purchaseOrderRepo.create({
@@ -84,17 +99,8 @@ export class PurchaseOrdersService {
       await purchaseOrderRepo.save(newPurchaseOrder);
 
       for (const createPurchaseOrderDetailDto of createPurchaseOrderDetailDtos) {
-        const { productId, quantity, unitPrice } = createPurchaseOrderDetailDto;
-
-        const findProduct = await productRepo.findOne({
-          where: {
-            id: productId,
-          },
-        });
-
-        if (!findProduct) {
-          throw new NotFoundException('Không tìm thấy thông tin của sản phẩm.');
-        }
+        const { createProductDto, quantity, unitPrice } =
+          createPurchaseOrderDetailDto;
 
         const subTotal = new Decimal(unitPrice).mul(quantity).toFixed(2);
 
@@ -102,10 +108,23 @@ export class PurchaseOrdersService {
           .add(subTotal)
           .toNumber();
 
+        const newProduct = await this.productsService.createProduct(
+          createProductDto,
+          manager,
+          employee,
+          supplierId,
+        );
+
+        if (!newProduct) {
+          throw new InternalServerErrorException(
+            'Đã xảy ra lỗi khi tạo sản phẩm mới.',
+          );
+        }
+
         const newPurchaseOrderDetail = purchaseOrderDetailRepo.create({
           purchaseOrder: newPurchaseOrder,
           subTotal: new Decimal(subTotal).toNumber(),
-          product: findProduct,
+          product: newProduct,
           quantity,
           unitPrice,
         });
@@ -185,7 +204,9 @@ export class PurchaseOrdersService {
       {
         employee: true,
         supplier: true,
-        details: true,
+        details: {
+          product: true,
+        },
       },
     );
 
@@ -234,6 +255,11 @@ export class PurchaseOrdersService {
         purchaseOrderRepo,
         'id',
         id,
+        {
+          details: {
+            product: true,
+          },
+        },
       );
 
       if (!findPurchase)
@@ -267,6 +293,13 @@ export class PurchaseOrdersService {
 
       if (status === PurchaseStatus.SENT_TO_SUPPLIER) {
         findPurchase.purchaseDate = new Date();
+      } else if (status === PurchaseStatus.COMPLETED) {
+        for (const { product } of findPurchase.details) {
+          if (!product.isActive) {
+            product.isActive = true;
+            await productRepo.save(product);
+          }
+        }
       }
 
       if (updatePurchaseOrderDetailDtos?.length) {
@@ -336,7 +369,9 @@ export class PurchaseOrdersService {
         id,
         {
           employee: true,
-          details: true,
+          details: {
+            product: true,
+          },
           supplier: true,
         },
       );
