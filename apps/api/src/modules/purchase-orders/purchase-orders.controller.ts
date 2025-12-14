@@ -61,6 +61,9 @@ export class PurchaseOrdersController {
       updatedAt: '2025-12-07T19:39:21.554Z',
     },
   })
+  @ApiBody({
+    type: CreatePurchaseOrderDto,
+  })
   @Roles(UserRole.EMPLOYEE)
   @Post()
   async createPurchaseOrder(
@@ -162,12 +165,24 @@ export class PurchaseOrdersController {
         updatedAt: '2025-12-06T19:02:31.751Z',
       },
       totalAmount: 500000,
-      purchaseDate: null,
-      status: 'draft',
-      note: 'Mua hàng từ nhà cung cấp',
+      purchaseDate: '2025-12-08T08:04:39.367Z',
+      status: 'sent_to_supplier',
+      note: 'Ghi chú cho đơn mua 5',
       details: [
         {
           id: 'ac1ffdd6-d99b-4c85-8c8b-509134bada3a',
+          product: {
+            id: 'ff7a231d-bc3b-4888-be88-b4754395dae3',
+            sku: 'STA-39581-434',
+            name: 'Product 1',
+            description: 'Mô tả cho sản phẩm 1',
+            price: 200000,
+            type: 'stationery',
+            isActive: true,
+            createdAt: '2025-12-07T19:30:39.195Z',
+            updatedAt: '2025-12-07T19:30:39.195Z',
+            deletedAt: null,
+          },
           quantity: 10,
           unitPrice: 50000,
           subTotal: 500000,
@@ -176,7 +191,7 @@ export class PurchaseOrdersController {
         },
       ],
       createdAt: '2025-12-07T19:39:21.554Z',
-      updatedAt: '2025-12-07T19:39:21.554Z',
+      updatedAt: '2025-12-08T01:04:38.307Z',
     },
   })
   @Get(':id')
@@ -224,12 +239,24 @@ export class PurchaseOrdersController {
         updatedAt: '2025-12-06T19:02:31.751Z',
       },
       totalAmount: 500000,
-      purchaseDate: '2025-12-08T08:04:39.367Z',
-      status: 'sent_to_supplier',
+      purchaseDate: '2025-12-14T12:26:43.513Z',
+      status: 'completed',
       note: 'Ghi chú cho đơn mua 5',
       details: [
         {
           id: 'ac1ffdd6-d99b-4c85-8c8b-509134bada3a',
+          product: {
+            id: 'ff7a231d-bc3b-4888-be88-b4754395dae3',
+            sku: 'STA-39581-434',
+            name: 'Product 1',
+            description: 'Mô tả cho sản phẩm 1',
+            price: 200000,
+            type: 'stationery',
+            isActive: true,
+            createdAt: '2025-12-07T19:30:39.195Z',
+            updatedAt: '2025-12-14T05:27:17.000Z',
+            deletedAt: null,
+          },
           quantity: 10,
           unitPrice: 50000,
           subTotal: 500000,
@@ -238,7 +265,7 @@ export class PurchaseOrdersController {
         },
       ],
       createdAt: '2025-12-07T19:39:21.554Z',
-      updatedAt: '2025-12-08T01:04:38.307Z',
+      updatedAt: '2025-12-14T05:28:40.622Z',
     },
   })
   @ApiBody({

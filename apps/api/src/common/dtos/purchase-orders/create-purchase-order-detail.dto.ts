@@ -1,5 +1,13 @@
+import { CreateProductDto } from '@/common/dtos/products';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsInt, IsNumber, IsPositive, IsUUID } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  IsInt,
+  IsNotEmpty,
+  IsNumber,
+  IsPositive,
+  ValidateNested,
+} from 'class-validator';
 
 export class CreatePurchaseOrderDetailDto {
   @ApiProperty({
@@ -28,10 +36,8 @@ export class CreatePurchaseOrderDetailDto {
   })
   readonly unitPrice: number;
 
-  @ApiProperty({
-    description: 'Mã sản phẩm',
-    example: 'your-product-uuid-here',
-  })
-  @IsUUID()
-  readonly productId: string;
+  @IsNotEmpty()
+  @Type(() => CreateProductDto)
+  @ValidateNested()
+  readonly createProductDto: CreateProductDto;
 }

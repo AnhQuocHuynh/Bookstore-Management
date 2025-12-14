@@ -60,7 +60,7 @@ export class Product {
 
   @Column({
     type: 'boolean',
-    default: true,
+    default: false,
   })
   isActive: boolean;
 
