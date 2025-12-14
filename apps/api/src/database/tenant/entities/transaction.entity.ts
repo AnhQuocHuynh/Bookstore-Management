@@ -81,6 +81,18 @@ export class Transaction {
   })
   note?: string;
 
+  @Column({
+    type: 'boolean',
+    default: false,
+  })
+  isCompleted: boolean;
+
+  @Column({
+    type: 'timestamp',
+    nullable: true,
+  })
+  completedAt?: Date;
+
   @CreateDateColumn({
     type: 'timestamp',
   })
