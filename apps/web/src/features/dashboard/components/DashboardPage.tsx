@@ -1,9 +1,10 @@
-import { Card, Row, Col, Statistic } from "antd";
+import { Card, Row, Col, Statistic, Button } from "antd";
 import {
   DollarOutlined,
   ShoppingOutlined,
   UserOutlined,
   InboxOutlined,
+  ApiOutlined,
 } from "@ant-design/icons";
 
 export const DashboardPage = () => {
@@ -57,6 +58,20 @@ export const DashboardPage = () => {
 
       <Card title="Tổng quan">
         <p>Trang dashboard đang được phát triển...</p>
+        <div className="mt-4">
+          <Button
+            type="primary"
+            icon={<ApiOutlined />}
+            href="/api"
+            target="_blank"
+          >
+            Mở Swagger API Documentation
+          </Button>
+          <p className="text-sm text-gray-500 mt-2">
+            Swagger được proxy qua Vite dev server từ{" "}
+            <code>http://localhost:3001/api</code>
+          </p>
+        </div>
       </Card>
     </div>
   );

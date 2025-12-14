@@ -1,14 +1,16 @@
-import { Layout, Menu, Avatar, Dropdown, Typography, Space } from "antd";
+import { useState } from "react";
+import { Layout, Menu, Avatar, Dropdown, Typography, Space, Button } from "antd";
 import {
-  DashboardOutlined,
-  ShoppingOutlined,
-  InboxOutlined,
-  DollarOutlined,
-  TeamOutlined,
-  UserOutlined,
+  AppstoreOutlined,
   ShopOutlined,
+  BarcodeOutlined,
+  InboxOutlined,
+  TeamOutlined,
+  LineChartOutlined,
+  UserOutlined,
   LogoutOutlined,
-  SettingOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
 } from "@ant-design/icons";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ReactNode } from "react";
@@ -24,18 +26,18 @@ interface MainLayoutProps {
 const menuItems = [
   {
     key: "/dashboard",
-    icon: <DashboardOutlined />,
+    icon: <AppstoreOutlined />,
     label: "Dashboard",
   },
   {
-    key: "/products",
-    icon: <ShoppingOutlined />,
-    label: "Sản phẩm",
+    key: "/sales",
+    icon: <ShopOutlined />,
+    label: "POS/Bán hàng",
   },
   {
-    key: "/sales",
-    icon: <DollarOutlined />,
-    label: "Bán hàng",
+    key: "/products",
+    icon: <BarcodeOutlined />,
+    label: "Sản phẩm",
   },
   {
     key: "/inventory",
@@ -43,14 +45,14 @@ const menuItems = [
     label: "Kho hàng",
   },
   {
-    key: "/partners",
-    icon: <ShopOutlined />,
-    label: "Đối tác",
-  },
-  {
     key: "/employees",
     icon: <TeamOutlined />,
     label: "Nhân viên",
+  },
+  {
+    key: "/reports",
+    icon: <LineChartOutlined />,
+    label: "Báo cáo",
   },
 ];
 
@@ -58,6 +60,7 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, currentStore, logout } = useAuthStore();
+  const [collapsed, setCollapsed] = useState(false);
 
   const handleMenuClick = ({ key }: { key: string }) => {
     navigate(key);
@@ -68,16 +71,16 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
     navigate("/auth/login");
   };
 
+  const handleSwitchStore = () => {
+    navigate("/auth/select-store");
+  };
+
   const userMenuItems = [
     {
-      key: "profile",
-      icon: <UserOutlined />,
-      label: "Hồ sơ",
-    },
-    {
-      key: "settings",
-      icon: <SettingOutlined />,
-      label: "Cài đặt",
+      key: "switch-store",
+      icon: <ShopOutlined />,
+      label: "Chuyển cửa hàng",
+      onClick: handleSwitchStore,
     },
     {
       type: "divider" as const,
@@ -96,14 +99,21 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
       <Sider
         width={250}
         theme="dark"
+        collapsible
+        collapsed={collapsed}
+        onCollapse={setCollapsed}
         className="fixed left-0 top-0 bottom-0"
         breakpoint="lg"
-        collapsedWidth="0"
+        collapsedWidth={collapsed ? 80 : 250}
       >
         <div className="h-16 flex items-center justify-center border-b border-gray-700">
-          <Text className="text-white text-lg font-bold">
-            Bookstore Management
-          </Text>
+          {!collapsed ? (
+            <Text className="text-white text-lg font-bold">
+              BookFlow
+            </Text>
+          ) : (
+            <Text className="text-white text-xl font-bold">BF</Text>
+          )}
         </div>
         <Menu
           theme="dark"
@@ -115,28 +125,44 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
         />
       </Sider>
 
-      <Layout className="ml-[250px] lg:ml-[250px]">
+      <Layout className={collapsed ? "ml-[80px]" : "ml-[250px]"}>
         <Header className="bg-white shadow-sm flex items-center justify-between px-6">
-          <div>
-            <Text strong className="text-lg">
-              {currentStore?.name || "Chưa chọn cửa hàng"}
-            </Text>
-          </div>
+          {/* Left: Collapse Trigger */}
+          <Button
+            type="text"
+            icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+            onClick={() => setCollapsed(!collapsed)}
+            className="text-lg"
+          />
 
-          <Dropdown
-            menu={{ items: userMenuItems }}
-            placement="bottomRight"
-            arrow
-          >
-            <Space className="cursor-pointer hover:bg-gray-50 px-3 py-1 rounded">
-              <Avatar icon={<UserOutlined />} src={user?.avatar} />
-              <Text>{user?.name || "User"}</Text>
-            </Space>
-          </Dropdown>
+          {/* Center/Right: Store Name and User Dropdown */}
+          <Space size="large" className="ml-auto">
+            {/* Current Store Name */}
+            <div className="flex items-center gap-2">
+              <ShopOutlined className="text-teal-600" />
+              <Text strong className="text-base">
+                {currentStore?.name || "Chưa chọn cửa hàng"}
+              </Text>
+            </div>
+
+            {/* User Dropdown */}
+            <Dropdown
+              menu={{ items: userMenuItems }}
+              placement="bottomRight"
+              arrow
+            >
+              <Space className="cursor-pointer hover:bg-gray-50 px-3 py-1 rounded transition-colors">
+                <Avatar icon={<UserOutlined />} src={user?.avatar} />
+                <Text>{user?.name || "User"}</Text>
+              </Space>
+            </Dropdown>
+          </Space>
         </Header>
 
         <Content className="p-6 bg-gray-50 min-h-[calc(100vh-64px)]">
-          {children}
+          <div className="bg-white rounded-lg shadow-sm p-6 min-h-full">
+            {children}
+          </div>
         </Content>
       </Layout>
     </Layout>
