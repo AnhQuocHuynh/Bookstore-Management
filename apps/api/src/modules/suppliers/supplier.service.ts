@@ -47,7 +47,7 @@ export class SupplierService {
 
     if (existingSupplierEmail)
       throw new ConflictException(
-        'This email has already been used by another supplier.',
+        'Email này đã được sử dụng bởi một nhà cung cấp khác.',
       );
 
     const existingSupplierPhone = await supplierRepo.findOne({
@@ -58,7 +58,7 @@ export class SupplierService {
 
     if (existingSupplierPhone)
       throw new ConflictException(
-        'This phone number has already been used by another supplier.',
+        'Số điện thoại này đã được sử dụng bởi một nhà cung cấp khác.',
       );
 
     const newSupplier = supplierRepo.create(createSupplierDto);
@@ -88,7 +88,8 @@ export class SupplierService {
       },
     });
 
-    if (!findSupplier) throw new NotFoundException('Supplier info not found.');
+    if (!findSupplier)
+      throw new NotFoundException('Không tìm thấy thông tin nhà cung cấp.');
 
     return findSupplier;
   }
