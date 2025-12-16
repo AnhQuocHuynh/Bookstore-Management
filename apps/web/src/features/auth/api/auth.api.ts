@@ -25,7 +25,7 @@ export const authApi = {
   login: async (body: SignInDto): Promise<SignInResponse> => {
     const response = await apiClient.post<SignInResponse>(
       "/auth/sign-in",
-      body
+      body,
     );
     return response.data;
   },
@@ -39,7 +39,7 @@ export const authApi = {
   checkEmail: async (email: string): Promise<ForgetPasswordResponse> => {
     const response = await apiClient.post<ForgetPasswordResponse>(
       "/auth/forget-password",
-      { email } as ForgetPasswordDto
+      { email } as ForgetPasswordDto,
     );
     return response.data;
   },
@@ -53,7 +53,7 @@ export const authApi = {
   sendOtp: async (body: ResendOtpDto): Promise<ResendOtpResponse> => {
     const response = await apiClient.post<ResendOtpResponse>(
       "/auth/resend-otp",
-      body
+      body,
     );
     return response.data;
   },
@@ -67,7 +67,7 @@ export const authApi = {
   verifyOtp: async (body: VerifyOtpDto): Promise<VerifyOtpResponse> => {
     const response = await apiClient.post<VerifyOtpResponse>(
       "/auth/verify-otp",
-      body
+      body,
     );
     return response.data;
   },
@@ -80,13 +80,12 @@ export const authApi = {
    * @returns Response with success message
    */
   resetPassword: async (
-    body: ResetPasswordDto
+    body: ResetPasswordDto,
   ): Promise<ResetPasswordResponse> => {
     const response = await apiClient.post<ResetPasswordResponse>(
       "/auth/reset-password",
-      body
+      body,
     );
     return response.data;
   },
 };
-

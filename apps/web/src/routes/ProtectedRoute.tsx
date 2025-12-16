@@ -3,7 +3,7 @@ import { useAuthStore } from "../stores/useAuthStore";
 
 /**
  * ProtectedRoute Component
- * 
+ *
  * Logic:
  * 1. If no accessToken -> Redirect to /auth/login
  * 2. If accessToken exists but no currentStore -> Redirect to /auth/select-store

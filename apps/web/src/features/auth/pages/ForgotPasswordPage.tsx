@@ -307,7 +307,9 @@ export const ForgotPasswordPage = () => {
                       title={store.name}
                       description={
                         <Space direction="vertical" size={0}>
-                          {store.code && <Text type="secondary">Mã: {store.code}</Text>}
+                          {store.code && (
+                            <Text type="secondary">Mã: {store.code}</Text>
+                          )}
                           {store.address && (
                             <Text type="secondary">{store.address}</Text>
                           )}
@@ -395,10 +397,7 @@ export const ForgotPasswordPage = () => {
                   },
                 ]}
               >
-                <Input.Password
-                  placeholder="Nhập mật khẩu mới"
-                  size="large"
-                />
+                <Input.Password placeholder="Nhập mật khẩu mới" size="large" />
               </Form.Item>
 
               <Form.Item
@@ -443,4 +442,3 @@ export const ForgotPasswordPage = () => {
     </AuthLayout>
   );
 };
-

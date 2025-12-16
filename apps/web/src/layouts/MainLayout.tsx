@@ -1,5 +1,13 @@
 import { useState } from "react";
-import { Layout, Menu, Avatar, Dropdown, Typography, Space, Button } from "antd";
+import {
+  Layout,
+  Menu,
+  Avatar,
+  Dropdown,
+  Typography,
+  Space,
+  Button,
+} from "antd";
 import {
   AppstoreOutlined,
   ShopOutlined,
@@ -108,9 +116,7 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
       >
         <div className="h-16 flex items-center justify-center border-b border-gray-700">
           {!collapsed ? (
-            <Text className="text-white text-lg font-bold">
-              BookFlow
-            </Text>
+            <Text className="text-white text-lg font-bold">BookFlow</Text>
           ) : (
             <Text className="text-white text-xl font-bold">BF</Text>
           )}
