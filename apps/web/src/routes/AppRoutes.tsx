@@ -7,11 +7,13 @@ import { PublicRoute } from "./PublicRoute";
 import { DashboardPage } from "../features/dashboard/components/DashboardPage";
 import { ProductsPage } from "../features/products/components/ProductsPage";
 import { ForgotPasswordPage } from "../features/auth/pages/ForgotPasswordPage";
+import { Button } from "@/components/ui/button";
 
 // Auth pages (placeholder)
 const LoginPage = () => (
   <div className="text-center">
     <h1 className="text-2xl font-bold mb-4">Đăng nhập</h1>
+    <Button variant="outline">Button</Button>
     <p>Trang đăng nhập đang được phát triển...</p>
   </div>
 );

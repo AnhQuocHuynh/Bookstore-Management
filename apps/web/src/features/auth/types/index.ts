@@ -1,21 +1,21 @@
 // Enums
 export const OtpTypeEnum = {
-  SIGN_UP: 'sign_up',
-  RESET_PASSWORD: 'reset_password',
-  CHANGE_PASSWORD: 'change_password',
+  SIGN_UP: "sign_up",
+  RESET_PASSWORD: "reset_password",
+  CHANGE_PASSWORD: "change_password",
 } as const;
 
-export type OtpTypeEnum = typeof OtpTypeEnum[keyof typeof OtpTypeEnum];
+export type OtpTypeEnum = (typeof OtpTypeEnum)[keyof typeof OtpTypeEnum];
 
 // User Role Enum (from backend)
 export const UserRole = {
-  ADMIN: 'ADMIN',
-  OWNER: 'OWNER',
-  EMPLOYEE: 'EMPLOYEE',
-  STAFF: 'STAFF',
+  ADMIN: "ADMIN",
+  OWNER: "OWNER",
+  EMPLOYEE: "EMPLOYEE",
+  STAFF: "STAFF",
 } as const;
 
-export type UserRole = typeof UserRole[keyof typeof UserRole];
+export type UserRole = (typeof UserRole)[keyof typeof UserRole];
 
 // Request DTOs
 export interface SignInDto {
@@ -95,4 +95,3 @@ export interface ResetPasswordResponse {
 export interface ResendOtpResponse {
   message: string;
 }
-
