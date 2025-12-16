@@ -42,6 +42,7 @@ export class CreatePurchaseOrderDto {
         createProductDto: {
           name: 'Clean Architecture',
           description: 'Sách về kiến trúc phần mềm',
+          sku: '8938505974192',
           price: 200000,
           type: ProductType.BOOK,
           categoryIds: ['cat-book'],
@@ -66,6 +67,7 @@ export class CreatePurchaseOrderDto {
         createProductDto: {
           name: 'Clean Architecture',
           description: 'Sách về kiến trúc phần mềm',
+          sku: '8938505974192',
           price: 200000,
           type: ProductType.STATIONERY,
           categoryIds: ['cat-book'],

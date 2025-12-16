@@ -14,6 +14,7 @@ import { PurchaseOrdersModule } from '@/modules/purchase-orders/purchase-orders.
 import { ScheduleModule } from '@/modules/schedule/schedule.module';
 import { ShiftModule } from '@/modules/shifts/shifts.module';
 import { SupplierModule } from '@/modules/suppliers/supplier.module';
+import { TransactionsModule } from '@/modules/transactions/transactions.module';
 import { UserModule } from '@/modules/users/user.module';
 import { TenantModule } from '@/tenants/tenant.module';
 import { BullModule } from '@nestjs/bullmq';
@@ -68,6 +69,7 @@ import { PublishersModule } from './modules/publishers/publishers.module';
     ProductsModule,
     ShiftModule,
     ScheduleModule,
+    TransactionsModule,
   ],
 })
 export class AppModule {}

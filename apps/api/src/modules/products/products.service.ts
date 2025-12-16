@@ -66,18 +66,6 @@ export class ProductsService {
     const { createInventoryDto, createBookDto, type, categoryIds, ...res } =
       createProductDto;
 
-    const existingName = await this.findProductByField(
-      'name',
-      res.name,
-      productRepo,
-    );
-
-    if (existingName) {
-      throw new ConflictException(
-        `Sản phẩm “${res.name}” đã tồn tại trong hệ thống.`,
-      );
-    }
-
     const supplier = await this.supplierService.findSupplierByField(
       'id',
       supplierId,
@@ -89,15 +77,35 @@ export class ProductsService {
         `Không tìm thấy nhà cung cấp với mã ${supplierId}.`,
       );
 
-    const newProduct = productRepo.create({
-      ...res,
-      type,
-      sku: await this.generateUniqueSKU(type, productRepo),
-      supplier,
-      categories: [],
+    let newProduct = await productRepo.findOne({
+      where: [{ sku: res.sku }, { name: res.name }],
     });
 
-    await productRepo.save(newProduct);
+    if (newProduct) {
+      await productRepo.update(
+        {
+          id: newProduct.id,
+        },
+        {
+          price: res.price,
+          ...(res?.description?.trim() && {
+            description: res.description.trim(),
+          }),
+          type,
+          supplier,
+          categories: [],
+        },
+      );
+    } else {
+      newProduct = productRepo.create({
+        ...res,
+        type,
+        supplier,
+        categories: [],
+      });
+
+      await productRepo.save(newProduct);
+    }
 
     await this.categoriesService.assignCategoriesToProduct(
       categoryIds,
@@ -328,7 +336,9 @@ export class ProductsService {
     updateProductDto: UpdateProductDto,
   ) {
     if (Object.keys(updateProductDto).length <= 0)
-      throw new BadRequestException('Must be provide dto');
+      throw new BadRequestException(
+        'Vui lòng cung cấp dữ liệu để cập nhật sản phẩm.',
+      );
 
     const dataSource = await this.tenantService.getTenantConnection({
       bookStoreId,
@@ -342,7 +352,8 @@ export class ProductsService {
       },
     });
 
-    if (!product) throw new NotFoundException('Product not found.');
+    if (!product)
+      throw new NotFoundException('Không tìm thấy thông tin sản phẩm.');
 
     const { sku, name } = updateProductDto;
 
