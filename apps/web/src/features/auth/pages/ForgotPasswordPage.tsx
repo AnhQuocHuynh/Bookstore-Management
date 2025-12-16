@@ -1,25 +1,25 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { AuthLayout } from "@/layouts/AuthLayout";
 import {
+  ArrowLeftOutlined,
+  MailOutlined,
+  SafetyOutlined,
+  ShopOutlined,
+} from "@ant-design/icons";
+import {
+  Alert,
+  Button,
+  Card,
   Form,
   Input,
-  Button,
-  Steps,
-  Card,
   List,
   message,
-  Typography,
   Space,
-  Alert,
+  Steps,
+  Typography,
 } from "antd";
-import {
-  MailOutlined,
-  ShopOutlined,
-  SafetyOutlined,
-  ArrowLeftOutlined,
-} from "@ant-design/icons";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { authApi, OtpTypeEnum, type StoreInfo } from "../";
-import { AuthLayout } from "@/layouts/AuthLayout";
 
 const { Title, Text } = Typography;
 
