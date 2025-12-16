@@ -1,3 +1,4 @@
+import { IsNonEmptyString } from '@/common/decorators';
 import { CreateBookDto } from '@/common/dtos/books';
 import { CreateInventoryDto } from '@/common/dtos/inventories';
 import { ProductType } from '@/common/enums';
@@ -25,6 +26,15 @@ export class CreateProductDto {
   @IsString({ message: 'Tên sản phẩm phải là chuỗi ký tự' })
   @IsNotEmpty({ message: 'Tên sản phẩm không được để trống' })
   readonly name: string;
+
+  @ApiProperty({
+    description: 'Mã sku của sản phẩm',
+    example: '8938505974192',
+  })
+  @IsNonEmptyString({
+    message: 'Mã sku không hợp lệ',
+  })
+  readonly sku: string;
 
   @ApiPropertyOptional({
     description: 'Mô tả sản phẩm',

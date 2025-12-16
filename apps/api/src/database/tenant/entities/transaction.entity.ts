@@ -72,8 +72,9 @@ export class Transaction {
   @Column({
     type: 'enum',
     enum: PaymentMethod,
+    nullable: true,
   })
-  paymentMethod: PaymentMethod;
+  paymentMethod?: PaymentMethod;
 
   @Column({
     type: 'text',
@@ -103,8 +104,6 @@ export class Transaction {
   })
   readonly updatedAt: Date;
 
-  @OneToMany(() => ReturnOrder, (ro) => ro.transaction, {
-    cascade: true,
-  })
+  @OneToMany(() => ReturnOrder, (ro) => ro.transaction)
   returnOrders: ReturnOrder[];
 }

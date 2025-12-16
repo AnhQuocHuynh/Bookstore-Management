@@ -8,6 +8,7 @@ import {
   PurchaseOrderDetail,
   ReturnOrderDetail,
   Supplier,
+  TransactionDetail,
 } from '@/database/tenant/entities';
 import {
   Column,
@@ -128,4 +129,7 @@ export class Product {
     type: 'timestamp',
   })
   readonly deletedAt?: Date;
+
+  @OneToMany(() => TransactionDetail, (td) => td.product)
+  transactionDetails: TransactionDetail[];
 }
