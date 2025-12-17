@@ -1,3 +1,5 @@
+import { EmployeeRole } from '@/common/enums';
+
 export const SUBJECT_EMAIL_MAP = {
   'email-otp-verification': 'Verify Your Email Address',
   'email-reset-password': 'Reset Your Password',
@@ -12,3 +14,10 @@ export const ALGORITHM = 'aes-256-cbc';
 export const IV_LENGTH = 16;
 export const CHARS =
   'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+';
+export const EMPLOYEE_ROLE_PREFIX: Record<EmployeeRole, string> = {
+  [EmployeeRole.STORE_MANAGER]: 'SM',
+  [EmployeeRole.STAFF]: 'ST',
+  [EmployeeRole.CASHIER]: 'CS',
+  [EmployeeRole.INVENTORY]: 'IV',
+  [EmployeeRole.ACCOUNTANT]: 'AC',
+};
