@@ -53,6 +53,9 @@ export class Product {
   })
   price: number;
 
+  @Column({ nullable: true, type: 'text' })
+  imageUrl?: string;
+
   @Column({
     type: 'enum',
     enum: ProductType,

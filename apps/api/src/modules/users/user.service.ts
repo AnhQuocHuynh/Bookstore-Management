@@ -1,4 +1,5 @@
-import { EmailTemplateNameEnum } from '@/common/enums';
+import { EMPLOYEE_ROLE_PREFIX } from '@/common/constants';
+import { EmailTemplateNameEnum, EmployeeRole } from '@/common/enums';
 import {
   generateSecurePassword,
   generateUsername,
@@ -29,6 +30,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { omit } from 'lodash';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class UserService {
@@ -81,7 +83,7 @@ export class UserService {
     const { bookStoreId } = userSession;
 
     if (!bookStoreId?.trim())
-      throw new UnauthorizedException('Bookstore ID is missing...');
+      throw new UnauthorizedException('Không xác thực được yêu cầu của bạn.');
 
     const dataSource = await this.tenantService.getTenantConnection({
       bookStoreId,
@@ -95,8 +97,8 @@ export class UserService {
       },
     );
 
-    if (!bookStoreData)
-      throw new NotFoundException('Your bookstore data not found.');
+    if (!bookStoreData || !bookStoreData.isActive)
+      throw new NotFoundException('Không tìm thấy thông tin nhà sách của bạn.');
 
     const employeeRepo = dataSource.getRepository(Employee);
 
@@ -108,7 +110,7 @@ export class UserService {
 
     if (existingPhoneNumber) {
       throw new ConflictException(
-        'An employee member in this bookstore is already using this phone number.',
+        'Số điện thoại này đã được một nhân viên trong cửa hàng sử dụng.',
       );
     }
 
@@ -120,13 +122,14 @@ export class UserService {
 
     if (existingEmail) {
       throw new ForbiddenException(
-        'An employee member in this bookstore is already using this email.',
+        'Email này đã được một nhân viên trong cửa hàng sử dụng.',
       );
     }
 
     const randomPassword = generateSecurePassword();
     const birthDateString = birthDate.toISOString().split('T')[0];
     const username = generateUsername(fullName, birthDateString);
+    const employeeCode = await this.generateEmployeeCode(role, employeeRepo);
 
     const newEmployee = employeeRepo.create({
       fullName,
@@ -136,6 +139,7 @@ export class UserService {
       role,
       email: employeeEmail,
       birthDate,
+      employeeCode,
     });
 
     await employeeRepo.save(newEmployee);
@@ -162,7 +166,7 @@ export class UserService {
 
     return {
       message:
-        'Employee account has been created. An email with login details has been sent.',
+        'Tài khoản nhân viên đã được tạo. Thông tin đăng nhập đã được gửi qua email.',
     };
   }
 
@@ -235,7 +239,7 @@ export class UserService {
         );
 
         if (existingPhoneNumber && existingPhoneNumber.id !== userId) {
-          throw new ConflictException('This phone number is already in use.');
+          throw new ConflictException('Số điện thoại này đã được sử dụng.');
         }
       }
 
@@ -255,7 +259,7 @@ export class UserService {
         });
 
         if (existingPhoneNumber && existingPhoneNumber.id !== userId) {
-          throw new ConflictException('This phone number is already in use.');
+          throw new ConflictException('Số điện thoại này đã được sử dụng.');
         }
       }
 
@@ -265,7 +269,8 @@ export class UserService {
         },
       });
 
-      if (!employee) throw new NotFoundException('Your profile not found.');
+      if (!employee)
+        throw new NotFoundException('Không tìm thấy thông tin của bạn.');
 
       Object.assign(employee, updateProfileDto);
       await employeeRepo.save(employee);
@@ -275,5 +280,28 @@ export class UserService {
       message: 'Thông tin của bạn đã được cập nhật thành công.',
       data: await this.getMe(userSession),
     };
+  }
+
+  private async generateEmployeeCode(
+    role: EmployeeRole,
+    employeeRepo: Repository<Employee>,
+  ): Promise<string> {
+    const prefix = EMPLOYEE_ROLE_PREFIX[role];
+
+    const lastEmployee = await employeeRepo.findOne({
+      where: { role },
+      order: { createdAt: 'DESC' },
+      select: {
+        employeeCode: true,
+      },
+    });
+
+    const lastNumber = lastEmployee?.employeeCode
+      ? parseInt(lastEmployee.employeeCode.replace(prefix, ''), 10)
+      : 0;
+
+    const nextNumber = lastNumber + 1;
+
+    return `${prefix}${nextNumber.toString().padStart(4, '0')}`;
   }
 }
