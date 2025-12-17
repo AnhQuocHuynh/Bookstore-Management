@@ -1,23 +1,15 @@
-import { Routes, Route, Navigate, Outlet } from "react-router-dom";
-import { MainLayout } from "../layouts/MainLayout";
-import { AuthLayout } from "../layouts/AuthLayout";
-import { ProtectedRoute } from "./ProtectedRoute";
-import { TokenProtectedRoute } from "./TokenProtectedRoute";
-import { PublicRoute } from "./PublicRoute";
+import LoginPage from "@/features/auth/pages/LoginPage";
+import { Navigate, Outlet, Route, Routes } from "react-router-dom";
+import { ForgotPasswordPage } from "../features/auth/pages/ForgotPasswordPage";
 import { DashboardPage } from "../features/dashboard/components/DashboardPage";
 import { ProductsPage } from "../features/products/components/ProductsPage";
-import { ForgotPasswordPage } from "../features/auth/pages/ForgotPasswordPage";
-import { Button } from "@/components/ui/button";
+import { AuthLayout } from "../layouts/AuthLayout";
+import { MainLayout } from "../layouts/MainLayout";
+import { ProtectedRoute } from "./ProtectedRoute";
+import { PublicRoute } from "./PublicRoute";
+import { TokenProtectedRoute } from "./TokenProtectedRoute";
 
 // Auth pages (placeholder)
-const LoginPage = () => (
-  <div className="text-center">
-    <h1 className="text-2xl font-bold mb-4">Đăng nhập</h1>
-    <Button variant="outline">Button</Button>
-    <p>Trang đăng nhập đang được phát triển...</p>
-  </div>
-);
-
 const RegisterPage = () => (
   <div className="text-center">
     <h1 className="text-2xl font-bold mb-4">Đăng ký</h1>
