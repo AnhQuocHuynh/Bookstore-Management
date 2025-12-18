@@ -24,7 +24,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { FindOptionsRelations, Repository } from 'typeorm';
+import { EntityManager, FindOptionsRelations, Repository } from 'typeorm';
 
 @Injectable()
 export class ProductsService {
@@ -53,116 +53,104 @@ export class ProductsService {
   }
 
   async createProduct(
-    userSession: TUserSession,
     createProductDto: CreateProductDto,
+    manager: EntityManager,
+    employee: Employee,
+    supplierId: string,
   ) {
-    const { bookStoreId } = userSession;
+    const productRepo = manager.getRepository(Product);
+    const supplierRepo = manager.getRepository(Supplier);
+    const categoryRepo = manager.getRepository(Category);
+    const inventoryLogRepo = manager.getRepository(InventoryLog);
 
-    const dataSource = await this.tenantService.getTenantConnection({
-      bookStoreId,
+    const { createInventoryDto, createBookDto, type, categoryIds, ...res } =
+      createProductDto;
+
+    const supplier = await this.supplierService.findSupplierByField(
+      'id',
+      supplierId,
+      supplierRepo,
+    );
+
+    if (!supplier)
+      throw new NotFoundException(
+        `Không tìm thấy nhà cung cấp với mã ${supplierId}.`,
+      );
+
+    let newProduct = await productRepo.findOne({
+      where: [{ sku: res.sku }, { name: res.name }],
     });
 
-    return dataSource.transaction(async (manager) => {
-      const productRepo = manager.getRepository(Product);
-      const supplierRepo = manager.getRepository(Supplier);
-      const categoryRepo = manager.getRepository(Category);
-      const inventoryLogRepo = manager.getRepository(InventoryLog);
-      const employeeRepo = manager.getRepository(Employee);
-
-      const employee = await employeeRepo.findOne({
-        where: {
-          id: userSession.userId,
+    if (newProduct) {
+      await productRepo.update(
+        {
+          id: newProduct.id,
         },
-      });
-
-      if (!employee) throw new NotFoundException('Your profile not found.');
-
-      const {
-        createInventoryDto,
-        createBookDto,
-        type,
-        categoryIds,
-        supplierId,
-        ...res
-      } = createProductDto;
-
-      const existingName = await this.findProductByField(
-        'name',
-        res.name,
-        productRepo,
+        {
+          price: res.price,
+          ...(res?.description?.trim() && {
+            description: res.description.trim(),
+          }),
+          type,
+          supplier,
+          categories: [],
+        },
       );
-
-      if (existingName) {
-        throw new ConflictException(`Product ${res.name} has been existed.`);
-      }
-
-      const supplier = await this.supplierService.findSupplierByField(
-        'id',
-        supplierId,
-        supplierRepo,
-      );
-
-      if (!supplier)
-        throw new NotFoundException(`Supplier ${supplierId} not found.`);
-
-      const newProduct = productRepo.create({
+    } else {
+      newProduct = productRepo.create({
         ...res,
         type,
-        sku: await this.generateUniqueSKU(type, productRepo),
         supplier,
         categories: [],
       });
 
       await productRepo.save(newProduct);
+    }
 
-      await this.categoriesService.assignCategoriesToProduct(
-        categoryIds,
-        newProduct,
-        categoryRepo,
-        productRepo,
-      );
+    await this.categoriesService.assignCategoriesToProduct(
+      categoryIds,
+      newProduct,
+      categoryRepo,
+      productRepo,
+    );
 
-      if (
-        type === ProductType.BOOK &&
-        createBookDto &&
-        Object.keys(createBookDto).length > 0
-      ) {
-        const newBook = await this.booksService.createBook(
-          createBookDto,
-          manager,
-        );
-        newProduct.book = newBook;
-        await productRepo.save(newProduct);
-      }
-
-      const inventory = await this.inventoriesService.createNewInventory(
-        createInventoryDto,
+    if (
+      type === ProductType.BOOK &&
+      createBookDto &&
+      Object.keys(createBookDto).length > 0
+    ) {
+      const newBook = await this.booksService.createBook(
+        createBookDto,
         manager,
       );
-
-      newProduct.inventory = inventory;
+      newProduct.book = newBook;
       await productRepo.save(newProduct);
+    }
 
-      await this.inventoriesService.createNewInventoryLog(
-        {
-          inventory,
-          quantityChange: createInventoryDto.stockQuantity,
-          action: InventoryLogAction.PURCHASE,
-          employee,
-          note: 'Restocked product from purchase',
-        },
-        inventoryLogRepo,
-      );
+    const inventory = await this.inventoriesService.createNewInventory(
+      createInventoryDto,
+      manager,
+    );
 
-      return {
-        message: 'Product created successfully.',
-        data: await this.findProductByField('id', newProduct.id, productRepo, {
-          inventory: true,
-          categories: true,
-          book: type === ProductType.BOOK,
-          supplier: true,
-        }),
-      };
+    newProduct.inventory = inventory;
+    await productRepo.save(newProduct);
+
+    await this.inventoriesService.createNewInventoryLog(
+      {
+        inventory,
+        quantityChange: createInventoryDto.stockQuantity,
+        action: InventoryLogAction.PURCHASE,
+        employee,
+        note: 'Nhập thêm hàng từ đơn mua',
+      },
+      inventoryLogRepo,
+    );
+
+    return this.findProductByField('id', newProduct.id, productRepo, {
+      inventory: true,
+      categories: true,
+      book: type === ProductType.BOOK,
+      supplier: true,
     });
   }
 
@@ -269,7 +257,9 @@ export class ProductsService {
     bookStoreId: string,
   ) {
     if (Object.keys(getProductDetailQueryDto)?.length <= 0)
-      throw new BadRequestException('Must be provide sku or id of product.');
+      throw new BadRequestException(
+        'Vui lòng cung cấp mã sku hoặc id của sản phẩm.',
+      );
 
     const dataSource = await this.tenantService.getTenantConnection({
       bookStoreId,
@@ -285,10 +275,14 @@ export class ProductsService {
       },
       relations: {
         book: true,
+        categories: true,
+        supplier: true,
+        inventory: true,
       },
     });
 
-    if (!product) throw new NotFoundException('Product not found.');
+    if (!product)
+      throw new NotFoundException('Không tìm thấy thông tin sản phẩm.');
 
     return product;
   }
@@ -300,7 +294,9 @@ export class ProductsService {
     const { sku, id } = getProductDetailQueryDto;
 
     if (!sku?.trim() && !id?.trim())
-      throw new BadRequestException('Must be provide sku or id of product');
+      throw new BadRequestException(
+        'Vui lòng cung cấp SKU hoặc ID của sản phẩm.',
+      );
 
     const dataSource = await this.tenantService.getTenantConnection({
       bookStoreId,
@@ -318,12 +314,18 @@ export class ProductsService {
       },
     });
 
-    if (!product) throw new NotFoundException('Product not found.');
+    if (!product)
+      throw new NotFoundException('Không tìm thấy thông tin sản phẩm');
 
-    await productRepo.softRemove(product);
+    if (!product.isActive) {
+      throw new ConflictException('Sản phẩm đã được xoá.');
+    }
+
+    product.isActive = false;
+    await productRepo.save(product);
 
     return {
-      message: 'Product deleted successfully.',
+      message: 'Sản phẩm đã được xoá thành công.',
       success: true,
     };
   }
@@ -334,7 +336,9 @@ export class ProductsService {
     updateProductDto: UpdateProductDto,
   ) {
     if (Object.keys(updateProductDto).length <= 0)
-      throw new BadRequestException('Must be provide dto');
+      throw new BadRequestException(
+        'Vui lòng cung cấp dữ liệu để cập nhật sản phẩm.',
+      );
 
     const dataSource = await this.tenantService.getTenantConnection({
       bookStoreId,
@@ -348,7 +352,8 @@ export class ProductsService {
       },
     });
 
-    if (!product) throw new NotFoundException('Product not found.');
+    if (!product)
+      throw new NotFoundException('Không tìm thấy thông tin sản phẩm.');
 
     const { sku, name } = updateProductDto;
 

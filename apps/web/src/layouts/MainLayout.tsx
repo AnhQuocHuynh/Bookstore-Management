@@ -49,8 +49,8 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
                 key={item.path}
                 to={item.path}
                 className={`group relative flex items-center gap-3 rounded-xl px-4 py-2.5 transition-all ${isActive(item.path)
-                    ? "bg-[#1A998F]"
-                    : "hover:bg-[#187F87]"
+                  ? "bg-[#1A998F]"
+                  : "hover:bg-[#187F87]"
                   }`}
               >
                 {isActive(item.path) && (

@@ -96,15 +96,15 @@ Tạo file `.env` trong `apps/web/` (chỉ cần cho production):
 ```env
 # Chỉ cần thiết cho production build
 # Trong dev mode, Vite proxy sẽ tự động xử lý
-VITE_API_URL=http://localhost:3000/api
+VITE_API_URL=http://localhost:3001/api/v1
 ```
 
 **Lưu ý về Proxy trong Development:**
 
 - Vite đã được cấu hình proxy để tránh lỗi CORS
-- Tất cả requests đến `/api` sẽ được proxy đến `http://localhost:3000`
+- Tất cả requests đến `/api` sẽ được proxy đến `http://localhost:3001`
+- Backend API có prefix `/api/v1`, Axios baseURL tự động sử dụng `/api/v1` trong dev mode
 - Không cần cấu hình `VITE_API_URL` trong dev mode
-- Axios sẽ tự động sử dụng relative path `/api` trong dev mode
 
 ### Development
 
@@ -132,16 +132,16 @@ npm run check-types
 
 ### Axios Setup (`src/lib/axios.ts`)
 
-- **Development**: Sử dụng relative path `/api` để leverage Vite proxy (tránh CORS)
-- **Production**: Base URL từ `import.meta.env.VITE_API_URL`
-- Request interceptor: Tự động attach Bearer token từ Zustand store
-- Response interceptor: Xử lý 401 errors (redirect to /login)
+- **Development**: Sử dụng relative path `/api/v1` để leverage Vite proxy (tránh CORS)
+- **Production**: Base URL từ `import.meta.env.VITE_API_URL` (mặc định: `http://localhost:3001/api/v1`)
+- Request interceptor: Tự động attach Bearer token từ localStorage (`auth-storage`)
+- Response interceptor: Xử lý 401 errors (clear storage & redirect to `/auth/login`)
 
 ### Vite Proxy Setup (`vite.config.ts`)
 
-- Proxy `/api` requests đến `http://localhost:3000`
+- Proxy `/api` requests đến `http://localhost:3001`
 - Tự động xử lý CORS trong development mode
-- Port: 5173 (frontend), 3000 (backend)
+- Port: 5173 (frontend), 3001 (backend)
 
 ### React Query Setup (`src/lib/react-query.ts`)
 

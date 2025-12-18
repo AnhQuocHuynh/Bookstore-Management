@@ -1,9 +1,8 @@
-import { assignDefined, TUserSession } from '@/common/utils';
+import { assignDefined } from '@/common/utils';
 import { Supplier } from '@/database/tenant/entities';
 import { CreateSupplierDto, UpdateSupplierDto } from '@/modules/suppliers/dto';
 import { TenantService } from '@/tenants/tenant.service';
 import {
-  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,

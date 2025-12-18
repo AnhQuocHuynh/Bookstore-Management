@@ -1,25 +1,24 @@
-import { Routes, Route, Navigate } from "react-router-dom";
-import { MainLayout } from "../layouts/MainLayout";
-import { AuthLayout } from "../layouts/AuthLayout";
-import { PrivateRoute } from "./PrivateRoute";
-import { PublicRoute } from "./PublicRoute";
+import LoginPage from "@/features/auth/pages/LoginPage";
+import { Navigate, Outlet, Route, Routes } from "react-router-dom";
+import { ForgotPasswordPage } from "../features/auth/pages/ForgotPasswordPage";
 import { DashboardPage } from "../features/dashboard/components/DashboardPage";
 import { ProductsPage } from "../features/products/components/ProductsPage";
 import { EmployeesPage } from "../features/employees/components/EmployeesPage";
 import { SuppliersPage } from "../features/suppliers/components/SuppliersPage";
 
 // Auth pages (placeholder)
-const LoginPage = () => (
-  <div className="text-center">
-    <h1 className="text-2xl font-bold mb-4">Đăng nhập</h1>
-    <p>Trang đăng nhập đang được phát triển...</p>
-  </div>
-);
-
 const RegisterPage = () => (
   <div className="text-center">
     <h1 className="text-2xl font-bold mb-4">Đăng ký</h1>
     <p>Trang đăng ký đang được phát triển...</p>
+  </div>
+);
+
+// Select Store Page (Semi-protected: requires token but no store)
+const SelectStorePage = () => (
+  <div className="text-center">
+    <h1 className="text-2xl font-bold mb-4">Chọn cửa hàng</h1>
+    <p>Trang chọn cửa hàng đang được phát triển...</p>
   </div>
 );
 
@@ -51,30 +50,40 @@ export const AppRoutes = () => {
       {/* Public Auth Routes */}
       <Route element={<PublicRoute />}>
         <Route
-          path="/auth/login"
+          path="/auth"
           element={
             <AuthLayout>
-              <LoginPage />
+              <Outlet />
             </AuthLayout>
           }
-        />
+        >
+          <Route path="login" element={<LoginPage />} />
+          <Route path="register" element={<RegisterPage />} />
+        </Route>
+      </Route>
+
+      {/* Forgot Password - Public route (no auth required) */}
+      <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
+
+      {/* Semi-Protected: Select Store (Requires Token, but NO Store yet) */}
+      <Route element={<TokenProtectedRoute />}>
         <Route
-          path="/auth/register"
+          path="/auth/select-store"
           element={
             <AuthLayout>
-              <RegisterPage />
+              <SelectStorePage />
             </AuthLayout>
           }
         />
       </Route>
 
-      {/* Protected Routes */}
-      <Route element={<PrivateRoute />}>
+      {/* Fully Protected: App Routes (Requires Token + Store) */}
+      <Route element={<ProtectedRoute />}>
         <Route
           path="/"
           element={
             <MainLayout>
-              <Navigate to="/dashboard" replace />
+              <Outlet />
             </MainLayout>
           }
         />
@@ -136,8 +145,8 @@ export const AppRoutes = () => {
         />
       </Route>
 
-      {/* 404 */}
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      {/* 404 - Redirect to login */}
+      <Route path="*" element={<Navigate to="/auth/login" replace />} />
     </Routes>
   );
 };

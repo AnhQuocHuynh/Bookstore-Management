@@ -8,6 +8,7 @@ import {
   PurchaseOrderDetail,
   ReturnOrderDetail,
   Supplier,
+  TransactionDetail,
 } from '@/database/tenant/entities';
 import {
   Column,
@@ -52,6 +53,9 @@ export class Product {
   })
   price: number;
 
+  @Column({ nullable: true, type: 'text' })
+  imageUrl?: string;
+
   @Column({
     type: 'enum',
     enum: ProductType,
@@ -60,7 +64,7 @@ export class Product {
 
   @Column({
     type: 'boolean',
-    default: true,
+    default: false,
   })
   isActive: boolean;
 
@@ -128,4 +132,7 @@ export class Product {
     type: 'timestamp',
   })
   readonly deletedAt?: Date;
+
+  @OneToMany(() => TransactionDetail, (td) => td.product)
+  transactionDetails: TransactionDetail[];
 }

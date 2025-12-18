@@ -1,5 +1,5 @@
 import { DecimalTransformer } from '@/common/transformers';
-import { Transaction } from '@/database/tenant/entities';
+import { Product, Transaction } from '@/database/tenant/entities';
 import {
   Column,
   CreateDateColumn,
@@ -56,11 +56,19 @@ export class TransactionDetail {
   })
   readonly updatedAt: Date;
 
-  @ManyToOne(() => Transaction, (transaction) => transaction, {
+  @ManyToOne(() => Transaction, (transaction) => transaction.details, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({
     name: 'transaction_id',
   })
   transaction: Transaction;
+
+  @ManyToOne(() => Product, (product) => product.transactionDetails, {
+    onDelete: 'RESTRICT',
+  })
+  @JoinColumn({
+    name: 'product_id',
+  })
+  product: Product;
 }
