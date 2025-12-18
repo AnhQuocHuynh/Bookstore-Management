@@ -7,6 +7,7 @@ export * from './inventories';
 export * from './invoices';
 export * from './publishers';
 export * from './purchase-orders';
+export * from './reports';
 export * from './schedule';
 export * from './shifts';
 export * from './transactions';

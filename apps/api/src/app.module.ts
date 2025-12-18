@@ -11,6 +11,7 @@ import { FilesModule } from '@/modules/files/files.module';
 import { InventoriesModule } from '@/modules/inventories/inventories.module';
 import { ProductsModule } from '@/modules/products/products.module';
 import { PurchaseOrdersModule } from '@/modules/purchase-orders/purchase-orders.module';
+import { ReportsModule } from '@/modules/reports/reports.module';
 import { ScheduleModule } from '@/modules/schedule/schedule.module';
 import { ShiftModule } from '@/modules/shifts/shifts.module';
 import { SupplierModule } from '@/modules/suppliers/supplier.module';
@@ -70,6 +71,7 @@ import { PublishersModule } from './modules/publishers/publishers.module';
     ShiftModule,
     ScheduleModule,
     TransactionsModule,
+    ReportsModule,
   ],
 })
 export class AppModule {}
