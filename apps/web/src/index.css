@@ -1,20 +1,14 @@
 @import "tailwindcss";
 
-@plugin "tailwindcss-animate";
-@import "tw-animate-css";
-
-@custom-variant dark (&:is(.dark *));
-
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-
   body {
-    @apply antialiased bg-background text-foreground;
+    @apply antialiased;
     margin: 0;
+    font-family: system-ui, -apple-system, sans-serif;
   }
 }
+<<<<<<< Updated upstream
+=======
 
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
@@ -171,3 +165,4 @@ input[type="email"]:focus {
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 150ms;
 }
+>>>>>>> Stashed changes

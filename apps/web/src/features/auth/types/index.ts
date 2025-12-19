@@ -23,6 +23,23 @@ export interface SignInDto {
   password: string;
 }
 
+export interface CreateBookStoreDto {
+  name: string;
+  phoneNumber: string;
+  address: string;
+  logoUrl?: string;
+}
+
+export interface SignUpDto {
+  email: string;
+  password: string;
+  fullName: string;
+  phoneNumber: string;
+  birthDate: string; // ISO date string
+  address: string;
+  createBookStoreDto: CreateBookStoreDto;
+}
+
 export interface ForgetPasswordDto {
   email: string;
 }
@@ -93,5 +110,9 @@ export interface ResetPasswordResponse {
 }
 
 export interface ResendOtpResponse {
+  message: string;
+}
+
+export interface SignUpResponse {
   message: string;
 }

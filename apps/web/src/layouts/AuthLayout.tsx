@@ -7,28 +7,25 @@ interface AuthLayoutProps {
   children: ReactNode;
 }
 
-export const AuthLayout = ({ children }: AuthLayoutProps) => {
-  const slides = [
-    {
-      image: "/image-5.jpg",
-      quote:
-        "Hệ thống quản lý này giúp chúng tôi theo dõi tồn kho nhanh chóng và chính xác hơn bao giờ hết.",
-      author: "Nguyễn Thị Lan – Quản lý nhà sách A",
-    },
-    {
-      image: "/image-6.jpg",
-      quote:
-        "Việc nhập – xuất hàng trở nên dễ dàng, tiết kiệm thời gian và tránh sai sót.",
-      author: "Trần Văn Hùng – Nhân viên kho",
-    },
-    {
-      image: "/image-7.jpg",
-      quote:
-        "Giao diện trực quan, dễ sử dụng, nhân viên mới cũng nhanh chóng làm quen.",
-      author: "Phạm Thị Mai – Chủ nhà sách B",
-    },
-  ];
+const slides = [
+  {
+    quote: "Sách là nguồn tri thức vô tận, mở ra những chân trời mới cho tâm hồn",
+    author: "Albert Einstein",
+    image: "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=800&q=80",
+  },
+  {
+    quote: "Đọc sách là cách tốt nhất để đầu tư vào bản thân",
+    author: "Warren Buffett",
+    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80",
+  },
+  {
+    quote: "Một cuốn sách hay là người bạn tốt của chúng ta",
+    author: "Victor Hugo",
+    image: "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=800&q=80",
+  },
+];
 
+export const AuthLayout = ({ children }: AuthLayoutProps) => {
   return (
     <div className="h-screen overflow-hidden bg-[#E8F5F5]">
       <div className="flex flex-col md:flex-row h-full">

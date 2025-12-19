@@ -1,4 +1,5 @@
 import LoginPage from "@/features/auth/pages/LoginPage";
+import RegisterPage from "@/features/auth/pages/RegisterPage";
 import { Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { ForgotPasswordPage } from "../features/auth/pages/ForgotPasswordPage";
 import { DashboardPage } from "../features/dashboard/components/DashboardPage";
@@ -8,14 +9,6 @@ import { MainLayout } from "../layouts/MainLayout";
 import { ProtectedRoute } from "./ProtectedRoute";
 import { PublicRoute } from "./PublicRoute";
 import { TokenProtectedRoute } from "./TokenProtectedRoute";
-
-// Auth pages (placeholder)
-const RegisterPage = () => (
-  <div className="text-center">
-    <h1 className="text-2xl font-bold mb-4">Đăng ký</h1>
-    <p>Trang đăng ký đang được phát triển...</p>
-  </div>
-);
 
 // Select Store Page (Semi-protected: requires token but no store)
 const SelectStorePage = () => (
