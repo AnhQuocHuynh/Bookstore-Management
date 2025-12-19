@@ -1,10 +1,7 @@
-import { Layout } from "antd";
 import { ReactNode } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
-import { Autoplay, EffectFade, Navigation, Pagination } from "swiper/modules";
+import { Autoplay, EffectFade, Pagination } from "swiper/modules";
 import "swiper/swiper-bundle.css";
-
-const { Content } = Layout;
 
 interface AuthLayoutProps {
   children: ReactNode;
@@ -33,15 +30,17 @@ export const AuthLayout = ({ children }: AuthLayoutProps) => {
   ];
 
   return (
-    <Layout className="h-screen overflow-hidden">
-      <Content className="flex flex-col md:flex-row h-full">
-        <div className="w-full md:w-2/5 flex items-center justify-center bg-white p-6 md:p-12">
+    <div className="h-screen overflow-hidden bg-[#E8F5F5]">
+      <div className="flex flex-col md:flex-row h-full">
+        {/* Left Side - Form */}
+        <div className="w-full md:w-2/5 flex items-center justify-center bg-[#E8F5F5] p-6 md:p-12">
           <div className="w-full max-w-md">{children}</div>
         </div>
 
+        {/* Right Side - Carousel */}
         <div className="w-full md:w-3/5 relative h-64 md:h-full overflow-hidden">
           <Swiper
-            modules={[Autoplay, EffectFade, Navigation, Pagination]}
+            modules={[Autoplay, EffectFade, Pagination]}
             autoplay={{
               delay: 5000,
               disableOnInteraction: false,
@@ -50,11 +49,12 @@ export const AuthLayout = ({ children }: AuthLayoutProps) => {
             allowTouchMove={false}
             loop
             speed={500}
-            navigation={{
-              nextEl: ".swiper-button-next-custom",
-              prevEl: ".swiper-button-prev-custom",
+            effect="fade"
+            pagination={{
+              clickable: true,
+              bulletClass: "swiper-pagination-bullet !bg-white/50",
+              bulletActiveClass: "swiper-pagination-bullet-active !bg-white",
             }}
-            pagination={{ clickable: true }}
             className="h-full w-full"
           >
             {slides.map((slide, idx) => (
@@ -65,12 +65,14 @@ export const AuthLayout = ({ children }: AuthLayoutProps) => {
                     alt={slide.author}
                     className="absolute inset-0 w-full h-full object-cover"
                   />
-                  <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/30 to-transparent" />
-                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6 md:px-12 text-white">
-                    <h2 className="text-2xl md:text-4xl font-semibold mb-4 animate-fade-in">
+                  {/* Gradient Overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+                  {/* Content */}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6 md:px-12 text-white z-10">
+                    <h2 className="text-2xl md:text-4xl font-semibold mb-4">
                       "{slide.quote}"
                     </h2>
-                    <p className="text-lg md:text-2xl opacity-90 animate-fade-in delay-200">
+                    <p className="text-lg md:text-2xl opacity-90">
                       — {slide.author}
                     </p>
                   </div>
@@ -79,7 +81,7 @@ export const AuthLayout = ({ children }: AuthLayoutProps) => {
             ))}
           </Swiper>
         </div>
-      </Content>
-    </Layout>
+      </div>
+    </div>
   );
 };

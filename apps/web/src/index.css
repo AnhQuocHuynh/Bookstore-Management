@@ -90,6 +90,14 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  
+  /* Auth Gradient Colors */
+  --auth-gradient-from: #6366f1; /* Indigo */
+  --auth-gradient-to: #a855f7; /* Purple */
+  --auth-teal: #3EB795;
+  --auth-teal-dark: #347C76;
+  --auth-teal-light: #D0E0DB;
+  --auth-input-bg: #F3F4F6; /* gray-50 */
 }
 
 .dark {
@@ -124,4 +132,42 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+}
+
+/* Auth Gradient Utility Classes */
+.bg-auth-gradient {
+  background: linear-gradient(to right, #6366f1 0%, #a855f7 100%);
+}
+
+.bg-auth-gradient-hover {
+  background: linear-gradient(to right, #5855eb 0%, #9333ea 100%);
+}
+
+/* Swiper Custom Styles */
+.swiper-pagination-bullet {
+  width: 10px !important;
+  height: 10px !important;
+  background: rgba(255, 255, 255, 0.5) !important;
+  opacity: 1 !important;
+  transition: all 0.3s ease !important;
+}
+
+.swiper-pagination-bullet-active {
+  background: white !important;
+  width: 12px !important;
+  height: 12px !important;
+}
+
+/* Input Override Styles for Auth Forms */
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="email"]:focus {
+  box-shadow: none !important;
+}
+
+/* Smooth Transitions */
+* {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
 }
