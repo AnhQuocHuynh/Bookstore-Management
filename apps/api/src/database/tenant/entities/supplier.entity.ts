@@ -19,6 +19,12 @@ export class Supplier {
   })
   name: string;
 
+  @Column({
+    nullable: true,
+    unique: true,
+  })
+  supplierCode?: string;
+
   @Column({ unique: true })
   email: string;
 
