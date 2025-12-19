@@ -60,7 +60,10 @@ export class SupplierService {
         'This phone number has already been used by another supplier.',
       );
 
-    const newSupplier = supplierRepo.create(createSupplierDto);
+    const newSupplier = supplierRepo.create({
+      ...createSupplierDto,
+      supplierCode: await this.generateSupplierCode(supplierRepo),
+    });
 
     return supplierRepo.save(newSupplier);
   }
@@ -123,5 +126,26 @@ export class SupplierService {
     });
 
     return this.getSuppliers(bookStoreId);
+  }
+
+  private async generateSupplierCode(
+    repo: Repository<Supplier>,
+  ): Promise<string> {
+    let unique = false;
+    let code = '';
+
+    while (!unique) {
+      const date = new Date();
+      const dateStr = `${(date.getMonth() + 1).toString().padStart(2, '0')}${date.getDate().toString().padStart(2, '0')}`;
+      const randomNum = Math.floor(1000 + Math.random() * 9000);
+      code = `SUP-${dateStr}-${randomNum}`;
+
+      const existing = await repo.findOne({ where: { supplierCode: code } });
+      if (!existing) {
+        unique = true;
+      }
+    }
+
+    return code;
   }
 }
