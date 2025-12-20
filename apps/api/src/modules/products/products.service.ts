@@ -1,12 +1,14 @@
-import { CreateProductDto } from '@/common/dtos/products';
 import {
-  InventoryLogAction,
-  InventoryLogActorType,
-  ProductType,
-} from '@/common/enums';
+  CreateProductDto,
+  GetProductDetailQueryDto,
+  GetProductsQueryDto,
+  UpdateProductDto,
+} from '@/common/dtos/products';
+import { InventoryLogAction, ProductType } from '@/common/enums';
 import { TUserSession } from '@/common/utils';
 import {
   Category,
+  Employee,
   InventoryLog,
   Product,
   Supplier,
@@ -15,14 +17,14 @@ import { BooksService } from '@/modules/books/books.service';
 import { CategoriesService } from '@/modules/categories/categories.service';
 import { InventoriesService } from '@/modules/inventories/inventories.service';
 import { SupplierService } from '@/modules/suppliers/supplier.service';
-import { UserRole } from '@/modules/users/enums';
 import { TenantService } from '@/tenants/tenant.service';
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { FindOptionsRelations, Repository } from 'typeorm';
+import { EntityManager, FindOptionsRelations, Repository } from 'typeorm';
 
 @Injectable()
 export class ProductsService {
@@ -51,109 +53,104 @@ export class ProductsService {
   }
 
   async createProduct(
-    userSession: TUserSession,
     createProductDto: CreateProductDto,
+    manager: EntityManager,
+    employee: Employee,
+    supplierId: string,
   ) {
-    const { bookStoreId } = userSession;
+    const productRepo = manager.getRepository(Product);
+    const supplierRepo = manager.getRepository(Supplier);
+    const categoryRepo = manager.getRepository(Category);
+    const inventoryLogRepo = manager.getRepository(InventoryLog);
 
-    const dataSource = await this.tenantService.getTenantConnection({
-      bookStoreId,
+    const { createInventoryDto, createBookDto, type, categoryIds, ...res } =
+      createProductDto;
+
+    const supplier = await this.supplierService.findSupplierByField(
+      'id',
+      supplierId,
+      supplierRepo,
+    );
+
+    if (!supplier)
+      throw new NotFoundException(
+        `Không tìm thấy nhà cung cấp với mã ${supplierId}.`,
+      );
+
+    let newProduct = await productRepo.findOne({
+      where: [{ sku: res.sku }, { name: res.name }],
     });
 
-    return dataSource.transaction(async (manager) => {
-      const productRepo = manager.getRepository(Product);
-      const supplierRepo = manager.getRepository(Supplier);
-      const categoryRepo = manager.getRepository(Category);
-      const inventoryLogRepo = manager.getRepository(InventoryLog);
-
-      const {
-        createInventoryDto,
-        createBookDto,
-        type,
-        categoryIds,
-        supplierId,
-        ...res
-      } = createProductDto;
-
-      const existingName = await this.findProductByField(
-        'name',
-        res.name,
-        productRepo,
+    if (newProduct) {
+      await productRepo.update(
+        {
+          id: newProduct.id,
+        },
+        {
+          price: res.price,
+          ...(res?.description?.trim() && {
+            description: res.description.trim(),
+          }),
+          type,
+          supplier,
+          categories: [],
+        },
       );
-
-      if (existingName) {
-        throw new ConflictException(`Product ${res.name} has been existed.`);
-      }
-
-      const supplier = await this.supplierService.findSupplierByField(
-        'id',
-        supplierId,
-        supplierRepo,
-      );
-
-      if (!supplier)
-        throw new NotFoundException(`Supplier ${supplierId} not found.`);
-
-      const newProduct = productRepo.create({
+    } else {
+      newProduct = productRepo.create({
         ...res,
         type,
-        sku: await this.generateUniqueSKU(type, productRepo),
+        supplier,
+        categories: [],
       });
 
       await productRepo.save(newProduct);
+    }
 
-      await this.categoriesService.assignCategoriesToProduct(
-        categoryIds,
-        newProduct.id,
-        productRepo,
-        categoryRepo,
-      );
+    await this.categoriesService.assignCategoriesToProduct(
+      categoryIds,
+      newProduct,
+      categoryRepo,
+      productRepo,
+    );
 
-      if (
-        type === ProductType.BOOK &&
-        createBookDto &&
-        Object.keys(createBookDto).length > 0
-      ) {
-        const newBook = await this.booksService.createBook(
-          createBookDto,
-          manager,
-        );
-        newProduct.book = newBook;
-        await productRepo.save(newProduct);
-      }
-
-      const inventory = await this.inventoriesService.createNewInventory(
-        createInventoryDto,
+    if (
+      type === ProductType.BOOK &&
+      createBookDto &&
+      Object.keys(createBookDto).length > 0
+    ) {
+      const newBook = await this.booksService.createBook(
+        createBookDto,
         manager,
       );
-
-      newProduct.inventory = inventory;
+      newProduct.book = newBook;
       await productRepo.save(newProduct);
+    }
 
-      await this.inventoriesService.createNewInventoryLog(
-        {
-          inventory,
-          quantityChange: createInventoryDto.stockQuantity,
-          action: InventoryLogAction.PURCHASE,
-          actorType:
-            userSession.role === UserRole.OWNER
-              ? InventoryLogActorType.OWNER
-              : InventoryLogActorType.EMPLOYEE,
-          actorId: userSession.userId,
-          note: 'Restocked product from purchase',
-        },
-        inventoryLogRepo,
-      );
+    const inventory = await this.inventoriesService.createNewInventory(
+      createInventoryDto,
+      manager,
+    );
 
-      return {
-        message: 'Product created successfully.',
-        data: await this.findProductByField('id', newProduct.id, productRepo, {
-          inventory: true,
-          categories: true,
-          book: type === ProductType.BOOK,
-          supplier: true,
-        }),
-      };
+    newProduct.inventory = inventory;
+    await productRepo.save(newProduct);
+
+    await this.inventoriesService.createNewInventoryLog(
+      {
+        inventory,
+        quantityChange: createInventoryDto.stockQuantity,
+        action: InventoryLogAction.PURCHASE,
+        employee,
+        note: 'Nhập thêm hàng từ đơn mua',
+      },
+      inventoryLogRepo,
+    );
+
+    return this.findProductByField('id', newProduct.id, productRepo, {
+      inventory: true,
+      categories: true,
+      book: type === ProductType.BOOK,
+      supplier: true,
     });
   }
 
@@ -171,5 +168,219 @@ export class ProductsService {
       });
       if (!exists) return sku;
     }
+  }
+
+  async getProducts(
+    getProductsQueryDto: GetProductsQueryDto,
+    userSession: TUserSession,
+  ) {
+    const { bookStoreId } = userSession;
+
+    const dataSource = await this.tenantService.getTenantConnection({
+      bookStoreId,
+    });
+
+    const productRepo = dataSource.getRepository(Product);
+    const qb = productRepo
+      .createQueryBuilder('product')
+      .leftJoinAndSelect('product.categories', 'categories')
+      .leftJoinAndSelect('product.supplier', 'supplier')
+      .leftJoinAndSelect('product.book', 'book')
+      .leftJoinAndSelect('product.inventory', 'inventory');
+
+    const {
+      name,
+      sku,
+      type,
+      categoryName,
+      categorySlug,
+      supplierName,
+      isActive,
+      sortBy,
+      sortOrder,
+    } = getProductsQueryDto;
+
+    const exactFilters: Record<string, any> = {
+      sku,
+      type,
+      isActive,
+    };
+
+    Object.entries(exactFilters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        qb.andWhere(`product.${key} = :${key}`, { [key]: value });
+      }
+    });
+
+    const ilikeFilters: Record<string, string | undefined> = {
+      name,
+    };
+
+    Object.entries(ilikeFilters).forEach(([key, value]) => {
+      if (value) {
+        qb.andWhere(`product.${key} ILIKE :${key}`, { [key]: `%${value}%` });
+      }
+    });
+
+    if (categoryName?.trim() || categorySlug?.trim()) {
+      if (categoryName?.trim()) {
+        qb.andWhere('category.name ILIKE :categoryName', {
+          categoryName: `%${categoryName?.trim()}%`,
+        });
+      }
+
+      if (categorySlug?.trim()) {
+        qb.andWhere('category.slug = :categorySlug', {
+          categorySlug: categorySlug?.trim(),
+        });
+      }
+    }
+
+    if (supplierName?.trim()) {
+      qb.andWhere('supplier.name ILIKE :supplierName', {
+        supplierName,
+      });
+    }
+
+    if (sortBy?.trim() && sortOrder?.trim()) {
+      qb.orderBy(
+        `product.${sortBy?.trim()}`,
+        sortOrder?.trim().toUpperCase() as 'ASC' | 'DESC',
+      );
+    }
+
+    return qb.getMany();
+  }
+
+  async getProductDetail(
+    getProductDetailQueryDto: GetProductDetailQueryDto,
+    bookStoreId: string,
+  ) {
+    if (Object.keys(getProductDetailQueryDto)?.length <= 0)
+      throw new BadRequestException(
+        'Vui lòng cung cấp mã sku hoặc id của sản phẩm.',
+      );
+
+    const dataSource = await this.tenantService.getTenantConnection({
+      bookStoreId,
+    });
+
+    const productRepo = dataSource.getRepository(Product);
+    const { sku, id } = getProductDetailQueryDto;
+
+    const product = await productRepo.findOne({
+      where: {
+        ...(id?.trim() && { id }),
+        ...(sku?.trim() && { sku }),
+      },
+      relations: {
+        book: true,
+        categories: true,
+        supplier: true,
+        inventory: true,
+      },
+    });
+
+    if (!product)
+      throw new NotFoundException('Không tìm thấy thông tin sản phẩm.');
+
+    return product;
+  }
+
+  async deleteProduct(
+    getProductDetailQueryDto: GetProductDetailQueryDto,
+    bookStoreId: string,
+  ) {
+    const { sku, id } = getProductDetailQueryDto;
+
+    if (!sku?.trim() && !id?.trim())
+      throw new BadRequestException(
+        'Vui lòng cung cấp SKU hoặc ID của sản phẩm.',
+      );
+
+    const dataSource = await this.tenantService.getTenantConnection({
+      bookStoreId,
+    });
+
+    const productRepo = dataSource.getRepository(Product);
+
+    const product = await productRepo.findOne({
+      where: {
+        ...(id?.trim() && { id }),
+        ...(sku?.trim() && { sku }),
+      },
+      relations: {
+        book: true,
+      },
+    });
+
+    if (!product)
+      throw new NotFoundException('Không tìm thấy thông tin sản phẩm');
+
+    if (!product.isActive) {
+      throw new ConflictException('Sản phẩm đã được xoá.');
+    }
+
+    product.isActive = false;
+    await productRepo.save(product);
+
+    return {
+      message: 'Sản phẩm đã được xoá thành công.',
+      success: true,
+    };
+  }
+
+  async updateProduct(
+    id: string,
+    bookStoreId: string,
+    updateProductDto: UpdateProductDto,
+  ) {
+    if (Object.keys(updateProductDto).length <= 0)
+      throw new BadRequestException(
+        'Vui lòng cung cấp dữ liệu để cập nhật sản phẩm.',
+      );
+
+    const dataSource = await this.tenantService.getTenantConnection({
+      bookStoreId,
+    });
+
+    const productRepo = dataSource.getRepository(Product);
+
+    const product = await productRepo.findOne({
+      where: {
+        id,
+      },
+    });
+
+    if (!product)
+      throw new NotFoundException('Không tìm thấy thông tin sản phẩm.');
+
+    const { sku, name } = updateProductDto;
+
+    if (sku?.trim()) {
+      const existing = await this.findProductByField('sku', sku, productRepo);
+
+      if (existing && existing.id !== product.id)
+        throw new ConflictException(`Product with sku ${sku} already exists.`);
+    }
+
+    if (name?.trim()) {
+      const existing = await this.findProductByField('name', name, productRepo);
+
+      if (existing && existing.id !== product.id)
+        throw new ConflictException(
+          `Product with name ${name} already exists.`,
+        );
+    }
+
+    Object.assign(product, updateProductDto);
+    await productRepo.save(product);
+
+    return this.getProductDetail(
+      {
+        id,
+      },
+      bookStoreId,
+    );
   }
 }

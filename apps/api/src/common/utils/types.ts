@@ -1,3 +1,4 @@
+import { ProductType } from '@/common/enums';
 import { UserRole } from '@/modules/users/enums';
 import Redis from 'ioredis';
 
@@ -25,3 +26,38 @@ export type RawTenantConfig = {
   password: string;
   database: string;
 };
+
+export type EmployeeDto = {
+  id: string;
+  fullName: string;
+};
+
+export type ShiftScheduleDto = {
+  id: string;
+  name: string;
+  startTime: string;
+  endTime: string;
+  employees: EmployeeDto[];
+  key: string;
+};
+
+export type DayScheduleDto = {
+  date: string;
+  dayOfWeek: string;
+  shifts: ShiftScheduleDto[];
+};
+
+export type WeekScheduleDto = {
+  weekStart: string;
+  weekEnd: string;
+  schedule: DayScheduleDto[];
+};
+
+export interface ItemsSold {
+  total: number;
+  breakdown: {
+    [ProductType.BOOK]: number;
+    [ProductType.STATIONERY]: number;
+    [ProductType.OTHER]: number;
+  };
+}

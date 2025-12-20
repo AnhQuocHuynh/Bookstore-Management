@@ -68,7 +68,7 @@ export class RtStrategy extends PassportStrategy(
 
     const existingRefreshTokens = await refreshTokenRepo.find({
       where: {
-        user: {
+        employee: {
           id: userId,
         },
         expiresAt: MoreThan(new Date()),

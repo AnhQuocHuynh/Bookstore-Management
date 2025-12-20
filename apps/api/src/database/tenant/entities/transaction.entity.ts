@@ -1,6 +1,10 @@
 import { PaymentMethod } from '@/common/enums';
 import { DecimalTransformer } from '@/common/transformers';
-import { Employee, TransactionDetail } from '@/database/tenant/entities';
+import {
+  Employee,
+  ReturnOrder,
+  TransactionDetail,
+} from '@/database/tenant/entities';
 import {
   Column,
   CreateDateColumn,
@@ -21,7 +25,7 @@ export class Transaction {
     onDelete: 'SET NULL',
   })
   @JoinColumn({
-    name: 'cashier',
+    name: 'cashier_id',
   })
   cashier: Employee;
 
@@ -68,14 +72,27 @@ export class Transaction {
   @Column({
     type: 'enum',
     enum: PaymentMethod,
+    nullable: true,
   })
-  paymentMethod: PaymentMethod;
+  paymentMethod?: PaymentMethod;
 
   @Column({
     type: 'text',
     nullable: true,
   })
   note?: string;
+
+  @Column({
+    type: 'boolean',
+    default: false,
+  })
+  isCompleted: boolean;
+
+  @Column({
+    type: 'timestamp',
+    nullable: true,
+  })
+  completedAt?: Date;
 
   @CreateDateColumn({
     type: 'timestamp',
@@ -86,4 +103,7 @@ export class Transaction {
     type: 'timestamp',
   })
   readonly updatedAt: Date;
+
+  @OneToMany(() => ReturnOrder, (ro) => ro.transaction)
+  returnOrders: ReturnOrder[];
 }

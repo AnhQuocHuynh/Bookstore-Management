@@ -1,14 +1,26 @@
-import { UserRole } from '@/modules/users/enums';
-import { IsEmail, IsEnum, IsNotEmpty, IsString } from 'class-validator';
+import { IsNonEmptyString } from '@/common/decorators';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsEmail } from 'class-validator';
 
 export class SignInDto {
-  @IsEmail()
+  @ApiProperty({
+    description: 'Email đăng nhập',
+    example: 'user123@gmail.com',
+  })
+  @IsEmail(
+    {},
+    {
+      message: 'Email không hợp lệ.',
+    },
+  )
   readonly email: string;
 
-  @IsString()
-  @IsNotEmpty()
+  @ApiProperty({
+    description: 'Mật khẩu đăng nhập',
+    example: 'password123',
+  })
+  @IsNonEmptyString({
+    message: 'Mật khẩu không hợp lệ.',
+  })
   readonly password: string;
-
-  @IsEnum(UserRole)
-  readonly role: UserRole;
 }

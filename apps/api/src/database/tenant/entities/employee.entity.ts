@@ -1,29 +1,40 @@
+import { EmployeeRole } from '@/common/enums';
 import {
   AuthorizationCode,
+  DisplayLog,
+  InventoryLog,
   Otp,
+  PurchaseOrder,
+  ReturnOrder,
+  SchedulerEntry,
   Transaction,
-  User,
 } from '@/database/tenant/entities';
 import {
   Column,
   CreateDateColumn,
   Entity,
-  JoinColumn,
   OneToMany,
-  OneToOne,
-  PrimaryColumn,
+  PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 
 @Entity()
 export class Employee {
-  @PrimaryColumn({
-    type: 'uuid',
+  @PrimaryGeneratedColumn('uuid')
+  readonly id: string;
+
+  @Column({
+    unique: true,
   })
-  userId: string;
+  email: string;
+
+  @Column({
+    unique: true,
+  })
+  username: string;
 
   @Column()
-  readonly password: string;
+  password: string;
 
   @Column({ default: true })
   isActive: boolean;
@@ -34,6 +45,42 @@ export class Employee {
   })
   isFirstLogin: boolean;
 
+  @Column({
+    type: 'enum',
+    enum: EmployeeRole,
+  })
+  role: EmployeeRole;
+
+  @Column({
+    nullable: true,
+    unique: true,
+  })
+  employeeCode?: string;
+
+  @Column()
+  fullName: string;
+
+  @Column({
+    nullable: true,
+  })
+  address: string;
+
+  @Column({
+    unique: true,
+  })
+  phoneNumber: string;
+
+  @Column({
+    type: 'timestamp',
+  })
+  birthDate: Date;
+
+  @Column({
+    type: 'text',
+    nullable: true,
+  })
+  avatarUrl?: string;
+
   @CreateDateColumn({
     type: 'timestamp',
   })
@@ -43,14 +90,6 @@ export class Employee {
     type: 'timestamp',
   })
   readonly updatedAt: Date;
-
-  @OneToOne(() => User, (user) => user.employee, {
-    onDelete: 'CASCADE',
-  })
-  @JoinColumn({
-    name: 'user_id',
-  })
-  user: User;
 
   @OneToMany(() => Transaction, (transasction) => transasction.cashier, {
     cascade: true,
@@ -72,4 +111,29 @@ export class Employee {
     orphanedRowAction: 'delete',
   })
   otps: Otp[];
+
+  @OneToMany(() => PurchaseOrder, (po) => po.employee, {
+    cascade: true,
+  })
+  purchaseOrders: PurchaseOrder[];
+
+  @OneToMany(() => ReturnOrder, (ro) => ro.employee, {
+    cascade: true,
+  })
+  returnOrders: ReturnOrder[];
+
+  @OneToMany(() => DisplayLog, (dl) => dl.employee, {
+    cascade: true,
+  })
+  displayLogs: DisplayLog[];
+
+  @OneToMany(() => InventoryLog, (il) => il.employee, {
+    cascade: true,
+  })
+  inventoryLogs: InventoryLog[];
+
+  @OneToMany(() => SchedulerEntry, (se) => se.employee, {
+    cascade: true,
+  })
+  entries: SchedulerEntry[];
 }

@@ -1,5 +1,5 @@
 import { SupplyStatus } from '@/common/enums';
-import { Product, Purchase } from '@/database/tenant/entities';
+import { Product, PurchaseOrder } from '@/database/tenant/entities';
 import {
   Column,
   CreateDateColumn,
@@ -14,8 +14,16 @@ export class Supplier {
   @PrimaryGeneratedColumn('uuid')
   readonly id: string;
 
-  @Column()
+  @Column({
+    unique: true,
+  })
   name: string;
+
+  @Column({
+    nullable: true,
+    unique: true,
+  })
+  supplierCode?: string;
 
   @Column({ unique: true })
   email: string;
@@ -44,7 +52,9 @@ export class Supplier {
   @Column({ nullable: true, type: 'text' })
   note?: string;
 
-  @CreateDateColumn({ type: 'timestamp' })
+  @CreateDateColumn({
+    type: 'timestamp',
+  })
   readonly createdAt: Date;
 
   @UpdateDateColumn({
@@ -52,10 +62,10 @@ export class Supplier {
   })
   readonly updatedAt: Date;
 
-  @OneToMany(() => Purchase, (purchase) => purchase.supplier, {
+  @OneToMany(() => PurchaseOrder, (purchaseOrder) => purchaseOrder.supplier, {
     cascade: true,
   })
-  purchases: Purchase[];
+  purchaseOrders: PurchaseOrder[];
 
   @OneToMany(() => Product, (product) => product.supplier, {
     cascade: true,

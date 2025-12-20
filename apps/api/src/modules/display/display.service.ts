@@ -8,15 +8,9 @@ import {
   UpdateDisplayProductDto,
   UpdateDisplayShelfDto,
 } from '@/common/dtos';
-import {
-  BookStatus,
-  DisplayLogAction,
-  DisplayLogActorType,
-} from '@/common/enums';
+import { DisplayLogAction, DisplayProductStatus } from '@/common/enums';
 import { TUserSession } from '@/common/utils';
-import { MainUserService } from '@/database/main/services/main-user.service';
 import {
-  Book,
   DisplayLog,
   DisplayProduct,
   DisplayShelf,
@@ -24,7 +18,6 @@ import {
   Inventory,
   Product,
 } from '@/database/tenant/entities';
-import { UserRole } from '@/modules/users/enums';
 import { TenantService } from '@/tenants/tenant.service';
 import {
   BadRequestException,
@@ -32,14 +25,12 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { omit } from 'lodash';
 import { Repository } from 'typeorm';
 
 @Injectable()
 export class DisplayService {
-  constructor(
-    private readonly tenantService: TenantService,
-    private readonly mainUserService: MainUserService,
-  ) {}
+  constructor(private readonly tenantService: TenantService) {}
 
   async findDisplayShelfByField(
     field: keyof DisplayShelf,
@@ -75,9 +66,10 @@ export class DisplayService {
     );
 
     if (existingName)
-      throw new ConflictException(`Display self ${name} has been existed.`);
+      throw new ConflictException(`Kệ trưng bày ${name} đã tồn tại.`);
 
     const newDisplaySelf = displaySelfRepo.create(createDisplaySelfDto);
+
     return displaySelfRepo.save(newDisplaySelf);
   }
 
@@ -85,18 +77,28 @@ export class DisplayService {
     createDisplayProductDto: CreateDisplayProductDto,
     userSession: TUserSession,
   ) {
-    const { bookStoreId, userId, role } = userSession;
+    const { bookStoreId, userId } = userSession;
 
     const dataSource = await this.tenantService.getTenantConnection({
       bookStoreId,
     });
 
     const { productId, displayShelfId, quantity } = createDisplayProductDto;
+    const employeeRepo = dataSource.getRepository(Employee);
     const displayProductRepo = dataSource.getRepository(DisplayProduct);
     const productRepo = dataSource.getRepository(Product);
     const displayShelfRepo = dataSource.getRepository(DisplayShelf);
     const inventoryRepo = dataSource.getRepository(Inventory);
     const displayLogRepo = dataSource.getRepository(DisplayLog);
+
+    const employee = await employeeRepo.findOne({
+      where: {
+        id: userId,
+      },
+    });
+
+    if (!employee)
+      throw new NotFoundException('Không tìm thấy thông tin của bạn.');
 
     const product = await productRepo.findOne({
       where: {
@@ -108,16 +110,20 @@ export class DisplayService {
     });
 
     if (!product)
-      throw new NotFoundException(`Product with id ${productId} not found.`);
+      throw new NotFoundException(
+        `Không tìm thấy sản phẩm có mã ID '${productId}'.`,
+      );
 
     if (!product.isActive) {
       throw new BadRequestException(
-        'Cannot display a product that is not active.',
+        'Sản phẩm này đang tạm thời không hoạt động nên không thể trưng bày.',
       );
     }
 
     if (product.inventory.availableQuantity < quantity) {
-      throw new BadRequestException('Not enough inventory to display.');
+      throw new BadRequestException(
+        'Không đủ hàng tồn kho để trưng bày sản phẩm này.',
+      );
     }
 
     const existing = await displayProductRepo.findOne({
@@ -128,7 +134,7 @@ export class DisplayService {
     });
 
     if (existing) {
-      throw new BadRequestException('Product already displayed on this shelf');
+      throw new BadRequestException('Sản phẩm đã được trưng bày trên kệ này.');
     }
 
     const displayShelf = await this.findDisplayShelfByField(
@@ -139,7 +145,7 @@ export class DisplayService {
 
     if (!displayShelf)
       throw new NotFoundException(
-        `Display self with id ${displayShelfId} not found.`,
+        `Không tìm thấy kệ có mã ID '${displayShelfId}'`,
       );
 
     const newDisplayProduct = displayProductRepo.create({
@@ -150,6 +156,7 @@ export class DisplayService {
     await displayProductRepo.save(newDisplayProduct);
 
     product.inventory.availableQuantity -= createDisplayProductDto.quantity;
+    product.inventory.displayQuantity += createDisplayProductDto.quantity;
     await inventoryRepo.save(product.inventory);
 
     await this.createNewDisplayLog(
@@ -157,20 +164,19 @@ export class DisplayService {
         displayProduct: newDisplayProduct,
         shelf: displayShelf,
         action: DisplayLogAction.ADD,
-        actorId: userId,
-        actorType:
-          role === UserRole.EMPLOYEE
-            ? DisplayLogActorType.EMPLOYEE
-            : DisplayLogActorType.OWNER,
-        note: 'Create new display product',
+        employee,
+        note: 'Thêm mới sản phẩm vào kệ trưng bày',
         quantity: createDisplayProductDto.quantity,
       },
       displayLogRepo,
     );
 
     return {
-      message: `Product has been display in the shelf.`,
-      data: newDisplayProduct,
+      message: `Sản phẩm đã được trưng bày trên kệ.`,
+      data: await this.getDisplayProductDetail(
+        userSession,
+        newDisplayProduct.id,
+      ),
     };
   }
 
@@ -183,7 +189,11 @@ export class DisplayService {
 
     const displayShelfRepo = dataSource.getRepository(DisplayShelf);
 
-    return displayShelfRepo.find();
+    return displayShelfRepo.find({
+      where: {
+        isActive: true,
+      },
+    });
   }
 
   async getShelfDetail(userSession: TUserSession, shelfId: string) {
@@ -206,9 +216,12 @@ export class DisplayService {
       },
     });
 
-    if (!shelf) throw new NotFoundException('Shelf not found.');
+    if (!shelf)
+      throw new NotFoundException(
+        'Không tìm thấy thông tin trưng bày sản phẩm.',
+      );
 
-    return self;
+    return shelf;
   }
 
   async updateShelf(
@@ -224,6 +237,16 @@ export class DisplayService {
 
     const shelfRepo = dataSource.getRepository(DisplayShelf);
     const displayLogRepo = dataSource.getRepository(DisplayLog);
+    const employeeRepo = dataSource.getRepository(Employee);
+
+    const employee = await employeeRepo.findOne({
+      where: {
+        id: userSession.userId,
+      },
+    });
+
+    if (!employee)
+      throw new NotFoundException(`Không tìm thấy thông tin của bạn.`);
 
     const shelf = await shelfRepo.findOne({
       where: {
@@ -231,7 +254,7 @@ export class DisplayService {
       },
     });
 
-    if (!shelf) throw new NotFoundException('Shelf not found.');
+    if (!shelf) throw new NotFoundException('Không tìm thấy thông tin kệ sách');
 
     const { name, description } = updateDisplayShelfDto;
     shelf.name = name || shelf.name;
@@ -242,18 +265,15 @@ export class DisplayService {
       {
         shelf,
         action: DisplayLogAction.ADJUST,
-        actorId: userSession.userId,
-        actorType:
-          userSession.role === UserRole.EMPLOYEE
-            ? DisplayLogActorType.EMPLOYEE
-            : DisplayLogActorType.OWNER,
-        note: 'Update display shelf',
+        employee,
+        note: 'Cập nhật thông tin kệ sách',
       },
       displayLogRepo,
     );
 
     return {
-      message: 'Shelf has been updated successfully.',
+      message: 'Thông tin kệ sách đã được cập nhật.',
+      data: await this.getShelfDetail(userSession, shelfId),
     };
   }
 
@@ -267,6 +287,16 @@ export class DisplayService {
     const shelfRepo = dataSource.getRepository(DisplayShelf);
     const displayLogRepo = dataSource.getRepository(DisplayLog);
     const inventoryRepo = dataSource.getRepository(Inventory);
+    const employeeRepo = dataSource.getRepository(Employee);
+
+    const employee = await employeeRepo.findOne({
+      where: {
+        id: userSession.userId,
+      },
+    });
+
+    if (!employee)
+      throw new NotFoundException(`Không tìm thấy thông tin của bạn.`);
 
     const shelf = await shelfRepo.findOne({
       where: {
@@ -281,22 +311,18 @@ export class DisplayService {
       },
     });
 
-    if (!shelf) throw new NotFoundException('Shelf not found.');
+    if (!shelf)
+      throw new NotFoundException('Không tìm thấy thông tin kệ sách.');
 
-    await shelfRepo.delete({
-      id: shelfId,
-    });
+    shelf.isActive = false;
+    await shelfRepo.save(shelf);
 
     await this.createNewDisplayLog(
       {
         shelf,
         action: DisplayLogAction.REMOVE,
-        actorId: userSession.userId,
-        actorType:
-          userSession.role === UserRole.EMPLOYEE
-            ? DisplayLogActorType.EMPLOYEE
-            : DisplayLogActorType.OWNER,
-        note: 'Delete shelf',
+        employee,
+        note: 'Xoá bỏ kệ sách',
       },
       displayLogRepo,
     );
@@ -317,7 +343,7 @@ export class DisplayService {
     );
 
     return {
-      message: 'Display shelf has been deleted successfully.',
+      message: 'Kệ trưng bày đã được xoá thành công.',
     };
   }
 
@@ -329,22 +355,24 @@ export class DisplayService {
     });
 
     const displayLogRepo = dataSource.getRepository(DisplayLog);
-    const employeeRepo = dataSource.getRepository(Employee);
 
     const {
       displayShelfName,
       productName,
       productId,
-      actorId,
-      type,
+      action,
       from,
       to,
+      employeeId,
+      employeeName,
     } = getLogsQueryDto;
 
     const qb = displayLogRepo
       .createQueryBuilder('log')
-      .leftJoinAndSelect('log.product', 'product')
+      .leftJoinAndSelect('log.displayProduct', 'displayProduct')
+      .leftJoinAndSelect('displayProduct.product', 'product')
       .leftJoinAndSelect('log.shelf', 'shelf')
+      .leftJoinAndSelect('log.employee', 'employee')
       .orderBy('log.createdAt', 'DESC');
 
     const conditions = [
@@ -359,10 +387,15 @@ export class DisplayService {
         { productName: `%${productName}%` },
       ],
       [productId, 'product.id = :productId', { productId }],
-      [actorId, 'actor.id = :actorId', { actorId }],
-      [type, 'log.type = :type', { type }],
+      [action, 'log.action = :action', { action }],
       [from, 'log.createdAt >= :from', { from }],
       [to, 'log.createdAt <= :to', { to }],
+      [employeeId, 'employee.id = :employeeId', { employeeId }],
+      [
+        employeeName,
+        'employee.fullName ILIKE :employeeName',
+        { employeeName: `%${employeeName}%` },
+      ],
     ];
 
     conditions.forEach(
@@ -373,39 +406,9 @@ export class DisplayService {
 
     const logs = await qb.getMany();
 
-    const ownerIds = logs
-      .filter((l) => l.actorType === DisplayLogActorType.OWNER)
-      .map((l) => l.actorId);
-
-    const employeeIds = logs
-      .filter((l) => l.actorType === DisplayLogActorType.EMPLOYEE)
-      .map((l) => l.actorId);
-
-    const ownerMap =
-      ownerIds.length > 0
-        ? await this.mainUserService.getUseByIds(ownerIds)
-        : {};
-
-    let employees: Employee[] = [];
-    if (employeeIds.length > 0) {
-      employees = await employeeRepo
-        .createQueryBuilder('employee')
-        .where('employee.id IN (:...employeeIds)', { employeeIds })
-        .leftJoinAndSelect('employee.user', 'user')
-        .getMany();
-    }
-
-    const employeeMap: { [id: string]: Employee } = {};
-    for (const employee of employees) {
-      employeeMap[employee.userId] = employee;
-    }
-
     return logs.map((l) => ({
       ...l,
-      actorName:
-        l.actorType === DisplayLogActorType.OWNER
-          ? (ownerMap[l.actorId]?.fullName ?? 'Unknown')
-          : (employeeMap[l.actorId]?.user?.fullName ?? 'Unknown'),
+      employee: omit(l.employee, ['password']),
     }));
   }
 
@@ -427,30 +430,16 @@ export class DisplayService {
           product: true,
         },
         shelf: true,
+        employee: true,
       },
     });
 
-    if (!log) throw new NotFoundException(`Log ${logId} not found.`);
+    if (!log)
+      throw new NotFoundException(
+        `Không tìm thấy thông tin của log có ID '${logId}'.`,
+      );
 
-    let actorName = 'Unknown';
-    if (log.actorType === DisplayLogActorType.OWNER) {
-      const owner = await this.mainUserService.getUseByIds([log.actorId]);
-      actorName = owner[log.actorId]?.fullName ?? 'Unknown';
-    } else if (log.actorType === DisplayLogActorType.EMPLOYEE) {
-      const employee = await dataSource
-        .getRepository(Employee)
-        .createQueryBuilder('employee')
-        .leftJoinAndSelect('employee.user', 'user')
-        .where('employee.id = :id', { id: log.actorId })
-        .getOne();
-
-      actorName = employee?.user?.fullName ?? 'Unknown';
-    }
-
-    return {
-      ...log,
-      actorName,
-    };
+    return omit(log, ['employee.password']);
   }
 
   async getDisplayProducts(
@@ -467,7 +456,8 @@ export class DisplayService {
 
     const qb = displayProductRepo
       .createQueryBuilder('dp')
-      .leftJoinAndSelect('dp.book', 'book')
+      .leftJoinAndSelect('dp.product', 'product')
+      .leftJoinAndSelect('product.book', 'book')
       .leftJoinAndSelect('dp.displayShelf', 'shelf');
 
     const simpleFilters = {
@@ -549,14 +539,16 @@ export class DisplayService {
         id: displayProductId,
       },
       relations: {
-        product: true,
+        product: {
+          book: true,
+        },
         displayShelf: true,
       },
     });
 
     if (!displayProduct)
       throw new NotFoundException(
-        `Display product ${displayProductId} not found.`,
+        `Không tìm thấy trưng bày sản phẩm có mã ID '${displayProductId}'`,
       );
 
     return displayProduct;
@@ -575,25 +567,64 @@ export class DisplayService {
 
     const displayProductRepo = dataSource.getRepository(DisplayProduct);
     const displayLogRepo = dataSource.getRepository(DisplayLog);
+    const employeeRepo = dataSource.getRepository(Employee);
+
+    const employee = await employeeRepo.findOne({
+      where: {
+        id: userSession.userId,
+      },
+    });
+
+    if (!employee)
+      throw new NotFoundException(`Không tìm thấy thông tin của bạn.`);
 
     const displayProduct = await displayProductRepo.findOne({
       where: {
         id: displayProductId,
       },
       relations: {
-        product: true,
+        product: {
+          inventory: true,
+        },
         displayShelf: true,
       },
     });
 
     if (!displayProduct)
       throw new NotFoundException(
-        `Display product ${displayProductId} not found.`,
+        `Không tìm thấy trưng bày sản phẩm có mã ID '${displayProductId}'.`,
       );
 
-    for (const key of Object.keys(updateDisplayProductDto)) {
+    for (const key of Object.keys(
+      omit(updateDisplayProductDto, ['quantity']),
+    )) {
       if (updateDisplayProductDto[key] !== undefined) {
         displayProduct[key] = updateDisplayProductDto[key];
+      }
+    }
+
+    if (updateDisplayProductDto?.quantity !== undefined) {
+      const inventoryRepo = dataSource.getRepository(Inventory);
+      const inventory = displayProduct.product.inventory;
+
+      const newQty = updateDisplayProductDto.quantity;
+      const oldQty = displayProduct.quantity;
+      const delta = newQty - oldQty;
+
+      if (delta > 0 && delta > inventory.availableQuantity) {
+        throw new BadRequestException(
+          'Số lượng thêm vượt quá tồn kho của sản phẩm.',
+        );
+      }
+
+      if (delta !== 0) {
+        inventory.availableQuantity -= delta;
+        inventory.displayQuantity += delta;
+
+        await inventoryRepo.save(inventory);
+
+        displayProduct.quantity = newQty;
+        await displayProductRepo.save(displayProduct);
       }
     }
 
@@ -602,20 +633,22 @@ export class DisplayService {
         displayProduct,
         shelf: displayProduct.displayShelf,
         action: DisplayLogAction.ADJUST,
-        actorId: userSession.userId,
-        actorType:
-          userSession.role === UserRole.EMPLOYEE
-            ? DisplayLogActorType.EMPLOYEE
-            : DisplayLogActorType.OWNER,
-        note: 'Update display product',
+        employee,
+        note: 'Cập nhật thông tin sản phẩm trưng bày',
         ...(updateDisplayProductDto?.quantity && {
-          quantity: updateDisplayProductDto.quantity,
+          quantity:
+            (updateDisplayProductDto?.quantity > displayProduct.quantity
+              ? -1
+              : 1) * updateDisplayProductDto.quantity,
         }),
       },
       displayLogRepo,
     );
 
-    return displayProductRepo.save(displayProduct);
+    return {
+      message: 'Cập nhật thông tin trưng bày thành công.',
+      data: await displayProductRepo.save(displayProduct),
+    };
   }
 
   async deleteDisplayProductFromShelf(
@@ -630,6 +663,16 @@ export class DisplayService {
 
     const displayProductRepo = dataSource.getRepository(DisplayProduct);
     const inventoryRepo = dataSource.getRepository(Inventory);
+    const employeeRepo = dataSource.getRepository(Employee);
+
+    const employee = await employeeRepo.findOne({
+      where: {
+        id: userSession.userId,
+      },
+    });
+
+    if (!employee)
+      throw new NotFoundException(`Không tìm thấy thông tin của bạn.`);
 
     const displayProduct = await displayProductRepo.findOne({
       where: {
@@ -643,7 +686,7 @@ export class DisplayService {
 
     if (!displayProduct)
       throw new NotFoundException(
-        `Display product ${displayProductId} not found.`,
+        `Không tìm thấy trưng bày sản phẩm có mã ID '${displayProductId}'.`,
       );
 
     await displayProductRepo.delete({ id: displayProductId });
@@ -666,19 +709,15 @@ export class DisplayService {
         displayProduct,
         shelf: displayProduct.displayShelf,
         action: DisplayLogAction.RETURN_TO_INVENTORY,
-        actorId: userSession.userId,
-        actorType:
-          userSession.role === UserRole.EMPLOYEE
-            ? DisplayLogActorType.EMPLOYEE
-            : DisplayLogActorType.OWNER,
-        note: `Returned all (${displayProduct.quantity}) copies of "${displayProduct.product.name}" from shelf "${displayProduct.displayShelf.name}" to inventory`,
+        employee,
+        note: `Đã trả tất cả (${displayProduct.quantity}) bản của sản phẩm "${displayProduct.product.name}" từ kệ "${displayProduct.displayShelf.name}" về kho.`,
         quantity: displayProduct.quantity,
       },
       dataSource.getRepository(DisplayLog),
     );
 
     return {
-      message: `The display product has been successfully deleted and returned to inventory.`,
+      message: `Sản phẩm trên kệ đã được xoá thành công và trả về kho.`,
     };
   }
 
@@ -695,6 +734,16 @@ export class DisplayService {
 
     const displayProductRepo = dataSource.getRepository(DisplayProduct);
     const inventoryRepo = dataSource.getRepository(Inventory);
+    const employeeRepo = dataSource.getRepository(Employee);
+
+    const employee = await employeeRepo.findOne({
+      where: {
+        id: userSession.userId,
+      },
+    });
+
+    if (!employee)
+      throw new NotFoundException(`Không tìm thấy thông tin của bạn.`);
 
     const displayProduct = await displayProductRepo.findOne({
       where: {
@@ -708,14 +757,14 @@ export class DisplayService {
 
     if (!displayProduct)
       throw new NotFoundException(
-        `Display product ${displayProductId} not found.`,
+        `Không tìm thấy sản phẩm trưng bày có mã ID '${displayProductId}'.`,
       );
 
     const { quantity } = reduceDisplayProductQuantityDto;
 
     if (quantity > displayProduct.quantity) {
       throw new BadRequestException(
-        `The quantity to remove (${quantity}) cannot be greater than the current quantity on the shelf (${displayProduct.quantity}).`,
+        `Số lượng cần giảm (${quantity}) không được lớn hơn số lượng hiện có trên kệ (${displayProduct.quantity}).`,
       );
     }
 
@@ -733,7 +782,8 @@ export class DisplayService {
       },
     });
 
-    if (!inventory) throw new NotFoundException('Inventory of book not found.');
+    if (!inventory)
+      throw new NotFoundException('Tồn kho của sản phẩm không tồn tại.');
 
     inventory.availableQuantity += reduceDisplayProductQuantityDto.quantity;
     await inventoryRepo.save(inventory);
@@ -743,19 +793,15 @@ export class DisplayService {
         displayProduct,
         shelf: displayProduct.displayShelf,
         action: DisplayLogAction.RETURN_TO_INVENTORY,
-        actorId: userSession.userId,
-        actorType:
-          userSession.role === UserRole.EMPLOYEE
-            ? DisplayLogActorType.EMPLOYEE
-            : DisplayLogActorType.OWNER,
-        note: `Returned ${reduceDisplayProductQuantityDto.quantity} copies of "${displayProduct.product.name}" from shelf "${displayProduct.displayShelf.name}" to inventory`,
+        employee,
+        note: `Đã trả ${reduceDisplayProductQuantityDto.quantity} bản của sản phẩm "${displayProduct.product.name}" từ kệ "${displayProduct.displayShelf.name}" về kho.`,
         quantity: reduceDisplayProductQuantityDto.quantity,
       },
       dataSource.getRepository(DisplayLog),
     );
 
     return {
-      message: `Successfully returned ${reduceDisplayProductQuantityDto.quantity} copies to inventory.`,
+      message: `Đã trả thành công ${reduceDisplayProductQuantityDto.quantity} bản về kho.`,
     };
   }
 
@@ -772,6 +818,15 @@ export class DisplayService {
 
     const displayProductRepo = dataSource.getRepository(DisplayProduct);
     const displayShelfRepo = dataSource.getRepository(DisplayShelf);
+    const employeeRepo = dataSource.getRepository(Employee);
+
+    const employee = await employeeRepo.findOne({
+      where: {
+        id: userSession.userId,
+      },
+    });
+
+    if (!employee) throw new NotFoundException(`Your profile not found.`);
 
     const displayProduct = await displayProductRepo.findOne({
       where: {
@@ -787,14 +842,14 @@ export class DisplayService {
 
     if (!displayProduct)
       throw new NotFoundException(
-        `Display product ${displayProductId} not found.`,
+        `Không tìm thấy sản phẩm trưng bày có ID '${displayProductId}'.`,
       );
 
     const { targetShelfId, quantity } = moveDisplayProductDto;
 
     if (quantity && quantity > displayProduct.quantity) {
       throw new BadRequestException(
-        `The quantity to move (${quantity}) cannot be greater than the current quantity on the shelf (${displayProduct.quantity}).`,
+        `Số lượng cần di chuyển (${quantity}) không được lớn hơn số lượng hiện có trên kệ (${displayProduct.quantity})`,
       );
     }
 
@@ -808,7 +863,9 @@ export class DisplayService {
     });
 
     if (!targetShelf)
-      throw new NotFoundException(`Target shelf ${targetShelfId} not found.`);
+      throw new NotFoundException(
+        `Không tìm thấy thông tin kệ cần chuyến đến.`,
+      );
 
     const moveQty = quantity ?? displayProduct.quantity;
 
@@ -820,23 +877,23 @@ export class DisplayService {
       targetDP.quantity += moveQty;
       await displayProductRepo.save(targetDP);
     } else {
-      const newDP = displayProductRepo.create({
+      targetDP = displayProductRepo.create({
         product: displayProduct.product,
         displayShelf: targetShelf,
         quantity: moveQty,
         status: displayProduct.status,
         displayOrder: displayProduct.displayOrder,
       });
-      await displayProductRepo.save(newDP);
+      await displayProductRepo.save(targetDP);
     }
 
     displayProduct.quantity -= moveQty;
 
     if (displayProduct.quantity <= 0) {
-      await displayProductRepo.remove(displayProduct);
-    } else {
-      await displayProductRepo.save(displayProduct);
+      displayProduct.status = DisplayProductStatus.INACTIVE;
     }
+
+    await displayProductRepo.save(displayProduct);
 
     await this.createNewDisplayLog(
       {
@@ -844,18 +901,15 @@ export class DisplayService {
         displayProduct,
         shelf: targetShelf,
         action: DisplayLogAction.MOVE,
-        actorId: userSession.userId,
-        actorType:
-          userSession.role === UserRole.EMPLOYEE
-            ? DisplayLogActorType.EMPLOYEE
-            : DisplayLogActorType.OWNER,
-        note: `Moved ${moveQty} copies of "${displayProduct.product.name}" from shelf "${displayProduct.displayShelf.name}" to shelf "${targetShelf.name}"`,
+        employee,
+        note: `Đã di chuyển ${moveQty} bản của sản phẩm "${displayProduct.product.name}" từ kệ "${displayProduct.displayShelf.name}" sang kệ "${targetShelf.name}"`,
       },
       dataSource.getRepository(DisplayLog),
     );
 
     return {
-      message: `Successfully moved ${moveQty} copies.`,
+      message: `Đã di chuyển thành công ${moveQty} bản.`,
+      data: await this.getDisplayProductDetail(userSession, targetDP.id),
     };
   }
 
