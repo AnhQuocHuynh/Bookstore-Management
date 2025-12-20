@@ -19,11 +19,20 @@ export default function Step1Store({ onNext }: Step1StoreProps) {
 
   return (
     <div className="space-y-5">
+      <div className="relative">
+        <h1 className="text-lg font-semibold text-[#00796B]">
+          Thông tin nhà sách
+        </h1>
+        <p className="text-sm text-gray-600">
+          Vui lòng nhập thông tin cơ bản về nhà sách của bạn
+        </p>
+      </div>
+
       <FormField
         control={control}
         name="storeName"
         render={({ field }) => (
-          <FormItem className="flex flex-col">
+          <FormItem className="flex flex-col gap-1">
             <FormLabel>Tên nhà sách</FormLabel>
             <FormControl>
               <Input placeholder="Nhập tên nhà sách" {...field} />
@@ -37,7 +46,7 @@ export default function Step1Store({ onNext }: Step1StoreProps) {
         control={control}
         name="storePhoneNumber"
         render={({ field }) => (
-          <FormItem className="flex flex-col">
+          <FormItem className="flex flex-col gap-1">
             <FormLabel>Số điện thoại nhà sách</FormLabel>
             <FormControl>
               <Input placeholder="Nhập số điện thoại" {...field} />
@@ -51,7 +60,7 @@ export default function Step1Store({ onNext }: Step1StoreProps) {
         control={control}
         name="storeAddress"
         render={({ field }) => (
-          <FormItem className="flex flex-col">
+          <FormItem className="flex flex-col gap-1">
             <FormLabel>Địa chỉ nhà sách</FormLabel>
             <FormControl>
               <Input placeholder="Nhập địa chỉ" {...field} />

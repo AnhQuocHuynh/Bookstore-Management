@@ -60,14 +60,14 @@ export const AuthLayout = ({ children }: AuthLayoutProps) => {
           >
             {slides.map((slide, idx) => (
               <SwiperSlide key={idx}>
-                <div className="relative h-full w-full select-none pointer-events-none">
+                <div className="relative h-full w-full">
                   <img
                     src={slide.image}
                     alt={slide.author}
-                    className="absolute inset-0 w-full h-full object-cover select-none"
+                    className="absolute inset-0 w-full h-full object-cover"
                   />
                   {/* Gradient Overlay */}
-                  <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/30 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
                   {/* Content */}
                   <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6 md:px-12 text-white z-10">
                     <h2 className="text-2xl md:text-4xl font-semibold mb-4">

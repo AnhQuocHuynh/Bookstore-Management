@@ -26,12 +26,21 @@ export default function Step2Owner({ onBack, onNext }: Step2OwnerProps) {
 
   return (
     <div className="space-y-5">
+      <div className="relative">
+        <h1 className="text-lg font-semibold text-[#00796B]">
+          Thông tin của bạn
+        </h1>
+        <p className="text-sm text-gray-600">
+          Vui lòng nhập thông tin cơ bản của bạn
+        </p>
+      </div>
+
       {/* Full Name */}
       <FormField
         control={control}
         name="fullName"
         render={({ field }) => (
-          <FormItem className="flex flex-col">
+          <FormItem className="flex flex-col gap-1">
             <FormLabel>Họ và tên</FormLabel>
             <FormControl>
               <Input placeholder="Nhập họ và tên" {...field} />
@@ -46,7 +55,7 @@ export default function Step2Owner({ onBack, onNext }: Step2OwnerProps) {
         control={control}
         name="email"
         render={({ field }) => (
-          <FormItem className="flex flex-col">
+          <FormItem className="flex flex-col gap-1">
             <FormLabel>Email</FormLabel>
             <FormControl>
               <Input type="email" placeholder="Nhập email" {...field} />
@@ -61,7 +70,7 @@ export default function Step2Owner({ onBack, onNext }: Step2OwnerProps) {
         control={control}
         name="phoneNumber"
         render={({ field }) => (
-          <FormItem className="flex flex-col">
+          <FormItem className="flex flex-col gap-1">
             <FormLabel>Số điện thoại</FormLabel>
             <FormControl>
               <Input placeholder="Nhập số điện thoại" {...field} />
@@ -75,7 +84,7 @@ export default function Step2Owner({ onBack, onNext }: Step2OwnerProps) {
         control={control}
         name="birthDate"
         render={() => (
-          <FormItem className="flex flex-col">
+          <FormItem className="flex flex-col gap-1">
             <FormLabel>Ngày sinh</FormLabel>
             <FormControl>
               <Controller
@@ -123,7 +132,7 @@ export default function Step2Owner({ onBack, onNext }: Step2OwnerProps) {
         control={control}
         name="address"
         render={({ field }) => (
-          <FormItem className="flex flex-col">
+          <FormItem className="flex flex-col gap-1">
             <FormLabel>Địa chỉ</FormLabel>
             <FormControl>
               <Input placeholder="Nhập địa chỉ" {...field} />

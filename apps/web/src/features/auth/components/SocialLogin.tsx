@@ -25,7 +25,7 @@ const SocialLogin = ({
         <Button
           type="button"
           variant="outline"
-          className="h-12 gap-2 rounded-xl border-gray-200 hover:bg-gray-50"
+          className="h-12 gap-2 rounded-xl border-gray-200 hover:bg-gray-50 cursor-pointer"
           onClick={onGoogleLogin}
         >
           <FcGoogle className="h-5 w-5" />
@@ -35,7 +35,7 @@ const SocialLogin = ({
         <Button
           type="button"
           variant="outline"
-          className="h-12 gap-2 rounded-xl border-gray-200 hover:bg-gray-50"
+          className="h-12 gap-2 rounded-xl border-gray-200 hover:bg-gray-50 cursor-pointer"
           onClick={onFacebookLogin}
         >
           <FaFacebook className="h-5 w-5 text-[#1877F2]" />
