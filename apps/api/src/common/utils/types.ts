@@ -1,3 +1,4 @@
+import { ProductType } from '@/common/enums';
 import { UserRole } from '@/modules/users/enums';
 import Redis from 'ioredis';
 
@@ -51,3 +52,12 @@ export type WeekScheduleDto = {
   weekEnd: string;
   schedule: DayScheduleDto[];
 };
+
+export interface ItemsSold {
+  total: number;
+  breakdown: {
+    [ProductType.BOOK]: number;
+    [ProductType.STATIONERY]: number;
+    [ProductType.OTHER]: number;
+  };
+}

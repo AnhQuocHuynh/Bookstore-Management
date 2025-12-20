@@ -2,6 +2,8 @@ import { apiClient } from "@/lib/axios";
 import type {
   SignInDto,
   SignInResponse,
+  SignUpDto,
+  SignUpResponse,
   ForgetPasswordDto,
   ForgetPasswordResponse,
   VerifyOtpDto,
@@ -25,7 +27,22 @@ export const authApi = {
   login: async (body: SignInDto): Promise<SignInResponse> => {
     const response = await apiClient.post<SignInResponse>(
       "/auth/sign-in",
-      body
+      body,
+    );
+    return response.data;
+  },
+
+  /**
+   * Register a new bookstore owner account
+   * This creates both the owner account and the bookstore in one request
+   * An OTP will be sent to the provided email for verification
+   * @param body - Registration data including owner info and bookstore info
+   * @returns Response with success message
+   */
+  register: async (body: SignUpDto): Promise<SignUpResponse> => {
+    const response = await apiClient.post<SignUpResponse>(
+      "/auth/sign-up",
+      body,
     );
     return response.data;
   },
@@ -39,7 +56,7 @@ export const authApi = {
   checkEmail: async (email: string): Promise<ForgetPasswordResponse> => {
     const response = await apiClient.post<ForgetPasswordResponse>(
       "/auth/forget-password",
-      { email } as ForgetPasswordDto
+      { email } as ForgetPasswordDto,
     );
     return response.data;
   },
@@ -53,7 +70,7 @@ export const authApi = {
   sendOtp: async (body: ResendOtpDto): Promise<ResendOtpResponse> => {
     const response = await apiClient.post<ResendOtpResponse>(
       "/auth/resend-otp",
-      body
+      body,
     );
     return response.data;
   },
@@ -67,7 +84,7 @@ export const authApi = {
   verifyOtp: async (body: VerifyOtpDto): Promise<VerifyOtpResponse> => {
     const response = await apiClient.post<VerifyOtpResponse>(
       "/auth/verify-otp",
-      body
+      body,
     );
     return response.data;
   },
@@ -80,13 +97,12 @@ export const authApi = {
    * @returns Response with success message
    */
   resetPassword: async (
-    body: ResetPasswordDto
+    body: ResetPasswordDto,
   ): Promise<ResetPasswordResponse> => {
     const response = await apiClient.post<ResetPasswordResponse>(
       "/auth/reset-password",
-      body
+      body,
     );
     return response.data;
   },
 };
-

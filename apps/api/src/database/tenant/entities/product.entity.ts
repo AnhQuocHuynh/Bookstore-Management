@@ -8,6 +8,7 @@ import {
   PurchaseOrderDetail,
   ReturnOrderDetail,
   Supplier,
+  TransactionDetail,
 } from '@/database/tenant/entities';
 import {
   Column,
@@ -51,6 +52,9 @@ export class Product {
     transformer: DecimalTransformer,
   })
   price: number;
+
+  @Column({ nullable: true, type: 'text' })
+  imageUrl?: string;
 
   @Column({
     type: 'enum',
@@ -128,4 +132,7 @@ export class Product {
     type: 'timestamp',
   })
   readonly deletedAt?: Date;
+
+  @OneToMany(() => TransactionDetail, (td) => td.product)
+  transactionDetails: TransactionDetail[];
 }

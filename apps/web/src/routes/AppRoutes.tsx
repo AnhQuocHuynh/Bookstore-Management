@@ -1,27 +1,14 @@
-import { Routes, Route, Navigate, Outlet } from "react-router-dom";
-import { MainLayout } from "../layouts/MainLayout";
-import { AuthLayout } from "../layouts/AuthLayout";
-import { ProtectedRoute } from "./ProtectedRoute";
-import { TokenProtectedRoute } from "./TokenProtectedRoute";
-import { PublicRoute } from "./PublicRoute";
+import LoginPage from "@/features/auth/pages/LoginPage";
+import RegisterPage from "@/features/auth/pages/RegisterPage";
+import { Navigate, Outlet, Route, Routes } from "react-router-dom";
+import { ForgotPasswordPage } from "../features/auth/pages/ForgotPasswordPage";
 import { DashboardPage } from "../features/dashboard/components/DashboardPage";
 import { ProductsPage } from "../features/products/components/ProductsPage";
-import { ForgotPasswordPage } from "../features/auth/pages/ForgotPasswordPage";
-
-// Auth pages (placeholder)
-const LoginPage = () => (
-  <div className="text-center">
-    <h1 className="text-2xl font-bold mb-4">Đăng nhập</h1>
-    <p>Trang đăng nhập đang được phát triển...</p>
-  </div>
-);
-
-const RegisterPage = () => (
-  <div className="text-center">
-    <h1 className="text-2xl font-bold mb-4">Đăng ký</h1>
-    <p>Trang đăng ký đang được phát triển...</p>
-  </div>
-);
+import { AuthLayout } from "../layouts/AuthLayout";
+import { MainLayout } from "../layouts/MainLayout";
+import { ProtectedRoute } from "./ProtectedRoute";
+import { PublicRoute } from "./PublicRoute";
+import { TokenProtectedRoute } from "./TokenProtectedRoute";
 
 // Select Store Page (Semi-protected: requires token but no store)
 const SelectStorePage = () => (

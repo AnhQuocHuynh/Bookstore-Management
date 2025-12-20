@@ -51,6 +51,12 @@ export class Employee {
   })
   role: EmployeeRole;
 
+  @Column({
+    nullable: true,
+    unique: true,
+  })
+  employeeCode?: string;
+
   @Column()
   fullName: string;
 
