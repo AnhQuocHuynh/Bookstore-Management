@@ -74,7 +74,8 @@ export class PublishersService {
       },
     });
 
-    if (!publisher) throw new NotFoundException('Publisher not found.');
+    if (!publisher)
+      throw new NotFoundException('Không tìm thấy thông tin nhà xuất bản.');
     return publisher;
   }
 
@@ -94,7 +95,8 @@ export class PublishersService {
       },
     });
 
-    if (!publisher) throw new NotFoundException('Publisher not found.');
+    if (!publisher)
+      throw new NotFoundException('Không tìm thấy thông tin nhà xuất bản.');
     assignDefined(publisher, updatePublisherDto);
     await publisherRepo.save(publisher);
 
@@ -126,7 +128,7 @@ export class PublishersService {
 
     if (existing)
       throw new ConflictException(
-        `This ${field} has already been used by another supplier.`,
+        `${field === 'name' ? 'Tên' : field === 'email' ? 'Email' : 'Số điện thoại'} này đã được sử dụng bởi một nhà xuất bản khác.`,
       );
   }
 }
