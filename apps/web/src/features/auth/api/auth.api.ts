@@ -2,6 +2,8 @@ import { apiClient } from "@/lib/axios";
 import type {
   SignInDto,
   SignInResponse,
+  SignUpDto,
+  SignUpResponse,
   ForgetPasswordDto,
   ForgetPasswordResponse,
   VerifyOtpDto,
@@ -25,6 +27,21 @@ export const authApi = {
   login: async (body: SignInDto): Promise<SignInResponse> => {
     const response = await apiClient.post<SignInResponse>(
       "/auth/sign-in",
+      body,
+    );
+    return response.data;
+  },
+
+  /**
+   * Register a new bookstore owner account
+   * This creates both the owner account and the bookstore in one request
+   * An OTP will be sent to the provided email for verification
+   * @param body - Registration data including owner info and bookstore info
+   * @returns Response with success message
+   */
+  register: async (body: SignUpDto): Promise<SignUpResponse> => {
+    const response = await apiClient.post<SignUpResponse>(
+      "/auth/sign-up",
       body,
     );
     return response.data;
