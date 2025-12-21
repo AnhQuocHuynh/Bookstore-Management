@@ -18,6 +18,9 @@ export const registerSchema = z
     address: z.string().min(1, "Vui lòng nhập địa chỉ"),
     password: z.string().min(8, "Mật khẩu phải có ít nhất 8 ký tự"),
     confirmPassword: z.string().min(8, "Mật khẩu xác nhận không khớp"),
+    agreeTerms: z.boolean().refine((v) => v, {
+      message: "Bạn cần đồng ý với Điều khoản & Chính sách",
+    }),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Mật khẩu xác nhận không khớp",

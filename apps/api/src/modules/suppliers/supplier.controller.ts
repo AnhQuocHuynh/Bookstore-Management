@@ -88,7 +88,8 @@ export class SupplierController {
 
   @ApiOperation({
     summary: 'Lấy thông tin chi tiết nhà cung cấp',
-    description: 'Đường dẫn này dùng để lấy thông tin chi tiết của một nhà cung cấp.',
+    description:
+      'Đường dẫn này dùng để lấy thông tin chi tiết của một nhà cung cấp.',
   })
   @ApiParam({
     name: 'id',

@@ -21,9 +21,7 @@ export class UpdateReturnOrderDetailDto {
   @Min(0)
   refundAmount?: number;
 
-  @ValidateIf(
-    (dto, value) => value !== undefined,
-  )
+  @ValidateIf((dto, value) => value !== undefined)
   @IsUUID()
   @IsOptional()
   newProductId?: string;
@@ -33,4 +31,3 @@ export class UpdateReturnOrderDetailDto {
   @MaxLength(500)
   reason?: string;
 }
-

@@ -321,7 +321,11 @@ export class ReturnOrdersService {
     });
   }
 
-  async deleteDetail(returnOrderId: string, detailId: string, bookStoreId: string) {
+  async deleteDetail(
+    returnOrderId: string,
+    detailId: string,
+    bookStoreId: string,
+  ) {
     const dataSource = await this.tenantService.getTenantConnection({
       bookStoreId,
     });
@@ -410,10 +414,7 @@ export class ReturnOrdersService {
     });
   }
 
-  async approveReturnOrder(
-    returnOrderId: string,
-    userSession: TUserSession,
-  ) {
+  async approveReturnOrder(returnOrderId: string, userSession: TUserSession) {
     const dataSource = await this.tenantService.getTenantConnection({
       bookStoreId: userSession.bookStoreId,
     });
@@ -434,9 +435,7 @@ export class ReturnOrdersService {
 
         if (detail.type === ReturnExchangeDetailType.EXCHANGE) {
           if (!detail.newProduct) {
-            throw new BadRequestException(
-              'Chi tiết đổi phải có sản phẩm mới.',
-            );
+            throw new BadRequestException('Chi tiết đổi phải có sản phẩm mới.');
           }
 
           const inventoryRepo = manager.getRepository(Inventory);
@@ -490,4 +489,3 @@ export class ReturnOrdersService {
     });
   }
 }
-

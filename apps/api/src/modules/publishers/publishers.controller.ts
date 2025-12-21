@@ -92,7 +92,8 @@ export class PublishersController {
 
   @ApiOperation({
     summary: 'Lấy thông tin chi tiết nhà xuất bản',
-    description: 'Đường dẫn này dùng để lấy thông tin chi tiết của một nhà xuất bản.',
+    description:
+      'Đường dẫn này dùng để lấy thông tin chi tiết của một nhà xuất bản.',
   })
   @ApiParam({
     name: 'id',

@@ -64,6 +64,8 @@ export default function RegisterPage() {
             </p>
           </div>
 
+          <hr className="border-t border-gray-300 my-6" />
+
           {/* Steps */}
           {step === 1 && (
             <Step1Store

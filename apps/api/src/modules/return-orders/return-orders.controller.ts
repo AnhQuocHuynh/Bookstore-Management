@@ -231,10 +231,6 @@ export class ReturnOrdersController {
     @Param('id', ParseUUIDPipe) id: string,
     @UserSession() userSession: TUserSession,
   ) {
-    return this.returnOrdersService.approveReturnOrder(
-      id,
-      userSession,
-    );
+    return this.returnOrdersService.approveReturnOrder(id, userSession);
   }
 }
-

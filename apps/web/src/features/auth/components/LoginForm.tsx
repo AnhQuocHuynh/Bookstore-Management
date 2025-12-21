@@ -1,5 +1,5 @@
-import SocialLogin from "@/features/auth/components/SocialLogin";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
   FormControl,
@@ -9,6 +9,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import SocialLogin from "@/features/auth/components/SocialLogin";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useState } from "react";
@@ -17,8 +18,8 @@ import { Link } from "react-router-dom";
 import { z } from "zod";
 
 const formSchema = z.object({
-  email: z.email("Email không hợp lệ."),
-  password: z.string().min(1, "Mật khẩu không được để trống."),
+  email: z.email("Email không hợp lệ"),
+  password: z.string().min(1, "Mật khẩu không được để trống"),
   rememberMe: z.boolean().optional(),
 });
 
@@ -112,24 +113,29 @@ const LoginForm = () => {
             )}
           />
 
-          {/* Options */}
           <div className="flex items-center justify-between text-sm">
             <FormField
               control={form.control}
               name="rememberMe"
               render={({ field }) => (
-                <FormItem className="flex items-center gap-2 space-y-0">
+                <FormItem className="flex flex-col gap-1">
                   <FormControl>
-                    <input
-                      type="checkbox"
-                      checked={field.value}
-                      onChange={field.onChange}
-                      className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
-                    />
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="rememberMe"
+                        checked={field.value}
+                        onCheckedChange={(checked) => field.onChange(checked)}
+                        className="focus:ring-emerald-500"
+                      />
+                      <FormLabel
+                        htmlFor="rememberMe"
+                        className="text-sm text-gray-700 cursor-pointer"
+                      >
+                        Ghi nhớ đăng nhập
+                      </FormLabel>
+                    </div>
                   </FormControl>
-                  <FormLabel className="cursor-pointer text-gray-600">
-                    Ghi nhớ đăng nhập
-                  </FormLabel>
+                  <FormMessage className="text-red-500" />
                 </FormItem>
               )}
             />

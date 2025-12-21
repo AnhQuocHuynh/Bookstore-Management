@@ -12,4 +12,3 @@ export class CreateReturnOrderDto {
   @MaxLength(500)
   note?: string;
 }
-

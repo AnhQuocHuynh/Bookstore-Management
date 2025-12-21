@@ -32,6 +32,4 @@ export class AddReturnOrderDetailDto {
   @IsString()
   @MaxLength(500)
   reason?: string;
-
 }
-

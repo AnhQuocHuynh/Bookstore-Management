@@ -26,7 +26,7 @@ export default function Step2Owner({ onBack, onNext }: Step2OwnerProps) {
 
   return (
     <div className="space-y-5">
-      <div className="relative">
+      <div className="relative flex flex-col items-center justify-center text-center">
         <h1 className="text-lg font-semibold text-[#00796B]">
           Thông tin của bạn
         </h1>

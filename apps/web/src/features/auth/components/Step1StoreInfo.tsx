@@ -19,7 +19,7 @@ export default function Step1Store({ onNext }: Step1StoreProps) {
 
   return (
     <div className="space-y-5">
-      <div className="relative">
+      <div className="relative flex flex-col items-centern justify-center text-center">
         <h1 className="text-lg font-semibold text-[#00796B]">
           Thông tin nhà sách
         </h1>

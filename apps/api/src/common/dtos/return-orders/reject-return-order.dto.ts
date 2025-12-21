@@ -6,4 +6,3 @@ export class RejectReturnOrderDto {
   @MaxLength(500)
   note?: string;
 }
-
