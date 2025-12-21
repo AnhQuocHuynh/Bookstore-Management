@@ -1,35 +1,55 @@
 // src/features/auth/pages/SelectStorePage.tsx
-import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Spin, Button, message, Empty } from "antd";
+import { message, Spin, Empty, Button } from "antd";
 import { useBookStores } from "../hooks/useBookStores";
 import { SelectStoreCard } from "../components/SelectStoreCard";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { authApi } from "../api/auth.api";
 import { BookStore } from "../types/bookstore.types";
 
 const SelectStorePage = () => {
     const navigate = useNavigate();
-    const { setStore, accessToken } = useAuthStore();
-    const { data: stores, isLoading, error } = useBookStores();
+    const { systemToken, tempCredentials, setAccessToken, setStore, clearTemp } = useAuthStore();
+    const { data: stores, isLoading, error } = useBookStores(systemToken || "");
 
-    // Nếu không có token → quay về login
-    useEffect(() => {
-        if (!accessToken) {
-            message.error("Phiên đăng nhập hết hạn");
+    const handleSelectStore = async (store: BookStore) => {
+        if (!tempCredentials || !systemToken) {
+            message.error("Dữ liệu tạm thời bị mất. Vui lòng đăng nhập lại.");
             navigate("/auth/login");
+            return;
         }
-    }, [accessToken, navigate]);
 
-    const handleSelectStore = (store: BookStore) => {
-        setStore({
-            id: store.id,
-            name: store.name,
-            address: store.address,
-            phone: store.phoneNumber,
-        });
-        message.success(`Đã chọn: ${store.name}`);
-        navigate("/dashboard");
+        try {
+            const body = {
+                ...tempCredentials,
+                bookStoreId: store.id,
+            };
+
+            const response = await authApi.bookstoreLogin(systemToken, body);
+
+            const accessToken = response.accessToken;
+            if (!accessToken) throw new Error("Không nhận được accessToken");
+
+            setAccessToken(accessToken);
+            setStore({
+                id: store.id,
+                name: store.name,
+                address: store.address,
+                phone: store.phoneNumber,
+            });
+
+            clearTemp(); // Xóa temp credentials
+            message.success(`Đã chọn và đăng nhập nhà sách: ${store.name}`);
+            navigate("/dashboard");
+        } catch (err: any) {
+            message.error(err?.response?.data?.message || "Đăng nhập nhà sách thất bại");
+        }
     };
+
+    if (!systemToken) {
+        navigate("/auth/login");
+        return null;
+    }
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-teal-50 to-cyan-50 flex items-center justify-center p-6">

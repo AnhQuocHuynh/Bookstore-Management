@@ -1,36 +1,27 @@
-import LoginForm from "@/features/auth/components/LoginForm";
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { useAuthStore } from "@/stores/useAuthStore";
-import { Sparkles } from "lucide-react";
+// src/features/auth/pages/LoginPage.tsx
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { Button, Checkbox, Input } from "antd";
 import { toast } from "sonner";
 import { authApi } from "../api/auth.api";
-import { getRandomSampleOwner } from "../constants/sampleData";
+import { useAuthStore } from "@/stores/useAuthStore";
+import { Eye, EyeOff } from "lucide-react";
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const login = useAuthStore((state) => state.login);
+  const { login } = useAuthStore();
 
-  const [showPassword, setShowPassword] = useState(false);
+  const [emailOrUsername, setEmailOrUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-
-  function fillSampleData() {
-    const sample = getRandomSampleOwner();
-    setEmail(sample.email);
-    setPassword(sample.password);
-    toast.success("Đã điền dữ liệu mẫu!");
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("Form submitted:", { emailOrUsername, password });
 
-    if (!email.trim() || !password.trim()) {
+    if (!emailOrUsername.trim() || !password.trim()) {
       toast.error("Vui lòng nhập đầy đủ thông tin");
       return;
     }
@@ -38,50 +29,88 @@ const LoginPage = () => {
     setIsLoading(true);
 
     try {
-      const response = await authApi.login({ email, password });
-      const accessToken = response.accessToken || response.token;
+      let response;
+      const isOwner = emailOrUsername.includes("@"); // Detect Owner nếu có @ (email)
 
-      if (!accessToken) throw new Error("Không nhận được token");
+      if (isOwner) {
+        // Owner/Admin system login
+        response = await authApi.systemLoginOwner({
+          email: emailOrUsername,
+          password,
+        });
+      } else {
+        // Employee system login (chỉ username)
+        response = await authApi.systemLoginEmployee({
+          username: emailOrUsername,
+        });
+      }
+
+      console.log("API response:", response);
+      const systemToken = response.token;
+      if (!systemToken) throw new Error("Không nhận được token");
 
       const user = {
         id: response.profile.id,
-        email: response.profile.email,
+        email: response.profile.email || "",
         name: response.profile.fullName,
         role: response.profile.role,
-        avatar:
-          response.profile.avatarUrl || response.profile.logoUrl || undefined,
+        avatar: response.profile.avatarUrl,
       };
 
-      login(user, accessToken);
-      toast.success("Đăng nhập thành công!");
+      // Lưu temp credentials (password cần cho bookstore login)
+      const tempCreds = {
+        [isOwner ? "email" : "username"]: emailOrUsername,
+        password,
+        role: user.role as "OWNER" | "EMPLOYEE",
+      };
+
+      login(user, systemToken, tempCreds);
+      toast.success("Đăng nhập hệ thống thành công!");
       navigate("/auth/select-store");
     } catch (error: any) {
-      toast.error(
-        error?.response?.data?.message || error?.message || "Đăng nhập thất bại"
-      );
+      console.error("Lỗi đăng nhập chi tiết:", error);
+      console.error("Response từ server:", error.response?.data);
+      const errorMsg =
+        error.response?.data?.message ||
+        error.message ||
+        "Đăng nhập thất bại. Vui lòng thử lại.";
+      toast.error(errorMsg);
     } finally {
       setIsLoading(false);
     }
-  }
+  };
 
   return (
-    <div className="h-screen flex items-center justify-center w-full">
-      <ScrollArea className="h-dvh w-full flex justify-center">
-        <div className="w-full max-w-md px-4 py-10">
-          <Link
-            to="/"
-            className="inline-flex items-center text-sm font-semibold text-[#26A69A] 
-            hover:text-[#00796B] mb-8 group"
+    <div className="w-full max-w-md mx-auto">
+      <h1 className="text-2xl font-bold mb-6 text-center">Đăng nhập</h1>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <Input
+          placeholder="Email (Owner/Admin) hoặc Username (Employee)"
+          value={emailOrUsername}
+          onChange={(e) => setEmailOrUsername(e.target.value)}
+        />
+        <div className="relative">
+          <Input
+            type={showPassword ? "text" : "password"}
+            placeholder="Mật khẩu"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3 top-1/2 -translate-y-1/2"
           >
-            <span className="mr-1 group-hover:-translate-x-1 transition-transform">
-              ←
-            </span>
-            Quay Lại
-          </Link>
-
-          <LoginForm />
+            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+          </button>
         </div>
-      </ScrollArea>
+        <Checkbox checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)}>
+          Ghi nhớ đăng nhập
+        </Checkbox>
+        <Button type="primary" block htmlType="submit" loading={isLoading}>
+          Đăng nhập
+        </Button>
+      </form>
     </div>
   );
 };

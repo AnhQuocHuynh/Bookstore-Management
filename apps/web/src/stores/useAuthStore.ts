@@ -16,14 +16,25 @@ export interface Store {
   phone?: string;
 }
 
+interface TempCredentials {
+  email?: string;
+  username?: string;
+  password: string;
+  role: "OWNER" | "EMPLOYEE";
+}
+
 interface AuthState {
   user: User | null;
   accessToken: string | null;
   currentStore: Store | null;
   isAuthenticated: boolean;
-  login: (user: User, accessToken: string) => void;
-  logout: () => void;
+  systemToken: string | null; // Token tạm từ system login
+  tempCredentials: TempCredentials | null; // Credentials tạm (memory only)
+  login: (user: User, systemToken: string, tempCreds: TempCredentials) => void;
   setStore: (store: Store) => void;
+  setAccessToken: (accessToken: string) => void;
+  clearTemp: () => void;
+  logout: () => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -33,30 +44,39 @@ export const useAuthStore = create<AuthState>()(
       accessToken: null,
       currentStore: null,
       isAuthenticated: false,
+      systemToken: null,
+      tempCredentials: null,
 
-      login: (user, accessToken) => {
-        set({
-          user,
-          accessToken,
-          isAuthenticated: true,
-        });
-      },
+      login: (user, systemToken, tempCreds) => set({
+        user,
+        systemToken,
+        tempCredentials,
+        isAuthenticated: true,
+      }),
 
-      logout: () => {
-        set({
-          user: null,
-          accessToken: null,
-          currentStore: null,
-          isAuthenticated: false,
-        });
-      },
+      setStore: (store) => set({ currentStore: store }),
 
-      setStore: (store) => {
-        set({ currentStore: store });
-      },
+      setAccessToken: (accessToken) => set({ accessToken }),
+
+      clearTemp: () => set({ systemToken: null, tempCredentials: null }),
+
+      logout: () => set({
+        user: null,
+        accessToken: null,
+        currentStore: null,
+        systemToken: null,
+        tempCredentials: null,
+        isAuthenticated: false,
+      }),
     }),
     {
-      name: "auth-storage", // localStorage key
+      name: "auth-storage",
+      partialize: (state) => ({ // Không persist temp
+        user: state.user,
+        accessToken: state.accessToken,
+        currentStore: state.currentStore,
+        isAuthenticated: state.isAuthenticated,
+      }),
     },
   ),
 );

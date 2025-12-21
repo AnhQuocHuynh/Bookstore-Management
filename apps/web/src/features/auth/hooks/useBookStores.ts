@@ -1,13 +1,14 @@
 // src/features/auth/hooks/useBookStores.ts
 import { useQuery } from "@tanstack/react-query";
-import { bookstoreApi } from "../api/bookstore.api";
-import { BookStore } from "../types/bookstore.types";
+import { authApi } from "../api/auth.api";
+import { BookStore } from "../types";
 
-export const useBookStores = () => {
+export const useBookStores = (token: string) => {
     return useQuery<BookStore[], Error>({
-        queryKey: ["bookstores"],
-        queryFn: bookstoreApi.getAll,
-        staleTime: 5 * 60 * 1000, // 5 phút
+        queryKey: ["bookstores", token],
+        queryFn: () => authApi.getBookStores(token),
+        enabled: !!token,
+        staleTime: 5 * 60 * 1000,
         retry: 1,
     });
 };
