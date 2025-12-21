@@ -28,9 +28,9 @@ interface AuthState {
   accessToken: string | null;
   currentStore: Store | null;
   isAuthenticated: boolean;
-  systemToken: string | null; // Token tạm từ system login
+
   tempCredentials: TempCredentials | null; // Credentials tạm (memory only)
-  login: (user: User, systemToken: string, tempCreds: TempCredentials) => void;
+  login: (user: User, accessToken: string, tempCreds: TempCredentials) => void;
   setStore: (store: Store) => void;
   setAccessToken: (accessToken: string) => void;
   clearTemp: () => void;
@@ -44,12 +44,12 @@ export const useAuthStore = create<AuthState>()(
       accessToken: null,
       currentStore: null,
       isAuthenticated: false,
-      systemToken: null,
+
       tempCredentials: null,
 
-      login: (user, systemToken, tempCreds) => set({
+      login: (user, accessToken, tempCredentials) => set({
         user,
-        systemToken,
+        accessToken: accessToken,
         tempCredentials,
         isAuthenticated: true,
       }),
@@ -58,13 +58,13 @@ export const useAuthStore = create<AuthState>()(
 
       setAccessToken: (accessToken) => set({ accessToken }),
 
-      clearTemp: () => set({ systemToken: null, tempCredentials: null }),
+      clearTemp: () => set({ tempCredentials: null }),
 
       logout: () => set({
         user: null,
         accessToken: null,
         currentStore: null,
-        systemToken: null,
+
         tempCredentials: null,
         isAuthenticated: false,
       }),

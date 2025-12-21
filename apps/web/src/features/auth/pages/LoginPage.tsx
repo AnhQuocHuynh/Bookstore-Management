@@ -32,6 +32,12 @@ const LoginPage = () => {
       let response;
       const isOwner = emailOrUsername.includes("@"); // Detect Owner nếu có @ (email)
 
+      console.log("Dữ liệu gửi đi:", {
+        emailOrUsername,
+        password,
+        isOwner: emailOrUsername.includes("@")
+      });
+
       if (isOwner) {
         // Owner/Admin system login
         response = await authApi.systemLoginOwner({
@@ -46,8 +52,8 @@ const LoginPage = () => {
       }
 
       console.log("API response:", response);
-      const systemToken = response.token;
-      if (!systemToken) throw new Error("Không nhận được token");
+      const token = response.token;
+      if (!token) throw new Error("Không nhận được token");
 
       const user = {
         id: response.profile.id,
@@ -64,7 +70,7 @@ const LoginPage = () => {
         role: user.role as "OWNER" | "EMPLOYEE",
       };
 
-      login(user, systemToken, tempCreds);
+      login(user, token, tempCreds);
       toast.success("Đăng nhập hệ thống thành công!");
       navigate("/auth/select-store");
     } catch (error: any) {

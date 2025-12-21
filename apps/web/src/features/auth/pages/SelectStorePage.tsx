@@ -9,11 +9,11 @@ import { BookStore } from "../types/bookstore.types";
 
 const SelectStorePage = () => {
     const navigate = useNavigate();
-    const { systemToken, tempCredentials, setAccessToken, setStore, clearTemp } = useAuthStore();
-    const { data: stores, isLoading, error } = useBookStores(systemToken || "");
+    const { accessToken, tempCredentials, setAccessToken, setStore, clearTemp } = useAuthStore();
+    const { data: stores, isLoading, error } = useBookStores(accessToken || "");
 
     const handleSelectStore = async (store: BookStore) => {
-        if (!tempCredentials || !systemToken) {
+        if (!tempCredentials || !accessToken) {
             message.error("Dữ liệu tạm thời bị mất. Vui lòng đăng nhập lại.");
             navigate("/auth/login");
             return;
@@ -25,12 +25,12 @@ const SelectStorePage = () => {
                 bookStoreId: store.id,
             };
 
-            const response = await authApi.bookstoreLogin(systemToken, body);
+            const response = await authApi.bookstoreLogin(accessToken, body);
 
-            const accessToken = response.accessToken;
-            if (!accessToken) throw new Error("Không nhận được accessToken");
+            const newAccessToken = response.accessToken;
+            if (!newAccessToken) throw new Error("Không nhận được accessToken");
 
-            setAccessToken(accessToken);
+            setAccessToken(newAccessToken);
             setStore({
                 id: store.id,
                 name: store.name,
@@ -46,7 +46,7 @@ const SelectStorePage = () => {
         }
     };
 
-    if (!systemToken) {
+    if (!accessToken) {
         navigate("/auth/login");
         return null;
     }
