@@ -6,6 +6,12 @@ import { ProductsPage } from "../features/products/components/ProductsPage";
 import { EmployeesPage } from "../features/employees/components/EmployeesPage";
 import { SuppliersPage } from "../features/suppliers/components/SuppliersPage";
 
+import { AuthLayout } from "../layouts/AuthLayout";
+import { MainLayout } from "../layouts/MainLayout";
+import { ProtectedRoute } from "./ProtectedRoute";
+import { PublicRoute } from "./PublicRoute";
+import { TokenProtectedRoute } from "./TokenProtectedRoute";
+
 // Auth pages (placeholder)
 const RegisterPage = () => (
   <div className="text-center">
