@@ -4,20 +4,24 @@ import { Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { ForgotPasswordPage } from "../features/auth/pages/ForgotPasswordPage";
 import { DashboardPage } from "../features/dashboard/components/DashboardPage";
 import { ProductsPage } from "../features/products/components/ProductsPage";
+import { EmployeesPage } from "../features/employees/components/EmployeesPage";
+import { SuppliersPage } from "../features/suppliers/components/SuppliersPage";
+
 import { AuthLayout } from "../layouts/AuthLayout";
 import { MainLayout } from "../layouts/MainLayout";
 import { ProtectedRoute } from "./ProtectedRoute";
 import { PublicRoute } from "./PublicRoute";
 import { TokenProtectedRoute } from "./TokenProtectedRoute";
 import VerifyEmailPage from "@/features/auth/pages/VerifyEmailPage";
+import SelectStorePage from "@/features/auth/pages/SelectStorePage";
 
 // Select Store Page (Semi-protected: requires token but no store)
-const SelectStorePage = () => (
-  <div className="text-center">
-    <h1 className="text-2xl font-bold mb-4">Chọn cửa hàng</h1>
-    <p>Trang chọn cửa hàng đang được phát triển...</p>
-  </div>
-);
+// const SelectStorePage = () => (
+//   <div className="text-center">
+//     <h1 className="text-2xl font-bold mb-4">Chọn cửa hàng</h1>
+//     <p>Trang chọn cửa hàng đang được phát triển...</p>
+//   </div>
+// );
 
 // Placeholder pages
 const SalesPage = () => (
@@ -34,17 +38,10 @@ const InventoryPage = () => (
   </div>
 );
 
-const EmployeesPage = () => (
+const PartnersPage = () => (
   <div>
-    <h1 className="text-2xl font-bold mb-6">Nhân viên</h1>
-    <p>Trang nhân viên đang được phát triển...</p>
-  </div>
-);
-
-const ReportsPage = () => (
-  <div>
-    <h1 className="text-2xl font-bold mb-6">Báo cáo</h1>
-    <p>Trang báo cáo đang được phát triển...</p>
+    <h1 className="text-2xl font-bold mb-6">Đối tác</h1>
+    <p>Trang đối tác đang được phát triển...</p>
   </div>
 );
 
@@ -91,19 +88,78 @@ export const AppRoutes = () => {
               <Outlet />
             </MainLayout>
           }
-        >
-          <Route index element={<Navigate to="/dashboard" replace />} />
-          <Route path="dashboard" element={<DashboardPage />} />
-          <Route path="sales" element={<SalesPage />} />
-          <Route path="products" element={<ProductsPage />} />
-          <Route path="inventory" element={<InventoryPage />} />
-          <Route path="employees" element={<EmployeesPage />} />
-          <Route path="reports" element={<ReportsPage />} />
-        </Route>
+        />
+        <Route
+          path="/dashboard"
+          element={
+            <MainLayout>
+              <DashboardPage />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/products"
+          element={
+            <MainLayout>
+              <ProductsPage />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/sales"
+          element={
+            <MainLayout>
+              <SalesPage />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/inventory"
+          element={
+            <MainLayout>
+              <InventoryPage />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/partners"
+          element={
+            <MainLayout>
+              <PartnersPage />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/employees"
+          element={
+            <MainLayout>
+              <EmployeesPage />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/suppliers"
+          element={
+            <MainLayout>
+              <SuppliersPage />
+            </MainLayout>
+          }
+        />
       </Route>
 
       {/* 404 - Redirect to login */}
       <Route path="*" element={<Navigate to="/auth/login" replace />} />
+
+      <Route element={<TokenProtectedRoute />}>
+        <Route
+          path="/auth/select-store"
+          element={
+            <AuthLayout>
+              <SelectStorePage />
+            </AuthLayout>
+          }
+        />
+      </Route>
     </Routes>
   );
 };
