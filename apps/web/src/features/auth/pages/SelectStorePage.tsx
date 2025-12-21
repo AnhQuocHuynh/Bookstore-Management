@@ -1,6 +1,6 @@
 // src/features/auth/pages/SelectStorePage.tsx
 import { useNavigate } from "react-router-dom";
-import { message, Spin, Empty, Button } from "antd";
+import { message, Spin, Button } from "antd";
 import { useBookStores } from "../hooks/useBookStores";
 import { SelectStoreCard } from "../components/SelectStoreCard";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -9,40 +9,58 @@ import { BookStore } from "../types/bookstore.types";
 
 const SelectStorePage = () => {
     const navigate = useNavigate();
-    const { accessToken, tempCredentials, setAccessToken, setStore, clearTemp } = useAuthStore();
+    // Lấy accessToken (đang là system token) và credentials tạm
+    const { accessToken, tempCredentials, setStoreToken } = useAuthStore();
+    
+    // API getBookStores dùng accessToken hiện tại (system token)
     const { data: stores, isLoading, error } = useBookStores(accessToken || "");
 
     const handleSelectStore = async (store: BookStore) => {
-        if (!tempCredentials || !accessToken) {
-            message.error("Dữ liệu tạm thời bị mất. Vui lòng đăng nhập lại.");
+        if (!accessToken || !tempCredentials) {
+            message.error("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.");
             navigate("/auth/login");
             return;
         }
 
         try {
             const body = {
-                ...tempCredentials,
+                email: tempCredentials.email,
+                username: tempCredentials.username,
+                password: tempCredentials.password, // Pass lấy từ store
                 bookStoreId: store.id,
             };
 
+            // Gọi API login bước 2, truyền token hiện tại vào query param
             const response = await authApi.bookstoreLogin(accessToken, body);
 
             const newAccessToken = response.accessToken;
-            if (!newAccessToken) throw new Error("Không nhận được accessToken");
+            if (!newAccessToken) throw new Error("Không nhận được Access Token");
 
-            setAccessToken(newAccessToken);
-            setStore({
-                id: store.id,
-                name: store.name,
-                address: store.address,
-                phone: store.phoneNumber,
-            });
+            // Lúc này cả Owner và Employee đều trả về profile đầy đủ -> Map lại user
+            const finalUser = {
+                id: response.profile.id,
+                email: response.profile.email,
+                name: response.profile.fullName,
+                role: response.profile.role,
+                avatar: response.profile.avatarUrl,
+            };
 
-            clearTemp(); // Xóa temp credentials
-            message.success(`Đã chọn và đăng nhập nhà sách: ${store.name}`);
+            const storeInfo = {
+                id: response.bookStoreId,
+                name: store.name, 
+                address: response.profile.address, 
+                phone: response.profile.phoneNumber,
+            };
+
+            // CẬP NHẬT STORE: Ghi đè accessToken cũ bằng cái mới
+            setStoreToken(newAccessToken, storeInfo, finalUser);
+
+            message.success(`Đã vào cửa hàng: ${store.name}`);
             navigate("/dashboard");
+
         } catch (err: any) {
-            message.error(err?.response?.data?.message || "Đăng nhập nhà sách thất bại");
+            console.error(err);
+            message.error(err?.response?.data?.message || "Đăng nhập vào cửa hàng thất bại");
         }
     };
 
@@ -54,60 +72,28 @@ const SelectStorePage = () => {
     return (
         <div className="min-h-screen bg-gradient-to-br from-teal-50 to-cyan-50 flex items-center justify-center p-6">
             <div className="w-full max-w-5xl">
-                {/* Header */}
                 <div className="text-center mb-10">
                     <h1 className="text-3xl md:text-4xl font-bold text-teal-800 mb-3">
-                        Chọn nhà sách của bạn
+                        Chọn chi nhánh làm việc
                     </h1>
-                    <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                        Bạn đang quản lý nhiều nhà sách. Vui lòng chọn một nhà sách để bắt đầu làm việc với{" "}
-                        <span className="font-bold text-teal-600">BookFlow</span>.
-                    </p>
                 </div>
 
-                {/* Loading */}
-                {isLoading && (
-                    <div className="flex flex-col items-center py-20">
-                        <Spin size="large" />
-                        <p className="mt-4 text-lg text-gray-600">Đang tải danh sách nhà sách...</p>
+                {isLoading && <div className="flex justify-center py-20"><Spin size="large" /></div>}
+                
+                {error && (
+                    <div className="text-center text-red-500">
+                        {error.message} <br/>
+                        <Button onClick={() => window.location.reload()}>Thử lại</Button>
                     </div>
                 )}
 
-                {/* Error */}
-                {error && !isLoading && (
-                    <div className="text-center py-20">
-                        <p className="text-red-600 text-lg mb-4">
-                            {error.message || "Không thể tải danh sách nhà sách"}
-                        </p>
-                        <Button type="primary" onClick={() => window.location.reload()}>
-                            Thử lại
-                        </Button>
-                    </div>
-                )}
-
-                {/* Empty State */}
-                {!isLoading && !error && (!stores || stores.length === 0) && (
-                    <div className="text-center py-20">
-                        <Empty description="Bạn chưa có nhà sách nào" />
-                        <Button
-                            type="primary"
-                            size="large"
-                            className="mt-6"
-                            onClick={() => navigate("/auth/register")}
-                        >
-                            Tạo nhà sách mới
-                        </Button>
-                    </div>
-                )}
-
-                {/* Danh sách nhà sách */}
-                {!isLoading && !error && stores && stores.length > 0 && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {!isLoading && stores && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         {stores.map((store) => (
-                            <SelectStoreCard
-                                key={store.id}
-                                store={store}
-                                onSelect={handleSelectStore}
+                            <SelectStoreCard 
+                                key={store.id} 
+                                store={store} 
+                                onSelect={handleSelectStore} 
                             />
                         ))}
                     </div>
