@@ -13,6 +13,7 @@ import { ProtectedRoute } from "./ProtectedRoute";
 import { PublicRoute } from "./PublicRoute";
 import { TokenProtectedRoute } from "./TokenProtectedRoute";
 import VerifyEmailPage from "@/features/auth/pages/VerifyEmailPage";
+import SelectStorePage from "@/features/auth/pages/SelectStorePage";
 
 // Select Store Page (Semi-protected: requires token but no store)
 const SelectStorePage = () => (
@@ -148,6 +149,17 @@ export const AppRoutes = () => {
 
       {/* 404 - Redirect to login */}
       <Route path="*" element={<Navigate to="/auth/login" replace />} />
+
+      <Route element={<TokenProtectedRoute />}>
+        <Route
+          path="/auth/select-store"
+          element={
+            <AuthLayout>
+              <SelectStorePage />
+            </AuthLayout>
+          }
+        />
+      </Route>
     </Routes>
   );
 };

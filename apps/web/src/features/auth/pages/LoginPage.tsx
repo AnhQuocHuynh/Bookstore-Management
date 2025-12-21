@@ -54,7 +54,7 @@ const LoginPage = () => {
 
       login(user, accessToken);
       toast.success("Đăng nhập thành công!");
-      navigate("/dashboard");
+      navigate("/auth/select-store");
     } catch (error: any) {
       toast.error(
         error?.response?.data?.message || error?.message || "Đăng nhập thất bại"
