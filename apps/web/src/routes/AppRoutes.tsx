@@ -9,6 +9,7 @@ import { MainLayout } from "../layouts/MainLayout";
 import { ProtectedRoute } from "./ProtectedRoute";
 import { PublicRoute } from "./PublicRoute";
 import { TokenProtectedRoute } from "./TokenProtectedRoute";
+import VerifyEmailPage from "@/features/auth/pages/VerifyEmailPage";
 
 // Select Store Page (Semi-protected: requires token but no store)
 const SelectStorePage = () => (
@@ -62,6 +63,7 @@ export const AppRoutes = () => {
         >
           <Route path="login" element={<LoginPage />} />
           <Route path="register" element={<RegisterPage />} />
+          <Route path="verify-email" element={<VerifyEmailPage />} />
         </Route>
       </Route>
 

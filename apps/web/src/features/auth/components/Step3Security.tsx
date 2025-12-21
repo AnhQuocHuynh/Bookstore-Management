@@ -13,6 +13,7 @@ import { RegisterFormValues } from "@/features/auth/schema/register.schema";
 import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { useFormContext } from "react-hook-form";
+import { useNavigate } from "react-router-dom";
 
 interface Step3SecurityProps {
   onBack: () => void;
@@ -22,8 +23,10 @@ export default function Step3Security({ onBack }: Step3SecurityProps) {
   const { control, handleSubmit } = useFormContext<RegisterFormValues>();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const navigate = useNavigate();
 
   const onSubmit = (data: RegisterFormValues) => {
+    navigate("/auth/verify-email");
     console.log("Submit:", data);
   };
 

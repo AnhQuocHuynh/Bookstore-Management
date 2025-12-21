@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
-import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, EffectFade, Pagination } from "swiper/modules";
+import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/swiper-bundle.css";
 
 interface AuthLayoutProps {
@@ -64,12 +64,19 @@ export const AuthLayout = ({ children }: AuthLayoutProps) => {
                   <img
                     src={slide.image}
                     alt={slide.author}
-                    className="absolute inset-0 w-full h-full object-cover"
+                    className="absolute inset-0 w-full h-full object-cover select-none 
+                    pointer-events-none"
                   />
                   {/* Gradient Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+                  <div
+                    className="absolute inset-0 bg-linear-to-t from-black/70 
+                  via-black/30 to-transparent"
+                  />
                   {/* Content */}
-                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6 md:px-12 text-white z-10">
+                  <div
+                    className="absolute inset-0 flex flex-col items-center 
+                  justify-center text-center px-6 md:px-12 text-white z-10 select-none"
+                  >
                     <h2 className="text-2xl md:text-4xl font-semibold mb-4">
                       "{slide.quote}"
                     </h2>
