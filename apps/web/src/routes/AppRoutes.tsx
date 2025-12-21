@@ -16,12 +16,12 @@ import VerifyEmailPage from "@/features/auth/pages/VerifyEmailPage";
 import SelectStorePage from "@/features/auth/pages/SelectStorePage";
 
 // Select Store Page (Semi-protected: requires token but no store)
-const SelectStorePage = () => (
-  <div className="text-center">
-    <h1 className="text-2xl font-bold mb-4">Chọn cửa hàng</h1>
-    <p>Trang chọn cửa hàng đang được phát triển...</p>
-  </div>
-);
+// const SelectStorePage = () => (
+//   <div className="text-center">
+//     <h1 className="text-2xl font-bold mb-4">Chọn cửa hàng</h1>
+//     <p>Trang chọn cửa hàng đang được phát triển...</p>
+//   </div>
+// );
 
 // Placeholder pages
 const SalesPage = () => (
