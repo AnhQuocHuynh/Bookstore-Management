@@ -1,51 +1,46 @@
 // src/features/auth/pages/LoginPage.tsx
+import LoginForm from "@/features/auth/components/LoginForm";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Button, Checkbox, Input } from "antd";
 import { toast } from "sonner";
 import { authApi } from "../api/auth.api";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { Eye, EyeOff } from "lucide-react";
+import { z } from "zod";
+
+const formSchema = z.object({
+  emailOrUsername: z.string().min(1, "Vui lòng nhập email hoặc username"),
+  password: z.string().min(1, "Mật khẩu không được để trống"),
+  rememberMe: z.boolean().optional(),
+});
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const { setSystemToken } = useAuthStore(); // Dùng action setSystemToken
+  const { setSystemToken } = useAuthStore();
 
-  const [emailOrUsername, setEmailOrUsername] = useState("");
-  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!emailOrUsername.trim() || !password.trim()) {
-      toast.error("Vui lòng nhập đầy đủ thông tin");
-      return;
-    }
-
+  const handleSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
+
     try {
-      const isOwner = emailOrUsername.includes("@");
+      const isOwner = values.emailOrUsername.includes("@");
       let response;
 
-      // Bước 1: Gọi API lấy System Token
       if (isOwner) {
         response = await authApi.systemLoginOwner({
-          email: emailOrUsername.trim(),
-          password: password,
+          email: values.emailOrUsername.trim(),
+          password: values.password,
         });
       } else {
         response = await authApi.systemLoginEmployee({
-          username: emailOrUsername.trim(),
+          username: values.emailOrUsername.trim(),
         });
       }
 
       const token = response.token;
       if (!token) throw new Error("Không nhận được token");
 
-      // XỬ LÝ USER PROFILE AN TOÀN
-      // Với Employee: response chỉ có { token: "..." }, không có profile -> user = null
-      // Với Owner: response có { token, profile: {...} } -> map user
       let userData = null;
       if (response.profile) {
         userData = {
@@ -57,21 +52,19 @@ const LoginPage = () => {
         };
       }
 
-      // Lưu vào Store: Token + Pass tạm + User (nếu có)
       setSystemToken(
         token,
         {
-          email: isOwner ? emailOrUsername.trim() : undefined,
-          username: !isOwner ? emailOrUsername.trim() : undefined,
-          password: password, // Lưu pass để dùng cho bước sau
-          role: isOwner ? "OWNER" : "EMPLOYEE"
+          email: isOwner ? values.emailOrUsername.trim() : undefined,
+          username: !isOwner ? values.emailOrUsername.trim() : undefined,
+          password: values.password, // Lưu tạm password
+          role: isOwner ? "OWNER" : "EMPLOYEE",
         },
-        userData as any // Employee sẽ là null, không sao cả
+        userData as any
       );
 
       toast.success("Xác thực thành công!");
       navigate("/auth/select-store");
-
     } catch (error: any) {
       console.error("Login Error:", error);
       const msg = error.response?.data?.message || "Đăng nhập thất bại";
@@ -82,33 +75,23 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto">
-      <h1 className="text-2xl font-bold mb-6 text-center">Đăng nhập</h1>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <Input
-          placeholder="Email (Chủ) hoặc Username (Nhân viên)"
-          value={emailOrUsername}
-          onChange={(e) => setEmailOrUsername(e.target.value)}
-        />
-        <div className="relative">
-          <Input
-            type={showPassword ? "text" : "password"}
-            placeholder="Mật khẩu"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2"
+    <div className="h-screen flex items-center justify-center w-full">
+      <ScrollArea className="h-dvh w-full flex justify-center">
+        <div className="w-full max-w-md px-4 py-10">
+          <Link
+            to="/"
+            className="inline-flex items-center text-sm font-semibold text-[#26A69A] 
+            hover:text-[#00796B] mb-8 group"
           >
-            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-          </button>
+            <span className="mr-1 group-hover:-translate-x-1 transition-transform">
+              ←
+            </span>
+            Quay Lại
+          </Link>
+
+          <LoginForm onSubmit={handleSubmit} isLoading={isLoading} />
         </div>
-        <Button type="primary" block htmlType="submit" loading={isLoading}>
-          Tiếp tục
-        </Button>
-      </form>
+      </ScrollArea>
     </div>
   );
 };
