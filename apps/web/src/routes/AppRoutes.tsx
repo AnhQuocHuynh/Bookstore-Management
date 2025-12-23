@@ -74,14 +74,7 @@ export const AppRoutes = () => {
 
       {/* Semi-Protected: Select Store (Requires Token, but NO Store yet) */}
       <Route element={<TokenProtectedRoute />}>
-        <Route
-          path="/auth/select-store"
-          element={
-            <AuthLayout>
-              <SelectStorePage />
-            </AuthLayout>
-          }
-        />
+        <Route path="/select-store" element={<SelectStorePage />} />
       </Route>
 
       {/* Fully Protected: App Routes (Requires Token + Store) */}
@@ -154,17 +147,6 @@ export const AppRoutes = () => {
 
       {/* 404 - Redirect to login */}
       <Route path="*" element={<Navigate to="/auth/login" replace />} />
-
-      <Route element={<TokenProtectedRoute />}>
-        <Route
-          path="/auth/select-store"
-          element={
-            <AuthLayout>
-              <SelectStorePage />
-            </AuthLayout>
-          }
-        />
-      </Route>
     </Routes>
   );
 };

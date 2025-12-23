@@ -42,7 +42,7 @@ const LoginForm = ({ onSubmit, isLoading }: LoginFormProps) => {
   });
 
   return (
-    <div className="relative flex flex-col gap-4 py-6">
+    <div className="relative flex flex-col gap-4">
       <div className="flex flex-col gap-1 items-center text-center">
         <h1 className="text-2xl font-bold text-gray-800">Chào mừng trở lại!</h1>
         <p className="text-sm text-gray-500">
@@ -51,20 +51,18 @@ const LoginForm = ({ onSubmit, isLoading }: LoginFormProps) => {
         </p>
       </div>
 
+      <hr className="border-t border-gray-300 my-3" />
+
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          {/* Email hoặc Username */}
           <FormField
             control={form.control}
             name="emailOrUsername"
             render={({ field }) => (
               <FormItem className="flex flex-col gap-1">
-                <FormLabel>Email hoặc Username</FormLabel>
+                <FormLabel>Email/Username</FormLabel>
                 <FormControl>
-                  <Input
-                    placeholder="Email (chủ) hoặc Username (nhân viên)"
-                    {...field}
-                  />
+                  <Input placeholder="Nhập email hoặc username" {...field} />
                 </FormControl>
                 <FormMessage className="text-red-500" />
               </FormItem>
@@ -100,9 +98,9 @@ const LoginForm = ({ onSubmit, isLoading }: LoginFormProps) => {
                         transition-colors
                         focus:outline-none
                       "
-                    // Giải thích:
-                    // top-0 h-full: Button cao bằng input
-                    // flex items-center justify-center: Icon luôn ở chính giữa button
+                      // Giải thích:
+                      // top-0 h-full: Button cao bằng input
+                      // flex items-center justify-center: Icon luôn ở chính giữa button
                     >
                       {showPassword ? (
                         <EyeOff className="h-5 w-5" />
@@ -170,9 +168,9 @@ const LoginForm = ({ onSubmit, isLoading }: LoginFormProps) => {
               text-base font-bold
               transition-all cursor-pointer
             "
-          // Giải thích:
-          // border-0: Xóa viền nếu button mặc định là outline
-          // !bg-...: Dấu ! (important) ép buộc dùng màu gradient này đè lên màu mặc định của Shadcn
+            // Giải thích:
+            // border-0: Xóa viền nếu button mặc định là outline
+            // !bg-...: Dấu ! (important) ép buộc dùng màu gradient này đè lên màu mặc định của Shadcn
           >
             {isLoading ? (
               <span className="flex items-center gap-2">

@@ -63,8 +63,8 @@ const LoginPage = () => {
         userData as any
       );
 
-      toast.success("Xác thực thành công!");
-      navigate("/auth/select-store");
+      toast.success("Đăng nhập thành công!");
+      navigate("/select-store");
     } catch (error: any) {
       console.error("Login Error:", error);
       const msg = error.response?.data?.message || "Đăng nhập thất bại";

@@ -12,7 +12,7 @@ export const ProtectedRoute = () => {
 
   // Có token mà chưa có store -> Về trang chọn store
   if (!currentStore) {
-    return <Navigate to="/auth/select-store" replace />;
+    return <Navigate to="/select-store" replace />;
   }
 
   return <Outlet />;
