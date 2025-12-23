@@ -3,17 +3,18 @@ import RegisterPage from "@/features/auth/pages/RegisterPage";
 import { Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { ForgotPasswordPage } from "../features/auth/pages/ForgotPasswordPage";
 import { DashboardPage } from "../features/dashboard/components/DashboardPage";
-import { ProductsPage } from "../features/products/components/ProductsPage";
 import { EmployeesPage } from "../features/employees/components/EmployeesPage";
+import { ProductsPage } from "../features/products/components/ProductsPage";
 import { SuppliersPage } from "../features/suppliers/components/SuppliersPage";
 
+import SelectStorePage from "@/features/auth/pages/SelectStorePage";
+import VerifyEmailPage from "@/features/auth/pages/VerifyEmailPage";
+import VerifyEmailSuccessPage from "@/features/auth/pages/VerifyEmailSuccessPage";
 import { AuthLayout } from "../layouts/AuthLayout";
 import { MainLayout } from "../layouts/MainLayout";
 import { ProtectedRoute } from "./ProtectedRoute";
 import { PublicRoute } from "./PublicRoute";
 import { TokenProtectedRoute } from "./TokenProtectedRoute";
-import VerifyEmailPage from "@/features/auth/pages/VerifyEmailPage";
-import SelectStorePage from "@/features/auth/pages/SelectStorePage";
 
 // Select Store Page (Semi-protected: requires token but no store)
 // const SelectStorePage = () => (
@@ -61,6 +62,10 @@ export const AppRoutes = () => {
           <Route path="login" element={<LoginPage />} />
           <Route path="register" element={<RegisterPage />} />
           <Route path="verify-email" element={<VerifyEmailPage />} />
+          <Route
+            path="verify-email/success"
+            element={<VerifyEmailSuccessPage />}
+          />
         </Route>
       </Route>
 

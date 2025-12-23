@@ -67,10 +67,13 @@ export const ForgotPasswordPage = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-[#E0F2F1] to-[#B2DFDB] px-4">
+    <div
+      className="min-h-screen flex items-center justify-center bg-linear-to-br! 
+    from-[#99dad4] to-[#88b7b2] px-4"
+    >
       <div className="w-full max-w-md">
         <FormProvider {...form}>
-          <div className="max-w-xl mx-auto py-10 px-10 bg-white rounded-3xl shadow-sm p-8">
+          <div className="max-w-xl mx-auto py-10 px-10 bg-white rounded-3xl shadow-lg p-8">
             <Link
               to="/auth/login"
               className="inline-flex items-center text-sm font-semibold text-[#26A69A] hover:text-[#00796B] mb-8 transition-colors group"
