@@ -1,20 +1,35 @@
 import { CustomerType } from '@/common/enums';
-import { CustomerCompany } from '@/database/tenant/entities';
+import { CustomerCompany, ReturnOrder } from '@/database/tenant/entities';
 import {
   Column,
   CreateDateColumn,
   Entity,
-  JoinColumn,
+  OneToMany,
   OneToOne,
-  PrimaryColumn,
+  PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { User } from './user.entity';
 
 @Entity()
 export class Customer {
-  @PrimaryColumn({ name: 'user_id', type: 'uuid' })
-  userId: string;
+  @PrimaryGeneratedColumn('uuid')
+  readonly id: string;
+
+  @Column({
+    unique: true,
+  })
+  email: string;
+
+  @Column()
+  fullName: string;
+
+  @Column({
+    unique: true,
+  })
+  phoneNumber: string;
+
+  @Column()
+  address: string;
 
   @Column({
     type: 'text',
@@ -27,15 +42,6 @@ export class Customer {
     enum: CustomerType,
   })
   customerType: CustomerType;
-
-  @OneToOne(() => User, (user) => user.customer, {
-    onDelete: 'CASCADE',
-    eager: true,
-  })
-  @JoinColumn({
-    name: 'user_id',
-  })
-  user: User;
 
   @CreateDateColumn({
     type: 'timestamp',
@@ -51,4 +57,9 @@ export class Customer {
     cascade: true,
   })
   company: CustomerCompany;
+
+  @OneToMany(() => ReturnOrder, (ro) => ro.customer, {
+    cascade: true,
+  })
+  returnOrders: ReturnOrder[];
 }

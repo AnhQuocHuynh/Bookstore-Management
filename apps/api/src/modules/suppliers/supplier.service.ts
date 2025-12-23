@@ -1,9 +1,8 @@
-import { assignDefined, TUserSession } from '@/common/utils';
+import { assignDefined } from '@/common/utils';
 import { Supplier } from '@/database/tenant/entities';
 import { CreateSupplierDto, UpdateSupplierDto } from '@/modules/suppliers/dto';
 import { TenantService } from '@/tenants/tenant.service';
 import {
-  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -47,7 +46,7 @@ export class SupplierService {
 
     if (existingSupplierEmail)
       throw new ConflictException(
-        'This email has already been used by another supplier.',
+        'Email này đã được sử dụng bởi một nhà cung cấp khác.',
       );
 
     const existingSupplierPhone = await supplierRepo.findOne({
@@ -58,10 +57,13 @@ export class SupplierService {
 
     if (existingSupplierPhone)
       throw new ConflictException(
-        'This phone number has already been used by another supplier.',
+        'Số điện thoại này đã được sử dụng bởi một nhà cung cấp khác.',
       );
 
-    const newSupplier = supplierRepo.create(createSupplierDto);
+    const newSupplier = supplierRepo.create({
+      ...createSupplierDto,
+      supplierCode: await this.generateSupplierCode(supplierRepo),
+    });
 
     return supplierRepo.save(newSupplier);
   }
@@ -88,7 +90,8 @@ export class SupplierService {
       },
     });
 
-    if (!findSupplier) throw new NotFoundException('Supplier info not found.');
+    if (!findSupplier)
+      throw new NotFoundException('Không tìm thấy thông tin nhà cung cấp.');
 
     return findSupplier;
   }
@@ -124,5 +127,26 @@ export class SupplierService {
     });
 
     return this.getSuppliers(bookStoreId);
+  }
+
+  private async generateSupplierCode(
+    repo: Repository<Supplier>,
+  ): Promise<string> {
+    let unique = false;
+    let code = '';
+
+    while (!unique) {
+      const date = new Date();
+      const dateStr = `${(date.getMonth() + 1).toString().padStart(2, '0')}${date.getDate().toString().padStart(2, '0')}`;
+      const randomNum = Math.floor(1000 + Math.random() * 9000);
+      code = `SUP-${dateStr}-${randomNum}`;
+
+      const existing = await repo.findOne({ where: { supplierCode: code } });
+      if (!existing) {
+        unique = true;
+      }
+    }
+
+    return code;
   }
 }

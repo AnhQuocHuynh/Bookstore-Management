@@ -26,6 +26,7 @@ import {
   ResetPasswordDto,
   SignInDto,
   SignInOfBookStoreDto,
+  SignInOfEmployeeDto,
   SignUpDto,
   VerifyOtpDto,
 } from '@/modules/auth/dto';
@@ -63,19 +64,13 @@ export class AuthService {
   ) {}
 
   async signIn(signInDto: SignInDto, response: Response) {
-    const { email, password, role } = signInDto;
+    const { email, password } = signInDto;
     const user = await this.mainUserService.findUserByField('email', email);
 
-    if (role === UserRole.CUSTOMER) {
-      throw new ForbiddenException(
-        'Customer is not allowed to perform this action.',
-      );
-    }
+    if (!user || (user && !(await verifyPassword(password, user.password))))
+      throw new UnauthorizedException('Invalid credentials.');
 
-    if (role === UserRole.ADMIN) {
-      if (!user || (user && !(await verifyPassword(password, user.password))))
-        throw new UnauthorizedException('Invalid credentials.');
-
+    if (user.role === UserRole.ADMIN) {
       const { accessToken, refreshToken } = await this.generateTokens(
         user.id,
         user.role,
@@ -89,10 +84,8 @@ export class AuthService {
       };
     }
 
-    const isOwner = role === UserRole.OWNER && user !== null;
-
     const payload = {
-      role,
+      role: user.role,
       email,
     };
 
@@ -103,9 +96,7 @@ export class AuthService {
 
     return {
       token,
-      data: isOwner
-        ? await this.mainBookStoreService.getBookStoresOfUser(user.id)
-        : await this.mainEmployeeMappingService.findBookStoresOfEmployee(email),
+      profile: omit(user, ['password']),
     };
   }
 
@@ -114,37 +105,46 @@ export class AuthService {
     token: string,
     response: Response,
   ) {
+    const { email, password, bookStoreId, username } = signInOfBookStoreDto;
     let isOwner = false;
+    let payload: any = null;
 
     try {
-      const payload = this.jwtService.verify<{ role: UserRole; email: string }>(
-        token,
-        {
-          secret: this.configService.get('jwt_secret'),
-        },
-      );
+      payload = this.jwtService.verify<{
+        role: UserRole;
+        email?: string;
+        username?: string;
+      }>(token, {
+        secret: this.configService.get('jwt_secret'),
+      });
 
       const isValidRole = [UserRole.EMPLOYEE, UserRole.OWNER].includes(
         payload.role,
       );
-      const isValidEmail = payload.email === signInOfBookStoreDto.email;
 
-      if (!isValidRole || !isValidEmail) {
-        throw new UnauthorizedException('Invalid token.');
-      }
+      if (!isValidRole) throw new Error('Invalid token.');
 
       isOwner = payload.role === UserRole.OWNER;
-    } catch {
-      throw new GoneException('Invalid or expired token.');
+    } catch (error) {
+      throw new UnauthorizedException('Invalid or expired token.');
     }
 
-    const { email, password, bookStoreId } = signInOfBookStoreDto;
+    if (payload?.role === UserRole.OWNER && username?.trim())
+      throw new BadRequestException('Owner should not provide a username.');
+
+    if (payload?.role === UserRole.EMPLOYEE && email?.trim())
+      throw new BadRequestException('Employee should not provide an email.');
+
     let userId: string = '';
     let profile: any = null;
     let storeCode: string = '';
 
     if (isOwner) {
+      if (!email)
+        throw new BadRequestException('Owner must be provide an email.');
+
       const user = await this.mainUserService.findUserByField('email', email);
+
       if (!user || (user && !(await verifyPassword(password, user.password))))
         throw new UnauthorizedException('Invalid credentials.');
 
@@ -163,12 +163,17 @@ export class AuthService {
       profile = omit(user, ['password']);
       storeCode = bookStore.code;
     } else {
+      if (!username?.trim())
+        throw new BadRequestException('Employee must be provide a username.');
+
       const employeeMappings =
-        await this.mainEmployeeMappingService.findBookStoresOfEmployee(email);
+        await this.mainEmployeeMappingService.findBookStoresOfEmployee(
+          username,
+        );
 
       const bookStores = employeeMappings.map((em) => em.bookstore);
-
       let seletecBookStore: BookStore | null = null;
+
       for (const bs of bookStores) {
         if (bs.id === bookStoreId) {
           seletecBookStore = bs;
@@ -188,20 +193,32 @@ export class AuthService {
 
       const employee = await employeeRepo.findOne({
         where: {
-          user: {
-            employee: true,
-          },
-        },
-        relations: {
-          user: true,
+          username,
         },
       });
 
-      if (!employee || !(await verifyPassword(password, employee.password))) {
+      if (
+        !employee ||
+        (employee && !(await verifyPassword(password, employee.password)))
+      ) {
         throw new UnauthorizedException('Invalid credentails.');
       }
 
-      userId = employee.userId;
+      if (employee.isFirstLogin) {
+        const token = await this.jwtService.signAsync({
+          username: employee.username,
+          bookStoreId,
+        });
+
+        return {
+          token,
+          message:
+            'Welcome! Since this is your first login, please change your password.',
+          isFirstLogin: true,
+        };
+      }
+
+      userId = employee.id;
       profile = omit(employee, ['password']);
       storeCode = seletecBookStore.code;
     }
@@ -222,9 +239,37 @@ export class AuthService {
     };
   }
 
+  async signInOfEmployee(signInOfEmployeeDto: SignInOfEmployeeDto) {
+    const { username } = signInOfEmployeeDto;
+
+    const employeeMappings =
+      await this.mainEmployeeMappingService.findBookStoresOfEmployee(username);
+
+    const payload = {
+      role: UserRole.EMPLOYEE,
+      username,
+    };
+
+    const token = this.jwtService.sign(payload, {
+      secret: this.configService.get('jwt_secret'),
+      expiresIn: this.configService.get('jwt_expiration_time', '120s'),
+    });
+
+    return {
+      token,
+    };
+  }
+
   async signUp(signUpDto: SignUpDto) {
-    const { email, password, fullName, createBookStoreDto, phoneNumber } =
-      signUpDto;
+    const {
+      email,
+      password,
+      fullName,
+      createBookStoreDto,
+      phoneNumber,
+      birthDate,
+      address,
+    } = signUpDto;
 
     const existingEmail = await this.mainUserService.findUserByField(
       'email',
@@ -253,6 +298,8 @@ export class AuthService {
       password,
       fullName,
       phoneNumber,
+      address,
+      birthDate,
     });
 
     const bookStoreData = await this.mainBookStoreService.createNewBookStore(
@@ -266,7 +313,8 @@ export class AuthService {
     );
 
     return {
-      message: `The OTP has been sent to your email.`,
+      message:
+        'Mã OTP xác thực tài khoản đã được gửi đến email của bạn. Vui lòng kiểm tra để hoàn tất đăng ký.',
     };
   }
 
@@ -330,7 +378,8 @@ export class AuthService {
           {
             ownerName: user.fullName,
             storeName: bookStore.name,
-            storecode: bookStore.code,
+            ownerEmail: user.email,
+            storeCode: bookStore.code,
             address: bookStore.address,
             phoneNumber: bookStore.phoneNumber,
             dashboardUrl: '',
@@ -368,12 +417,13 @@ export class AuthService {
     return {
       message:
         type === OtpTypeEnum.SIGN_UP
-          ? 'Your account has been verified successfully. Registration completed.'
-          : `OTP has been verified successfully.`,
+          ? 'Tài khoản của bạn đã được xác thực thành công. Quá trình đăng ký đã hoàn tất.'
+          : 'OTP đã được xác thực thành công.',
       ...(authCode?.trim() && { authCode }),
       ...(type === OtpTypeEnum.SIGN_UP &&
-        storeCode?.trim() && {
-          bookStoreId: validRecord?.metadata?.bookStoreId ?? '',
+        storeCode?.trim() &&
+        validRecord?.metadata?.bookStoreId?.trim() && {
+          bookStoreId: validRecord?.metadata?.bookStoreId,
           storeCode,
         }),
     };
@@ -396,7 +446,7 @@ export class AuthService {
 
     await this.revokeRefreshToken(user.id, role, refreshToken, bookStoreId);
     return {
-      message: 'Signed out successfully.',
+      message: 'Đăng xuất tài khoản thành công.',
     };
   }
 
@@ -465,7 +515,7 @@ export class AuthService {
 
       const refreshTokens = await refreshTokenRepo.find({
         where: {
-          user: {
+          employee: {
             id: userId,
           },
           expiresAt: MoreThan(new Date()),
@@ -561,7 +611,7 @@ export class AuthService {
   ) {
     const newRT = repo.create({
       token: encryptPayload(token, this.configService),
-      user: {
+      employee: {
         id: userId,
       },
       expiresAt,
@@ -630,7 +680,7 @@ export class AuthService {
     );
 
     return {
-      message: `An OTP code has been sent to your email.`,
+      message: 'Mã OTP đã được gửi đến email của bạn.',
     };
   }
 
@@ -739,33 +789,7 @@ export class AuthService {
     }
 
     return {
-      message: `An OTP has been sent to your email.`,
-    };
-  }
-
-  private async issueOtp(
-    length = 6,
-    userId: string,
-    type: OtpTypeEnum,
-    expiresAt: Date,
-    repo: Repository<Otp>,
-    metadata?: Record<string, any>,
-  ) {
-    const otp = generateOtp(length);
-    const otpRecord = repo.create({
-      otp: encryptPayload(otp, this.configService),
-      user: {
-        id: userId,
-      },
-      type,
-      expiresAt,
-      ...(metadata && {
-        metadata,
-      }),
-    });
-    await repo.save(otpRecord);
-    return {
-      otp,
+      message: 'Mã OTP đã được gửi đến email của bạn.',
     };
   }
 

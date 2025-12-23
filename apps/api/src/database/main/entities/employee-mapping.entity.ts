@@ -16,7 +16,7 @@ export class EmployeeMapping {
   id: string;
 
   @Column()
-  email: string;
+  username: string;
 
   @ManyToOne(() => BookStore, (bs) => bs.employeeMappings, {
     onDelete: 'CASCADE',

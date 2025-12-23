@@ -1,7 +1,8 @@
-import { ALGORITHM, IV_LENGTH } from '@/common/constants';
+import { ALGORITHM, CHARS, IV_LENGTH } from '@/common/constants';
 import { ConfigService } from '@nestjs/config';
 import * as bcryptjs from 'bcryptjs';
 import crypto from 'crypto';
+import { addDays } from 'date-fns';
 import Decimal from 'decimal.js';
 import { CookieOptions, Response } from 'express';
 
@@ -96,17 +97,6 @@ export function setCookie(
   });
 }
 
-export function generateTempPassword(length = 8) {
-  const chars =
-    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
-  let password = '';
-  for (let i = 0; i < length; i++) {
-    const index = crypto.randomInt(0, chars.length);
-    password += chars[index];
-  }
-  return password;
-}
-
 export function generateSecureToken(sizeBytes = 32) {
   const buf = crypto.randomBytes(sizeBytes);
   return buf
@@ -142,4 +132,51 @@ export function calculateMoney(...values: (string | number)[]): number {
   return values
     .reduce((acc, val) => acc.plus(new Decimal(val)), new Decimal(0))
     .toNumber();
+}
+
+export function generateUsername(fullName: string, birthDate: string): string {
+  const normalized = fullName
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+
+  const names = normalized.split(' ').filter((n) => n.length > 0);
+  if (names.length === 0) return '';
+
+  const lastName = names[names.length - 1];
+  const initials = names
+    .slice(0, -1)
+    .map((n) => n[0])
+    .join('');
+  let username = lastName + initials;
+
+  const datePart = birthDate.replace(/-/g, '').substring(0, 6);
+  username += datePart;
+
+  const chars = CHARS.split('');
+  const randomLength = Math.floor(Math.random() * 2) + 5;
+
+  for (let i = 0; i < randomLength; i++) {
+    const randomChar = chars[Math.floor(Math.random() * chars.length)];
+    username += randomChar;
+  }
+
+  return username;
+}
+
+export function generateSecurePassword(length = 12) {
+  let password = '';
+  for (let i = 0; i < length; i++) {
+    const index = crypto.randomInt(0, CHARS.length);
+    password += CHARS[index];
+  }
+  return password;
+}
+
+export function calculateGrowth(
+  current: number,
+  previous: number,
+): number | null {
+  if (previous === 0) return null;
+  return ((current - previous) / previous) * 100;
 }

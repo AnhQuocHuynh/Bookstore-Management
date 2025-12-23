@@ -6,13 +6,11 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
-  OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { Author } from './author.entity';
-import { PurchaseDetail } from './purchase-detail.entity';
 
 @Entity()
 export class Book {
@@ -51,9 +49,6 @@ export class Book {
     name: 'publisher_id',
   })
   publisher: Publisher;
-
-  @OneToMany(() => PurchaseDetail, (pd) => pd.book)
-  purchaseDetails: PurchaseDetail[];
 
   @Column({
     type: 'enum',

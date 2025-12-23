@@ -45,7 +45,7 @@ export class AuthorizationCode {
   })
   @JoinColumn({
     name: 'employee_id',
-    referencedColumnName: 'userId',
+    referencedColumnName: 'id',
   })
   employee?: Employee;
 }

@@ -6,7 +6,6 @@ import { InventoriesService } from '@/modules/inventories/inventories.service';
 import { PublishersModule } from '@/modules/publishers/publishers.module';
 import { PublishersService } from '@/modules/publishers/publishers.service';
 import { Module } from '@nestjs/common';
-import { BooksController } from './books.controller';
 import { BooksService } from './books.service';
 
 @Module({
@@ -16,7 +15,6 @@ import { BooksService } from './books.service';
     PublishersModule,
     InventoriesModule,
   ],
-  controllers: [BooksController],
   providers: [
     BooksService,
     CategoriesService,

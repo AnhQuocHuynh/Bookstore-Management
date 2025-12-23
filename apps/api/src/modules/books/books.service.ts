@@ -2,8 +2,6 @@ import { CreateBookDto } from '@/common/dtos';
 import { TUserSession } from '@/common/utils';
 import { Author, Book, Publisher } from '@/database/tenant/entities';
 import { AuthorsService } from '@/modules/authors/authors.service';
-import { CategoriesService } from '@/modules/categories/categories.service';
-import { InventoriesService } from '@/modules/inventories/inventories.service';
 import { PublishersService } from '@/modules/publishers/publishers.service';
 import { TenantService } from '@/tenants/tenant.service';
 import {
@@ -17,10 +15,8 @@ import { EntityManager, Repository } from 'typeorm';
 export class BooksService {
   constructor(
     private readonly tenantsService: TenantService,
-    private readonly categoriesService: CategoriesService,
     private readonly authorsService: AuthorsService,
     private readonly publishersService: PublishersService,
-    private readonly inventoriesService: InventoriesService,
   ) {}
 
   async findBookByField(

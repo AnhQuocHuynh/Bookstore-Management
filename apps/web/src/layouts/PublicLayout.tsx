@@ -10,11 +10,7 @@ interface PublicLayoutProps {
 export const PublicLayout = ({ children }: PublicLayoutProps) => {
   return (
     <Layout className="min-h-screen">
-      <Content className="p-6">
-        {children}
-      </Content>
+      <Content className="p-6">{children}</Content>
     </Layout>
   );
 };
-
-

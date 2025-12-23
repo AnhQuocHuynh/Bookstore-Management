@@ -1,25 +1,28 @@
-import { Routes, Route, Navigate } from "react-router-dom";
-import { MainLayout } from "../layouts/MainLayout";
-import { AuthLayout } from "../layouts/AuthLayout";
-import { PrivateRoute } from "./PrivateRoute";
-import { PublicRoute } from "./PublicRoute";
+import LoginPage from "@/features/auth/pages/LoginPage";
+import RegisterPage from "@/features/auth/pages/RegisterPage";
+import { Navigate, Outlet, Route, Routes } from "react-router-dom";
+import { ForgotPasswordPage } from "../features/auth/pages/ForgotPasswordPage";
 import { DashboardPage } from "../features/dashboard/components/DashboardPage";
+import { EmployeesPage } from "../features/employees/components/EmployeesPage";
 import { ProductsPage } from "../features/products/components/ProductsPage";
+import { SuppliersPage } from "../features/suppliers/components/SuppliersPage";
 
-// Auth pages (placeholder)
-const LoginPage = () => (
-  <div className="text-center">
-    <h1 className="text-2xl font-bold mb-4">Đăng nhập</h1>
-    <p>Trang đăng nhập đang được phát triển...</p>
-  </div>
-);
+import SelectStorePage from "@/features/auth/pages/SelectStorePage";
+import VerifyEmailPage from "@/features/auth/pages/VerifyEmailPage";
+import VerifyEmailSuccessPage from "@/features/auth/pages/VerifyEmailSuccessPage";
+import { AuthLayout } from "../layouts/AuthLayout";
+import { MainLayout } from "../layouts/MainLayout";
+import { ProtectedRoute } from "./ProtectedRoute";
+import { PublicRoute } from "./PublicRoute";
+import { TokenProtectedRoute } from "./TokenProtectedRoute";
 
-const RegisterPage = () => (
-  <div className="text-center">
-    <h1 className="text-2xl font-bold mb-4">Đăng ký</h1>
-    <p>Trang đăng ký đang được phát triển...</p>
-  </div>
-);
+// Select Store Page (Semi-protected: requires token but no store)
+// const SelectStorePage = () => (
+//   <div className="text-center">
+//     <h1 className="text-2xl font-bold mb-4">Chọn cửa hàng</h1>
+//     <p>Trang chọn cửa hàng đang được phát triển...</p>
+//   </div>
+// );
 
 // Placeholder pages
 const SalesPage = () => (
@@ -43,43 +46,44 @@ const PartnersPage = () => (
   </div>
 );
 
-const EmployeesPage = () => (
-  <div>
-    <h1 className="text-2xl font-bold mb-6">Nhân viên</h1>
-    <p>Trang nhân viên đang được phát triển...</p>
-  </div>
-);
-
 export const AppRoutes = () => {
   return (
     <Routes>
       {/* Public Auth Routes */}
       <Route element={<PublicRoute />}>
         <Route
-          path="/auth/login"
+          path="/auth"
           element={
             <AuthLayout>
-              <LoginPage />
+              <Outlet />
             </AuthLayout>
           }
-        />
-        <Route
-          path="/auth/register"
-          element={
-            <AuthLayout>
-              <RegisterPage />
-            </AuthLayout>
-          }
-        />
+        >
+          <Route path="login" element={<LoginPage />} />
+          <Route path="register" element={<RegisterPage />} />
+          <Route path="verify-email" element={<VerifyEmailPage />} />
+          <Route
+            path="verify-email/success"
+            element={<VerifyEmailSuccessPage />}
+          />
+        </Route>
       </Route>
 
-      {/* Protected Routes */}
-      <Route element={<PrivateRoute />}>
+      {/* Forgot Password - Public route (no auth required) */}
+      <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
+
+      {/* Semi-Protected: Select Store (Requires Token, but NO Store yet) */}
+      <Route element={<TokenProtectedRoute />}>
+        <Route path="/select-store" element={<SelectStorePage />} />
+      </Route>
+
+      {/* Fully Protected: App Routes (Requires Token + Store) */}
+      <Route element={<ProtectedRoute />}>
         <Route
           path="/"
           element={
             <MainLayout>
-              <Navigate to="/dashboard" replace />
+              <Outlet />
             </MainLayout>
           }
         />
@@ -131,12 +135,18 @@ export const AppRoutes = () => {
             </MainLayout>
           }
         />
+        <Route
+          path="/suppliers"
+          element={
+            <MainLayout>
+              <SuppliersPage />
+            </MainLayout>
+          }
+        />
       </Route>
 
-      {/* 404 */}
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      {/* 404 - Redirect to login */}
+      <Route path="*" element={<Navigate to="/auth/login" replace />} />
     </Routes>
   );
 };
-
-

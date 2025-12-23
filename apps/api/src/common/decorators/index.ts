@@ -1,4 +1,5 @@
 export * from './book-store-id.decorator';
+export * from './is-non-empty-string.decorator';
 export * from './is-strong-password.decorator';
 export * from './is-vietnamese-phone-number.decorator';
 export * from './public.decorator';

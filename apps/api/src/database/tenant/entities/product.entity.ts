@@ -5,11 +5,15 @@ import {
   Category,
   DisplayProduct,
   Inventory,
+  PurchaseOrderDetail,
+  ReturnOrderDetail,
   Supplier,
+  TransactionDetail,
 } from '@/database/tenant/entities';
 import {
   Column,
   CreateDateColumn,
+  DeleteDateColumn,
   Entity,
   JoinColumn,
   JoinTable,
@@ -31,13 +35,15 @@ export class Product {
   })
   sku: string;
 
-  @Column()
+  @Column({
+    unique: true,
+  })
   name: string;
 
   @Column({
     nullable: true,
   })
-  description: string;
+  description?: string;
 
   @Column({
     type: 'decimal',
@@ -47,6 +53,9 @@ export class Product {
   })
   price: number;
 
+  @Column({ nullable: true, type: 'text' })
+  imageUrl?: string;
+
   @Column({
     type: 'enum',
     enum: ProductType,
@@ -55,7 +64,7 @@ export class Product {
 
   @Column({
     type: 'boolean',
-    default: true,
+    default: false,
   })
   isActive: boolean;
 
@@ -85,7 +94,9 @@ export class Product {
   })
   inventory: Inventory;
 
-  @ManyToMany(() => Category, (category) => category.products)
+  @ManyToMany(() => Category, (category) => category.products, {
+    cascade: true,
+  })
   @JoinTable({
     name: 'product_category',
     joinColumn: {
@@ -106,4 +117,22 @@ export class Product {
     cascade: true,
   })
   displayProducts: DisplayProduct[];
+
+  @OneToMany(() => PurchaseOrderDetail, (pod) => pod.product, {
+    cascade: true,
+  })
+  purchaseOrderDetails: PurchaseOrderDetail[];
+
+  @OneToMany(() => ReturnOrderDetail, (rod) => rod.newProduct, {
+    cascade: true,
+  })
+  returnOrderDetails: ReturnOrderDetail[];
+
+  @DeleteDateColumn({
+    type: 'timestamp',
+  })
+  readonly deletedAt?: Date;
+
+  @OneToMany(() => TransactionDetail, (td) => td.product)
+  transactionDetails: TransactionDetail[];
 }
