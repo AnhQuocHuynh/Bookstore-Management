@@ -31,12 +31,12 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           disabled:cursor-not-allowed
           disabled:opacity-50
           `,
-          className
+          className,
         )}
         {...props}
       />
     );
-  }
+  },
 );
 
 Input.displayName = "Input";

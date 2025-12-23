@@ -1,18 +1,11 @@
-// src/features/auth/pages/LoginPage.tsx
+import { authApi } from "@/features/auth/api/auth.api";
 import LoginForm from "@/features/auth/components/LoginForm";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Link, useNavigate } from "react-router-dom";
-import { useState } from "react";
-import { toast } from "sonner";
-import { authApi } from "../api/auth.api";
+import { loginSchema } from "@/features/auth/schema/login.schema";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { z } from "zod";
-
-const formSchema = z.object({
-  emailOrUsername: z.string().min(1, "Vui lòng nhập email hoặc username"),
-  password: z.string().min(1, "Mật khẩu không được để trống"),
-  rememberMe: z.boolean().optional(),
-});
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -20,28 +13,30 @@ const LoginPage = () => {
 
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (values: z.infer<typeof formSchema>) => {
+  const handleSubmit = async (values: z.infer<typeof loginSchema>) => {
     setIsLoading(true);
-
     try {
-      const isOwner = values.emailOrUsername.includes("@");
+      const { role, email, password, username } = values;
+      const isAdminOrOwnerRole = role === "admin" || role === "owner";
       let response;
 
-      if (isOwner) {
+      if (isAdminOrOwnerRole && email?.trim() && password?.trim()) {
         response = await authApi.systemLoginOwner({
-          email: values.emailOrUsername.trim(),
-          password: values.password,
+          email,
+          password,
         });
-      } else {
+      } else if (username?.trim()) {
         response = await authApi.systemLoginEmployee({
-          username: values.emailOrUsername.trim(),
+          username,
         });
       }
 
+      if (!response) return;
+
       const token = response.token;
       if (!token) throw new Error("Không nhận được token");
-
       let userData = null;
+
       if (response.profile) {
         userData = {
           id: response.profile.id,
@@ -55,18 +50,18 @@ const LoginPage = () => {
       setSystemToken(
         token,
         {
-          email: isOwner ? values.emailOrUsername.trim() : undefined,
-          username: !isOwner ? values.emailOrUsername.trim() : undefined,
-          password: values.password, // Lưu tạm password
-          role: isOwner ? "OWNER" : "EMPLOYEE",
+          email: isAdminOrOwnerRole ? values?.email?.trim() : undefined,
+          username: !isAdminOrOwnerRole ? values?.username?.trim() : undefined,
+          password: values.password ?? "",
+          role: isAdminOrOwnerRole ? "OWNER" : "EMPLOYEE",
         },
-        userData as any
+        userData as any,
       );
 
       toast.success("Đăng nhập thành công!");
       navigate("/select-store");
     } catch (error: any) {
-      console.error("Login Error:", error);
+      console.error("Login Error:", error.response?.data);
       const msg = error.response?.data?.message || "Đăng nhập thất bại";
       toast.error(msg);
     } finally {
@@ -75,23 +70,33 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="h-screen flex items-center justify-center w-full">
-      <ScrollArea className="h-dvh w-full flex justify-center">
-        <div className="w-full max-w-md px-4 py-10">
-          <Link
-            to="/"
-            className="inline-flex items-center text-sm font-semibold text-[#26A69A] 
+    <div className="flex items-center justify-center w-full">
+      <div className="w-full max-w-md px-4 py-10">
+        <Link
+          to="/"
+          className="inline-flex items-center text-sm font-semibold text-[#26A69A] 
             hover:text-[#00796B] mb-8 group"
-          >
-            <span className="mr-1 group-hover:-translate-x-1 transition-transform">
-              ←
-            </span>
-            Quay Lại
-          </Link>
+        >
+          <span className="mr-1 group-hover:-translate-x-1 transition-transform">
+            ←
+          </span>
+          Quay Lại
+        </Link>
 
-          <LoginForm onSubmit={handleSubmit} isLoading={isLoading} />
+        <div className="flex flex-col gap-1 items-center text-center">
+          <h1 className="text-2xl font-bold text-gray-800">
+            Chào mừng trở lại!
+          </h1>
+          <p className="text-sm text-gray-500">
+            Đăng nhập để tiếp tục làm việc cùng{" "}
+            <span className="font-semibold text-emerald-600">BookFlow</span>
+          </p>
         </div>
-      </ScrollArea>
+
+        <hr className="border-t border-gray-300 my-3" />
+
+        <LoginForm onSubmit={handleSubmit} isLoading={isLoading} />
+      </div>
     </div>
   );
 };

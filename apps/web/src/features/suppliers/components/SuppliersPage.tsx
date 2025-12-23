@@ -20,7 +20,9 @@ interface Supplier {
 }
 
 export const SuppliersPage = () => {
-  const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
+  const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(
+    null,
+  );
   const [data, setData] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -56,7 +58,7 @@ export const SuppliersPage = () => {
               note: supplier.note || "",
               createdDate: supplier.createdAt || "N/A",
               updateDate: supplier.updatedAt || "N/A",
-            })
+            }),
           );
 
           setData(formattedSuppliers);
@@ -127,7 +129,11 @@ export const SuppliersPage = () => {
     { title: "Tên NCC", dataIndex: "name", key: "name" },
     { title: "Email", dataIndex: "email", key: "email" },
     { title: "Số điện thoại", dataIndex: "phoneNumber", key: "phoneNumber" },
-    { title: "Người liên lạc", dataIndex: "contactPerson", key: "contactPerson" },
+    {
+      title: "Người liên lạc",
+      dataIndex: "contactPerson",
+      key: "contactPerson",
+    },
     { title: "Trạng thái", dataIndex: "status", key: "status" },
     {
       title: "Hành động",
@@ -146,7 +152,6 @@ export const SuppliersPage = () => {
   return (
     <div className="flex flex-col w-full bg-white min-h-screen">
       <div className="flex w-full items-start justify-start gap-6">
-        
         {/* LEFT — SUPPLIER TABLE */}
         <div className="flex-1">
           <div className="flex justify-between items-center mb-6">
@@ -180,7 +185,6 @@ export const SuppliersPage = () => {
         {/* RIGHT — DETAIL PANEL */}
         {selectedSupplier && (
           <aside className="relative w-[400px] bg-white border-2 border-teal-600 rounded-xl p-6 flex flex-col items-center shadow-md">
-            
             <button
               onClick={() => setSelectedSupplier(null)}
               className="absolute top-3 right-3 text-gray-600 hover:text-black text-xl"
@@ -198,19 +202,46 @@ export const SuppliersPage = () => {
                 {/* <div className="w-[250px] h-[250px] bg-gray-300 rounded-md" /> */}
 
                 <div className="mt-8 w-full space-y-2">
-
-                  <DetailItem label="Mã NCC" value={selectedSupplier.supplierId} />
+                  <DetailItem
+                    label="Mã NCC"
+                    value={selectedSupplier.supplierId}
+                  />
                   <DetailItem label="Tên NCC" value={selectedSupplier.name} />
                   <DetailItem label="Email" value={selectedSupplier.email} />
-                  <DetailItem label="Số điện thoại" value={selectedSupplier.phoneNumber} />
-                  <DetailItem label="Người liên lạc" value={selectedSupplier.contactPerson} />
-                  <DetailItem label="Trạng thái" value={selectedSupplier.status} />
-                  <DetailItem label="Địa chỉ" value={selectedSupplier.address} multiline />
-                  <DetailItem label="Mã số thuế" value={selectedSupplier.taxCode} />
-                  <DetailItem label="Ghi chú" value={selectedSupplier.note} multiline />
-                  <DetailItem label="Ngày tạo" value={selectedSupplier.createdDate} />
-                  <DetailItem label="Ngày cập nhật" value={selectedSupplier.updateDate} />
-
+                  <DetailItem
+                    label="Số điện thoại"
+                    value={selectedSupplier.phoneNumber}
+                  />
+                  <DetailItem
+                    label="Người liên lạc"
+                    value={selectedSupplier.contactPerson}
+                  />
+                  <DetailItem
+                    label="Trạng thái"
+                    value={selectedSupplier.status}
+                  />
+                  <DetailItem
+                    label="Địa chỉ"
+                    value={selectedSupplier.address}
+                    multiline
+                  />
+                  <DetailItem
+                    label="Mã số thuế"
+                    value={selectedSupplier.taxCode}
+                  />
+                  <DetailItem
+                    label="Ghi chú"
+                    value={selectedSupplier.note}
+                    multiline
+                  />
+                  <DetailItem
+                    label="Ngày tạo"
+                    value={selectedSupplier.createdDate}
+                  />
+                  <DetailItem
+                    label="Ngày cập nhật"
+                    value={selectedSupplier.updateDate}
+                  />
                 </div>
               </>
             )}

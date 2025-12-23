@@ -10,12 +10,11 @@ import { BookStore } from "../types/bookstore.types";
 //     },
 // };
 
-
 export const bookstoreApi = {
-    getAll: async (token: string): Promise<BookStore[]> => {
-        const response = await apiClient.get<BookStore[]>("/bookstores", {
-            params: { token },
-        });
-        return response.data;
-    },
+  getAll: async (token: string): Promise<BookStore[]> => {
+    const response = await apiClient.get<BookStore[]>("/bookstores", {
+      params: { token },
+    });
+    return response.data;
+  },
 };

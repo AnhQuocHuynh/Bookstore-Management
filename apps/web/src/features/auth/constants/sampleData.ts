@@ -8,14 +8,14 @@ export interface SampleOwnerData {
   storeName: string;
   storePhoneNumber: string;
   storeAddress: string;
-  
+
   // Owner Info
   fullName: string;
   email: string;
   phoneNumber: string;
   birthDate: string; // YYYY-MM-DD format
   address: string;
-  
+
   // Security
   password: string;
 }
@@ -97,4 +97,3 @@ export function getRandomSampleOwner(): SampleOwnerData {
 export function getSampleOwner(index: number): SampleOwnerData {
   return SAMPLE_OWNERS[index % SAMPLE_OWNERS.length];
 }
-

@@ -22,7 +22,7 @@ interface TempCredentials {
   email?: string;
   username?: string;
   password: string;
-  role: "OWNER" | "EMPLOYEE";
+  role: "OWNER" | "EMPLOYEE" | "ADMIN";
 }
 
 interface AuthState {
@@ -33,7 +33,11 @@ interface AuthState {
   tempCredentials: TempCredentials | null;
 
   // Action Login bước 1
-  setSystemToken: (token: string, tempCreds: TempCredentials, user?: User) => void;
+  setSystemToken: (
+    token: string,
+    tempCreds: TempCredentials,
+    user?: User,
+  ) => void;
 
   // Action Login bước 2 (Update token mới)
   setStoreToken: (newToken: string, store: Store, user: User) => void;
@@ -51,29 +55,32 @@ export const useAuthStore = create<AuthState>()(
       tempCredentials: null,
 
       // Bước 1: Lưu token hệ thống
-      setSystemToken: (token, tempCredentials, user = null) => set({
-        accessToken: token, // Lưu vào accessToken
-        tempCredentials,
-        user, // Owner có user ngay, Employee thì null
-        isAuthenticated: false, // Chưa coi là auth hoàn toàn cho đến khi chọn store
-      }),
+      setSystemToken: (token, tempCredentials, user) =>
+        set({
+          accessToken: token, // Lưu vào accessToken
+          tempCredentials,
+          user, // Owner có user ngay, Employee thì null
+          isAuthenticated: false, // Chưa coi là auth hoàn toàn cho đến khi chọn store
+        }),
 
       // Bước 2: Cập nhật token cửa hàng (Ghi đè token cũ)
-      setStoreToken: (newToken, store, user) => set({
-        accessToken: newToken, // Ghi đè bằng token mới xịn hơn
-        currentStore: store,
-        user,
-        isAuthenticated: true,
-        tempCredentials: null, // Xóa pass tạm
-      }),
+      setStoreToken: (newToken, store, user) =>
+        set({
+          accessToken: newToken, // Ghi đè bằng token mới xịn hơn
+          currentStore: store,
+          user,
+          isAuthenticated: true,
+          tempCredentials: null, // Xóa pass tạm
+        }),
 
-      logout: () => set({
-        user: null,
-        accessToken: null,
-        currentStore: null,
-        isAuthenticated: false,
-        tempCredentials: null,
-      }),
+      logout: () =>
+        set({
+          user: null,
+          accessToken: null,
+          currentStore: null,
+          isAuthenticated: false,
+          tempCredentials: null,
+        }),
     }),
     {
       name: "auth-storage",

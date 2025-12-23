@@ -68,7 +68,7 @@ export class AuthService {
     const user = await this.mainUserService.findUserByField('email', email);
 
     if (!user || (user && !(await verifyPassword(password, user.password))))
-      throw new UnauthorizedException('Invalid credentials.');
+      throw new UnauthorizedException('Thông tin đăng nhập không chính xác.');
 
     if (user.role === UserRole.ADMIN) {
       const { accessToken, refreshToken } = await this.generateTokens(
@@ -122,18 +122,20 @@ export class AuthService {
         payload.role,
       );
 
-      if (!isValidRole) throw new Error('Invalid token.');
+      if (!isValidRole) throw new Error('Token không hợp lệ hoặc đã hết hạn.');
 
       isOwner = payload.role === UserRole.OWNER;
     } catch (error) {
-      throw new UnauthorizedException('Invalid or expired token.');
+      throw new GoneException('Token không hợp lệ hoặc đã hết hạn.');
     }
 
     if (payload?.role === UserRole.OWNER && username?.trim())
-      throw new BadRequestException('Owner should not provide a username.');
+      throw new BadRequestException(
+        'Chủ nhà sách không nên cung cấp tên đăng nhập.',
+      );
 
     if (payload?.role === UserRole.EMPLOYEE && email?.trim())
-      throw new BadRequestException('Employee should not provide an email.');
+      throw new BadRequestException('Nhân viên không nên cung cấp email.');
 
     let userId: string = '';
     let profile: any = null;
@@ -141,12 +143,12 @@ export class AuthService {
 
     if (isOwner) {
       if (!email)
-        throw new BadRequestException('Owner must be provide an email.');
+        throw new BadRequestException('Chủ nhà sách phải cung cấp email.');
 
       const user = await this.mainUserService.findUserByField('email', email);
 
       if (!user || (user && !(await verifyPassword(password, user.password))))
-        throw new UnauthorizedException('Invalid credentials.');
+        throw new UnauthorizedException('Thông tin đăng nhập không chính xác.');
 
       const bookStore = await this.mainBookStoreService.findBookStoreByField(
         'id',
@@ -201,7 +203,7 @@ export class AuthService {
         !employee ||
         (employee && !(await verifyPassword(password, employee.password)))
       ) {
-        throw new UnauthorizedException('Invalid credentails.');
+        throw new UnauthorizedException('Thông tin đăng nhập không chính xác.');
       }
 
       if (employee.isFirstLogin) {
@@ -244,6 +246,10 @@ export class AuthService {
 
     const employeeMappings =
       await this.mainEmployeeMappingService.findBookStoresOfEmployee(username);
+
+    if (!employeeMappings.find((em) => em.username === username)) {
+      throw new NotFoundException('Thông tin đăng nhập không chính xác.');
+    }
 
     const payload = {
       role: UserRole.EMPLOYEE,

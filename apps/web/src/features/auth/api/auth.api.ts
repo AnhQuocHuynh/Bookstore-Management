@@ -145,13 +145,24 @@ import { apiClient } from "@/lib/axios";
 import { SignInDto, SignInResponse, BookStore } from "../types";
 
 export const authApi = {
-  systemLoginOwner: async (body: { email: string; password: string }): Promise<SignInResponse> => {
-    const response = await apiClient.post<SignInResponse>("/auth/sign-in", body);
+  systemLoginOwner: async (body: {
+    email: string;
+    password: string;
+  }): Promise<SignInResponse> => {
+    const response = await apiClient.post<SignInResponse>(
+      "/auth/sign-in",
+      body,
+    );
     return response.data;
   },
 
-  systemLoginEmployee: async (body: { username: string }): Promise<SignInResponse> => {
-    const response = await apiClient.post<SignInResponse>("/auth/sign-in/employee", body);
+  systemLoginEmployee: async (body: {
+    username: string;
+  }): Promise<SignInResponse> => {
+    const response = await apiClient.post<SignInResponse>(
+      "/auth/sign-in/employee",
+      body,
+    );
     return response.data;
   },
   // Get Bookstores (with token as query)
@@ -165,7 +176,12 @@ export const authApi = {
   // Bookstore Login (with token as query)
   bookstoreLogin: async (
     token: string,
-    body: { email?: string; username?: string; password: string; bookStoreId: string }
+    body: {
+      email?: string;
+      username?: string;
+      password: string;
+      bookStoreId: string;
+    },
   ): Promise<SignInResponse & { storeCode: string; bookStoreId: string }> => {
     const response = await apiClient.post("/auth/sign-in/bookstore", body, {
       params: { token },

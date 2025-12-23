@@ -40,20 +40,22 @@ export const EmployeesPage = () => {
             ? response.data.data
             : [response.data.data];
 
-          const formattedStaff = staffList.map((employee: any, index: number) => ({
-            key: employee.id || index,
-            id: employee.id,
-            staffId: employee.staffId || "N/A",
-            name: employee.fullName || employee.name || "N/A",
-            email: employee.email || "N/A",
-            role: employee.role || "N/A",
-            startDate: employee.startDate || "N/A",
-            status: employee.status || "N/A",
-            birthDate: employee.dateOfBirth || employee.birthDate || "N/A",
-            address: employee.address || "N/A",
-            updateDate: employee.updatedAt || "N/A",
-            avatarUrl: employee.avatarUrl || employee.avatar,
-          }));
+          const formattedStaff = staffList.map(
+            (employee: any, index: number) => ({
+              key: employee.id || index,
+              id: employee.id,
+              staffId: employee.staffId || "N/A",
+              name: employee.fullName || employee.name || "N/A",
+              email: employee.email || "N/A",
+              role: employee.role || "N/A",
+              startDate: employee.startDate || "N/A",
+              status: employee.status || "N/A",
+              birthDate: employee.dateOfBirth || employee.birthDate || "N/A",
+              address: employee.address || "N/A",
+              updateDate: employee.updatedAt || "N/A",
+              avatarUrl: employee.avatarUrl || employee.avatar,
+            }),
+          );
 
           setData(formattedStaff);
         }
@@ -107,7 +109,6 @@ export const EmployeesPage = () => {
   return (
     <div className="flex flex-col w-full bg-white min-h-screen">
       <div className="flex w-full items-start justify-start gap-6">
-        
         {/* LEFT — STAFF TABLE */}
         <div className="flex-1">
           <div className="flex justify-between items-center mb-6">
@@ -130,7 +131,9 @@ export const EmployeesPage = () => {
                 onRow={(record) => ({
                   onClick: () => handleRowClick(record),
                 })}
-                rowClassName={() => "cursor-pointer hover:bg-gray-100 transition-colors"}
+                rowClassName={() =>
+                  "cursor-pointer hover:bg-gray-100 transition-colors"
+                }
               />
             )}
           </Card>
@@ -139,7 +142,6 @@ export const EmployeesPage = () => {
         {/* RIGHT — DETAIL PANEL */}
         {selectedStaff && (
           <aside className="relative w-[400px] bg-white border-2 border-teal-600 rounded-xl p-6 flex flex-col items-center shadow-md">
-
             {/* Close button */}
             <button
               onClick={() => setSelectedStaff(null)}
@@ -168,9 +170,19 @@ export const EmployeesPage = () => {
               <DetailItem label="Ngày sinh" value={selectedStaff.birthDate} />
               <DetailItem label="Email" value={selectedStaff.email} />
               <DetailItem label="Vai trò" value={selectedStaff.role} />
-              <DetailItem label="Địa chỉ" value={selectedStaff.address} multiline />
-              <DetailItem label="Ngày vào làm" value={selectedStaff.startDate} />
-              <DetailItem label="Ngày cập nhật" value={selectedStaff.updateDate} />
+              <DetailItem
+                label="Địa chỉ"
+                value={selectedStaff.address}
+                multiline
+              />
+              <DetailItem
+                label="Ngày vào làm"
+                value={selectedStaff.startDate}
+              />
+              <DetailItem
+                label="Ngày cập nhật"
+                value={selectedStaff.updateDate}
+              />
             </div>
           </aside>
         )}
@@ -191,9 +203,7 @@ const DetailItem = ({
 }) => (
   <div className="flex justify-between items-center mb-4 w-full gap-4">
     {/* Left label */}
-    <div className="text-gray-600 text-sm flex-shrink-0 w-[120px]">
-      {label}
-    </div>
+    <div className="text-gray-600 text-sm flex-shrink-0 w-[120px]">{label}</div>
 
     {/* Right value */}
     <div

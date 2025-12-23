@@ -34,7 +34,7 @@ const Step2VerifyOtp = ({ onNext, onBack }: Step2VerifyOtpProps) => {
 
     const diff = Math.max(
       RESEND_INTERVAL - Math.floor((Date.now() - Number(lastSent)) / 1000),
-      0
+      0,
     );
     return diff;
   };

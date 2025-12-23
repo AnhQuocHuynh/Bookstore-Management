@@ -58,15 +58,14 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
     if (error.response?.status === 401) {
-      // Clear auth storage
-      localStorage.removeItem("auth-storage");
-
-      // Redirect to login
-      if (window.location.pathname !== "/auth/login") {
+      if (
+        window.location.pathname !== "/auth/login" &&
+        window.location.pathname !== "/select-store"
+      ) {
+        localStorage.removeItem("auth-storage");
         window.location.href = "/auth/login";
       }
     }
-
     return Promise.reject(error);
   },
 );

@@ -32,13 +32,20 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
           {/* Logo */}
           <div className="flex items-center gap-3 px-3 pt-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1A998F]">
-              <span className="material-symbols-outlined text-white" style={{ fontSize: "28px" }}>
+              <span
+                className="material-symbols-outlined text-white"
+                style={{ fontSize: "28px" }}
+              >
                 import_contacts
               </span>
             </div>
             <div className="flex flex-col">
-              <h1 className="text-base font-bold leading-normal text-white">BookFlow</h1>
-              <p className="text-sm font-normal leading-normal text-gray-300">Manager</p>
+              <h1 className="text-base font-bold leading-normal text-white">
+                BookFlow
+              </h1>
+              <p className="text-sm font-normal leading-normal text-gray-300">
+                Manager
+              </p>
             </div>
           </div>
 
@@ -48,10 +55,9 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
               <Link
                 key={item.path}
                 to={item.path}
-                className={`group relative flex items-center gap-3 rounded-xl px-4 py-2.5 transition-all ${isActive(item.path)
-                  ? "bg-[#1A998F]"
-                  : "hover:bg-[#187F87]"
-                  }`}
+                className={`group relative flex items-center gap-3 rounded-xl px-4 py-2.5 transition-all ${
+                  isActive(item.path) ? "bg-[#1A998F]" : "hover:bg-[#187F87]"
+                }`}
               >
                 {isActive(item.path) && (
                   <div className="absolute -left-2 top-1/2 h-0 w-0 -translate-y-1/2 border-y-8 border-l-8 border-y-transparent border-l-[#C4CFCE]" />
@@ -59,7 +65,9 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
                 <span className="material-symbols-outlined text-white">
                   {item.icon}
                 </span>
-                <p className="text-sm font-medium leading-normal text-white">{item.label}</p>
+                <p className="text-sm font-medium leading-normal text-white">
+                  {item.label}
+                </p>
               </Link>
             ))}
           </nav>
@@ -71,7 +79,9 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
           className="group flex items-center gap-3 rounded-xl px-4 py-2.5 hover:bg-[#187F87] transition-all"
         >
           <span className="material-symbols-outlined text-white">settings</span>
-          <p className="text-sm font-medium leading-normal text-white">Settings</p>
+          <p className="text-sm font-medium leading-normal text-white">
+            Settings
+          </p>
         </Link>
       </aside>
 

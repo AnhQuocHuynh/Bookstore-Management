@@ -38,7 +38,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <ScrollArea className="h-dvh w-full flex justify-center mb-10">
+    <div className="w-full mb-10">
       <FormProvider {...form}>
         <div className="max-w-lg mx-auto py-10 px-4">
           <Link
@@ -115,6 +115,6 @@ export default function RegisterPage() {
           </Link>
         </p>
       </FormProvider>
-    </ScrollArea>
+    </div>
   );
 }

@@ -112,7 +112,7 @@ export default function Step2Owner({ onBack, onNext }: Step2OwnerProps) {
                  focus:ring-2 focus:ring-emerald-200
                  focus:outline-none
                  disabled:cursor-not-allowed
-                 disabled:opacity-50`
+                 disabled:opacity-50`,
                     )}
                     suffixIcon={
                       <CalendarIcon className="w-5 h-5 text-gray-400" />
