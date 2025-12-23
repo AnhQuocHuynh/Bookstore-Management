@@ -18,6 +18,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { REGEXP_ONLY_DIGITS } from "input-otp";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 
 const RESEND_INTERVAL = 60;
@@ -27,6 +28,7 @@ const formSchema = z.object({
 });
 
 const VerifyEmailForm = () => {
+  const navigate = useNavigate();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: { otp: "" },
@@ -64,6 +66,7 @@ const VerifyEmailForm = () => {
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     console.log("OTP entered:", values.otp);
     // TODO: call verify OTP API
+    navigate("/auth/verify-email/success");
   };
 
   return (
@@ -74,7 +77,6 @@ const VerifyEmailForm = () => {
           name="otp"
           render={({ field }) => (
             <FormItem className="flex flex-col gap-2 items-center">
-              <FormLabel className="text-lg font-medium">Mã xác thực</FormLabel>
               <FormControl>
                 <InputOTP
                   pattern={REGEXP_ONLY_DIGITS}
