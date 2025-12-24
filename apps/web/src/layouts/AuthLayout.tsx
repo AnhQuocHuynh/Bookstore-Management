@@ -42,7 +42,7 @@ export const AuthLayout = ({ children }: AuthLayoutProps) => {
         </ScrollArea>
 
         {/* Right Side - Carousel */}
-        <div className="w-full md:w-3/5 relative h-64 md:h-full overflow-hidden">
+        <div className="w-full md:w-3/5 relative h-64 md:h-full overflow-hidden md:block hidden">
           <Swiper
             modules={[Autoplay, EffectFade, Pagination]}
             autoplay={{

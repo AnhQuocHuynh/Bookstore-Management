@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 
 const VerifyEmailPage = () => {
   return (
-    <div>
+    <div className="flex flex-col items-center h-screen justify-center">
       <div className="flex flex-col gap-1 items-center text-center mb-8">
         <h1 className="text-2xl font-bold text-gray-800">
           Xác thực email của bạn
