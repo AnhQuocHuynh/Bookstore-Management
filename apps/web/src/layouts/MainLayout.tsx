@@ -6,6 +6,7 @@ import { Search } from "lucide-react";
 import { ReactNode, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuthStore } from "../stores/useAuthStore";
+import StoreModal from "@/components/StoreModal";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -26,6 +27,7 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const { user } = useAuthStore();
   const [searchQuery, setSearchQuery] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -48,22 +50,17 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
       {/* Sidebar */}
       <aside className="flex h-full w-full max-w-[230px] flex-col justify-between bg-[#102E3C] p-4 text-white">
         <div className="flex flex-col gap-4">
-          {/* Logo */}
-          <div className="flex items-center gap-3 pr-3 -mt-3">
-            <img
-              src="/icon.jpg"
-              alt=""
-              className="h-17 w-17 select-none cursor-pointer"
-            />
-            <div className="flex flex-col text-nowrap">
-              <h1 className="text-base font-bold leading-normal text-white">
-                BookFlow
-              </h1>
-              <p className="text-sm font-normal leading-normal text-gray-300 z-10">
-                Phần mềm Quản lý Nhà sách thông minh
-              </p>
-            </div>
-          </div>
+          <StoreModal
+            store={{
+              name: "Nhà sách BookFlow",
+              address: "123 Bà Triệu, TP. Thủ Đức, HCM",
+              phone: "0909 123 456",
+              logo: "/default-store.jpg",
+            }}
+            onSave={(updatedStore: any) =>
+              console.log("Lưu thông tin:", updatedStore)
+            }
+          />
 
           {/* Navigation */}
           <nav className="flex flex-col gap-2">

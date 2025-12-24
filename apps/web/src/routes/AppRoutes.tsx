@@ -2,7 +2,7 @@ import LoginPage from "@/features/auth/pages/LoginPage";
 import RegisterPage from "@/features/auth/pages/RegisterPage";
 import { Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { ForgotPasswordPage } from "../features/auth/pages/ForgotPasswordPage";
-import { DashboardPage } from "../features/dashboard/components/DashboardPage";
+import { DashboardPage } from "../features/dashboard/pages/DashboardPage";
 import { EmployeesPage } from "../features/employees/components/EmployeesPage";
 import { ProductsPage } from "../features/products/components/ProductsPage";
 import { SuppliersPage } from "../features/suppliers/components/SuppliersPage";
