@@ -208,7 +208,8 @@ export class AuthController {
     })
     response: Response,
   ) {
-    if (!token?.trim()) throw new BadRequestException('Token is missing...');
+    if (!token?.trim())
+      throw new BadRequestException('Thiếu mã token để xác thực yêu cầu.');
     return this.authService.signInOfBookStore(
       signInOfBookStoreDto,
       token,
@@ -296,7 +297,8 @@ export class AuthController {
     @UserSession() userSession: TUserSession,
     @RefreshToken() token: string | null,
   ) {
-    if (!token) throw new UnauthorizedException('Invalid refresh token.');
+    if (!token)
+      throw new UnauthorizedException('Thiếu refresh token để xác thực.');
     return this.authService.signOut(userSession, token);
   }
 

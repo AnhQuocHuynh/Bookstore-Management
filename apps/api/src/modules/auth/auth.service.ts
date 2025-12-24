@@ -159,14 +159,14 @@ export class AuthService {
       );
 
       if (bookStore?.user?.id !== user.id)
-        throw new ForbiddenException('You are not an owner of this bookstore.');
+        throw new ForbiddenException('Bạn không phải là chủ của nhà sách này.');
 
       userId = user.id;
       profile = omit(user, ['password']);
       storeCode = bookStore.code;
     } else {
       if (!username?.trim())
-        throw new BadRequestException('Employee must be provide a username.');
+        throw new BadRequestException('Nhân viên phải cung cấp tên đăng nhập.');
 
       const employeeMappings =
         await this.mainEmployeeMappingService.findBookStoresOfEmployee(
@@ -183,9 +183,7 @@ export class AuthService {
       }
 
       if (!seletecBookStore)
-        throw new ForbiddenException(
-          'You are not an employee of this bookstore.',
-        );
+        throw new ForbiddenException('Không tìm thấy thông tin nhà sách.');
 
       const dataSource = await this.tenantService.getTenantConnection({
         bookStoreId,
@@ -215,7 +213,7 @@ export class AuthService {
         return {
           token,
           message:
-            'Welcome! Since this is your first login, please change your password.',
+            'Chào mừng! Vì đây là lần đăng nhập đầu tiên của bạn, vui lòng thay đổi mật khẩu.',
           isFirstLogin: true,
         };
       }
@@ -283,7 +281,7 @@ export class AuthService {
     );
 
     if (existingEmail)
-      throw new ConflictException(`This email has been registered.`);
+      throw new ConflictException(`Email này đã được đăng ký.`);
 
     await this.mainBookStoreService.checkDuplicateField(
       'name',
@@ -329,15 +327,19 @@ export class AuthService {
     const user = await this.mainUserService.findUserByField('email', email);
 
     if (!user)
-      throw new NotFoundException(`This email has not been registered.`);
+      throw new NotFoundException(
+        `Email này chưa được đăng ký trong hệ thống.`,
+      );
 
     if (user.role === UserRole.ADMIN)
       throw new BadRequestException(
-        'The account you are using is an admin account, so OTP verification cannot be performed.',
+        'Tài khoản bạn đang sử dụng là tài khoản quản trị, nên không thể thực hiện xác thực OTP.',
       );
 
     if (user.isEmailVerified && type === OtpTypeEnum.SIGN_UP)
-      throw new BadRequestException('Your account has been email-verified.');
+      throw new BadRequestException(
+        'Email tài khoản của bạn đã được xác thực.',
+      );
 
     const existingRecords = await this.mainOtpService.findOtpsByUserIdAndType(
       user.id,
@@ -357,7 +359,8 @@ export class AuthService {
       }
     }
 
-    if (!validRecord) throw new GoneException('OTP has expired or invalid.');
+    if (!validRecord)
+      throw new GoneException('Mã OTP đã hết hạn hoặc không hợp lệ.');
 
     let storeCode = '';
     if (
@@ -439,18 +442,14 @@ export class AuthService {
     const { userId, bookStoreId, role } = userSession;
 
     const user = await this.mainUserService.findUserByField('id', userId);
-    if (!user) throw new NotFoundException('User not found.');
 
-    if (user.role !== UserRole.ADMIN && !bookStoreId?.trim())
-      throw new BadRequestException('Please provide bookstoreId to log out.');
-
-    if (user.role === UserRole.ADMIN && bookStoreId?.trim()) {
+    if (user?.role === UserRole.ADMIN && bookStoreId?.trim()) {
       throw new BadRequestException(
-        'Admin accounts should not include bookstoreId when logging out.',
+        'Tài khoản quản trị không nên bao gồm bookstoreId khi đăng xuất.',
       );
     }
 
-    await this.revokeRefreshToken(user.id, role, refreshToken, bookStoreId);
+    await this.revokeRefreshToken(userId, role, refreshToken, bookStoreId);
     return {
       message: 'Đăng xuất tài khoản thành công.',
     };

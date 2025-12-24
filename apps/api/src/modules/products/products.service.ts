@@ -361,16 +361,14 @@ export class ProductsService {
       const existing = await this.findProductByField('sku', sku, productRepo);
 
       if (existing && existing.id !== product.id)
-        throw new ConflictException(`Product with sku ${sku} already exists.`);
+        throw new ConflictException(`Sản phẩm với mã SKU ${sku} đã tồn tại.`);
     }
 
     if (name?.trim()) {
       const existing = await this.findProductByField('name', name, productRepo);
 
       if (existing && existing.id !== product.id)
-        throw new ConflictException(
-          `Product with name ${name} already exists.`,
-        );
+        throw new ConflictException(`Sản phẩm với tên ${name} đã tồn tại.`);
     }
 
     Object.assign(product, updateProductDto);

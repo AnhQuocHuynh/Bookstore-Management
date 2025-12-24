@@ -1,4 +1,5 @@
 import { ALGORITHM, CHARS, IV_LENGTH } from '@/common/constants';
+import { BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as bcryptjs from 'bcryptjs';
 import crypto from 'crypto';
@@ -56,7 +57,7 @@ export function decryptPayload(
 
 export function generateStoreCode(storeName: string): string {
   if (!storeName || typeof storeName !== 'string') {
-    throw new Error('Invalid store name.');
+    throw new BadRequestException('Tên nhà sách không hợp lệ.');
   }
 
   const normalized = storeName
