@@ -10,3 +10,5 @@ export interface Product {
   name: string;
   price: number;
 }
+
+export type LoginRole = "admin" | "owner" | "employee";

@@ -93,7 +93,8 @@ export class CategoriesService {
 
     if (parentId?.trim()) {
       parent = await this.findCategoryByField('id', parentId, categoryRepo);
-      if (!parent) throw new NotFoundException('Parent of category not found.');
+      if (!parent)
+        throw new NotFoundException('Không tìm thấy thông tin danh mục cha.');
     }
 
     const existedSlug = await this.findCategoryByField(
@@ -103,9 +104,7 @@ export class CategoriesService {
     );
 
     if (existedSlug)
-      throw new ConflictException(
-        `Category has slug ${slug} has been existed.`,
-      );
+      throw new ConflictException(`Danh mục có slug ${slug} đã tồn tại.`);
 
     const existedName = await this.findCategoryByField(
       'name',
@@ -114,9 +113,7 @@ export class CategoriesService {
     );
 
     if (existedName)
-      throw new ConflictException(
-        `Category has name ${slug} has been existed.`,
-      );
+      throw new ConflictException(`Danh mục có tên ${name} đã tồn tại.`);
 
     const newCategory = categoryRepo.create({
       ...omit(createCategoryDto, ['parentId']),
@@ -148,7 +145,7 @@ export class CategoriesService {
     });
 
     if (!category) {
-      throw new NotFoundException('Category not found.');
+      throw new NotFoundException('Không tìm thấy thông tin danh mục.');
     }
 
     return category;
@@ -175,18 +172,18 @@ export class CategoriesService {
     });
 
     if (!category) {
-      throw new NotFoundException('Category not found.');
+      throw new NotFoundException('Không tìm thấy thông tin danh mục.');
     }
 
     let parent: Category | null = null;
     if (parentId?.trim()) {
       parent = await this.findCategoryByField('id', parentId, categoryRepo);
       if (!parent) {
-        throw new NotFoundException('Parent of category not found.');
+        throw new NotFoundException('Không tìm thấy thông tin danh mục cha.');
       }
       if (parent.id === id) {
         throw new ConflictException(
-          'A category cannot be set as its own parent.',
+          'Một danh mục không thể được đặt làm danh mục cha của chính nó.',
         );
       }
     }
@@ -198,9 +195,7 @@ export class CategoriesService {
         categoryRepo,
       );
       if (existedSlug && existedSlug.id !== id) {
-        throw new ConflictException(
-          `Category with slug ${slug} has already been existed.`,
-        );
+        throw new ConflictException(`Danh mục có slug ${slug} đã tồn tại.`);
       }
     }
 
@@ -211,9 +206,7 @@ export class CategoriesService {
         categoryRepo,
       );
       if (existedName && existedName.id !== id) {
-        throw new ConflictException(
-          `Category with name ${name} has already been existed.`,
-        );
+        throw new ConflictException(`Danh mục có tên ${name} đã tồn tại.`);
       }
     }
 
@@ -247,7 +240,7 @@ export class CategoriesService {
     });
 
     if (!category) {
-      throw new NotFoundException('Category not found.');
+      throw new NotFoundException('Không tìm thấy thông tin danh mục.');
     }
 
     category.status = CategoryStatus.INACTIVE;

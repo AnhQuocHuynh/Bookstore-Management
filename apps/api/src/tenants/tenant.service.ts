@@ -39,7 +39,7 @@ export class TenantService implements OnModuleDestroy {
 
     if (!bookStoreId?.trim() && !storeCode?.trim()) {
       throw new BadRequestException(
-        'Either bookStoreId or storeCode must be provided.',
+        'Phải cung cấp một trong hai: bookStoreId hoặc storeCode.',
       );
     }
 

@@ -82,14 +82,14 @@ export class EmployeeService {
 
     if (!id && !email && !username) {
       throw new BadRequestException(
-        'At least one query parameter (id, email, or username) must be provided.',
+        'Vui lòng cung cấp ít nhất một tham số truy vấn (id, email hoặc username).',
       );
     }
 
     const queryCount = [id, email, username].filter(Boolean).length;
     if (queryCount > 1) {
       throw new BadRequestException(
-        'Only one query parameter (id, email, or username) can be provided at a time.',
+        'Chỉ có thể cung cấp một tham số truy vấn (id, email hoặc username) tại một thời điểm.',
       );
     }
 
@@ -107,7 +107,7 @@ export class EmployeeService {
     });
 
     if (!employee) {
-      throw new NotFoundException('Employee not found.');
+      throw new NotFoundException('Không tìm thấy thông tin nhân viên.');
     }
 
     return employee;
@@ -135,7 +135,7 @@ export class EmployeeService {
 
       if (existingEmployee) {
         throw new ConflictException(
-          'An employee with this email already exists.',
+          'Email này đã được sử dụng bởi một nhân viên khác.',
         );
       }
     }
@@ -152,7 +152,7 @@ export class EmployeeService {
 
       if (existingEmployee) {
         throw new ConflictException(
-          'An employee with this phone number already exists.',
+          'Số điện thoại này đã được sử dụng bởi một nhân viên khác.',
         );
       }
     }

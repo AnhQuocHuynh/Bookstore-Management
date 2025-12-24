@@ -1,47 +1,50 @@
-import { Layout } from "antd";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { ReactNode } from "react";
+import { Autoplay, EffectFade, Pagination } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
-import { Autoplay, EffectFade, Navigation, Pagination } from "swiper/modules";
 import "swiper/swiper-bundle.css";
-
-const { Content } = Layout;
 
 interface AuthLayoutProps {
   children: ReactNode;
 }
 
+const slides = [
+  {
+    quote:
+      "Sách là nguồn tri thức vô tận, mở ra những chân trời mới cho tâm hồn",
+    author: "Albert Einstein",
+    image:
+      "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=800&q=80",
+  },
+  {
+    quote: "Đọc sách là cách tốt nhất để đầu tư vào bản thân",
+    author: "Warren Buffett",
+    image:
+      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80",
+  },
+  {
+    quote: "Một cuốn sách hay là người bạn tốt của chúng ta",
+    author: "Victor Hugo",
+    image:
+      "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=800&q=80",
+  },
+];
+
 export const AuthLayout = ({ children }: AuthLayoutProps) => {
-  const slides = [
-    {
-      image: "/image-5.jpg",
-      quote:
-        "Hệ thống quản lý này giúp chúng tôi theo dõi tồn kho nhanh chóng và chính xác hơn bao giờ hết.",
-      author: "Nguyễn Thị Lan – Quản lý nhà sách A",
-    },
-    {
-      image: "/image-6.jpg",
-      quote:
-        "Việc nhập – xuất hàng trở nên dễ dàng, tiết kiệm thời gian và tránh sai sót.",
-      author: "Trần Văn Hùng – Nhân viên kho",
-    },
-    {
-      image: "/image-7.jpg",
-      quote:
-        "Giao diện trực quan, dễ sử dụng, nhân viên mới cũng nhanh chóng làm quen.",
-      author: "Phạm Thị Mai – Chủ nhà sách B",
-    },
-  ];
-
   return (
-    <Layout className="h-screen overflow-hidden">
-      <Content className="flex flex-col md:flex-row h-full">
-        <div className="w-full md:w-2/5 flex items-center justify-center bg-white p-6 md:p-12">
-          <div className="w-full max-w-md">{children}</div>
-        </div>
+    <div className="h-screen overflow-hidden">
+      <div className="flex flex-col md:flex-row h-full">
+        {/* Left Side - Form */}
+        <ScrollArea className="h-dvh w-full md:w-2/5">
+          <div className="flex items-center justify-center">
+            <div className="w-full max-w-md">{children}</div>
+          </div>
+        </ScrollArea>
 
+        {/* Right Side - Carousel */}
         <div className="w-full md:w-3/5 relative h-64 md:h-full overflow-hidden">
           <Swiper
-            modules={[Autoplay, EffectFade, Navigation, Pagination]}
+            modules={[Autoplay, EffectFade, Pagination]}
             autoplay={{
               delay: 5000,
               disableOnInteraction: false,
@@ -50,11 +53,12 @@ export const AuthLayout = ({ children }: AuthLayoutProps) => {
             allowTouchMove={false}
             loop
             speed={500}
-            navigation={{
-              nextEl: ".swiper-button-next-custom",
-              prevEl: ".swiper-button-prev-custom",
+            effect="fade"
+            pagination={{
+              clickable: true,
+              bulletClass: "swiper-pagination-bullet !bg-white/50",
+              bulletActiveClass: "swiper-pagination-bullet-active !bg-white",
             }}
-            pagination={{ clickable: true }}
             className="h-full w-full"
           >
             {slides.map((slide, idx) => (
@@ -63,14 +67,23 @@ export const AuthLayout = ({ children }: AuthLayoutProps) => {
                   <img
                     src={slide.image}
                     alt={slide.author}
-                    className="absolute inset-0 w-full h-full object-cover"
+                    className="absolute inset-0 w-full h-full object-cover select-none 
+                    pointer-events-none"
                   />
-                  <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/30 to-transparent" />
-                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6 md:px-12 text-white">
-                    <h2 className="text-2xl md:text-4xl font-semibold mb-4 animate-fade-in">
+                  {/* Gradient Overlay */}
+                  <div
+                    className="absolute inset-0 bg-linear-to-t from-black/70 
+                  via-black/30 to-transparent"
+                  />
+                  {/* Content */}
+                  <div
+                    className="absolute inset-0 flex flex-col items-center 
+                  justify-center text-center px-6 md:px-12 text-white z-10 select-none"
+                  >
+                    <h2 className="text-2xl md:text-4xl font-semibold mb-4">
                       "{slide.quote}"
                     </h2>
-                    <p className="text-lg md:text-2xl opacity-90 animate-fade-in delay-200">
+                    <p className="text-lg md:text-2xl opacity-90">
                       — {slide.author}
                     </p>
                   </div>
@@ -79,7 +92,7 @@ export const AuthLayout = ({ children }: AuthLayoutProps) => {
             ))}
           </Swiper>
         </div>
-      </Content>
-    </Layout>
+      </div>
+    </div>
   );
 };
