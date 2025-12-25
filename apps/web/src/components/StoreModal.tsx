@@ -15,15 +15,18 @@ export default function StoreModal({ store, onSave }: any) {
   return (
     <>
       <div
-        className="flex items-center gap-3 px-1 cursor-pointer text-nowrap z-10"
+        className="
+    flex flex-col items-center gap-2 px-1 cursor-pointer z-10
+    lg:flex-row lg:items-start lg:gap-3
+  "
         onClick={() => setIsModalOpen(true)}
       >
         <img
           src="/default-store.jpg"
           alt="Logo nhà sách"
-          className="h-15 w-15 select-none rounded-lg object-cover"
+          className="h-15 md:w-15 w-20 select-none rounded-lg object-cover"
         />
-        <div className="flex flex-col text-nowrap">
+        <div className="flex flex-col text-nowrap md:text-left text-center">
           <h1 className="text-base font-bold leading-normal text-white">
             {store.name}
           </h1>
