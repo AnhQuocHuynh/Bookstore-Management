@@ -16,23 +16,29 @@ export const DashboardHeader = () => {
 
   const handleSelect = (date: Date) => {
     setSelectedDate(date);
-    setOpen(false); // đóng popover khi chọn
+    setOpen(false);
   };
 
   return (
-    <div className="flex items-center justify-between pr-4">
-      {/* Tiêu đề */}
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      {/* Title */}
       <h1 className="text-xl sm:text-2xl font-bold text-[#102E3C]">
         Tổng quan kinh doanh
       </h1>
 
-      {/* Bộ lọc ngày */}
+      {/* Date filter */}
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
-            className="flex items-center gap-2 rounded-lg border 
-            border-gray-300 bg-white px-4 py-2 text-sm font-medium hover:bg-gray-50"
+            className="
+            w-fit
+              flex items-center justify-start gap-2
+              rounded-lg border border-gray-300 bg-white
+              px-4 py-2 text-sm font-medium
+              hover:bg-gray-50
+              sm:w-auto
+            "
           >
             <CalendarIcon className="h-5 w-5 text-[#1A998F]" />
             <span className="text-[#102E3C]">
@@ -40,7 +46,8 @@ export const DashboardHeader = () => {
             </span>
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-2 mr-5">
+
+        <PopoverContent className="w-auto p-2 md:mx-8 mx-6">
           <Calendar
             mode="single"
             required

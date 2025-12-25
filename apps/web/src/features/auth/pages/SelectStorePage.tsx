@@ -122,7 +122,7 @@ const SelectStorePage = () => {
     } catch (err: any) {
       console.error(err);
       message.error(
-        err?.response?.data?.message || "Đăng nhập vào cửa hàng thất bại",
+        err?.response?.data?.message || "Đăng nhập vào cửa hàng thất bại"
       );
     }
   };
@@ -194,7 +194,7 @@ const SelectStorePage = () => {
       </div>
 
       <Modal
-        title="Xác nhật mật khẩu"
+        title="Xác nhận mật khẩu"
         open={isOpen}
         onCancel={handleCancel}
         centered
