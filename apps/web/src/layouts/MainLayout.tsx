@@ -1,4 +1,3 @@
-// src/layouts/MainLayout.tsx
 import NotificationsButton from "@/components/NotificationsButton";
 import { Input } from "@/components/ui/input";
 import UserMenu from "@/components/UserMenu";
@@ -13,23 +12,78 @@ interface MainLayoutProps {
 }
 
 const menuItems = [
-  { path: "/dashboard", label: "Dashboard", icon: "dashboard" },
-  { path: "/products", label: "Books", icon: "menu_book" },
-  { path: "/sales", label: "Orders", icon: "receipt_long" },
-  { path: "/partners", label: "Customers", icon: "groups" },
-  { path: "/employees", label: "Staff", icon: "badge" },
-  { path: "/suppliers", label: "Suppliers", icon: "local_shipping" },
-  { path: "/reports", label: "Reports", icon: "pie_chart" },
+  { path: "/dashboard", label: "Tổng quan", icon: "dashboard" },
+  {
+    path: "/dashboard/products",
+    label: "Sản phẩm",
+    icon: "menu_book",
+    children: [
+      { path: "/dashboard/products/list", label: "Danh sách sản phẩm" },
+      { path: "/dashboard/products/inventories", label: "Tồn kho" },
+      { path: "/dashboard/products/display", label: "Hàng trưng bày" },
+    ],
+  },
+  {
+    path: "/dashboard/purchases",
+    label: "Nhập hàng",
+    icon: "inventory",
+    children: [
+      { path: "/dashboard/purchases/create", label: "Tạo phiếu nhập" },
+      { path: "/dashboard/purchases/list", label: "Danh sách phiếu nhập" },
+    ],
+  },
+  {
+    path: "/dashboard/sales",
+    label: "Giao dịch",
+    icon: "receipt_long",
+    children: [
+      { path: "/dashboard/sales/create", label: "Tạo giao dịch" },
+      { path: "/dashboard/sales/list", label: "Danh sách giao dịch" },
+    ],
+  },
+  { path: "/dashboard/customers", label: "Khách hàng", icon: "groups" },
+  {
+    path: "/dashboard/employees",
+    label: "Nhân viên",
+    icon: "badge",
+    children: [
+      { path: "/dashboard/employees/roles", label: "Thời gian biểu" },
+      { path: "/dashboard/employees/list", label: "Danh sách nhân viên" },
+    ],
+  },
+  {
+    path: "/dashboard/suppliers",
+    label: "Nhà cung cấp",
+    icon: "local_shipping",
+  },
+  {
+    path: "/dashboard/reports",
+    label: "Thống kê",
+    icon: "pie_chart",
+    children: [
+      { path: "/dashboard/reports/revenues", label: "Doanh thu" },
+      { path: "/dashboard/reports/inventories", label: "Tồn kho" },
+      { path: "/dashboard/reports/employees", label: "Nhân viên" },
+    ],
+  },
 ];
 
 export const MainLayout = ({ children }: MainLayoutProps) => {
   const location = useLocation();
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const { user } = useAuthStore();
   const [searchQuery, setSearchQuery] = useState("");
-  const [isOpen, setIsOpen] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [openMenus, setOpenMenus] = useState<string[]>([]);
 
   const isActive = (path: string) => location.pathname === path;
+
+  const toggleMenu = (path: string) => {
+    if (openMenus.includes(path)) {
+      setOpenMenus([]);
+    } else {
+      setOpenMenus([path]); // chỉ mở 1 menu cha duy nhất
+    }
+  };
 
   const suggestions = [
     "Nhà sách Vạn Kim",
@@ -37,16 +91,12 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
     "Customer X",
     "Employee Y",
   ];
-
   const filtered = suggestions.filter((item) =>
-    item.toLowerCase().includes(searchQuery.toLowerCase())
+    item.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   return (
-    <div
-      className="relative flex h-screen w-full flex-row overflow-hidden bg-[#C4CFCE] 
-    font-['Inter']"
-    >
+    <div className="relative flex h-screen w-full flex-row overflow-hidden bg-[#C4CFCE] font-['Inter']">
       {/* Sidebar */}
       <aside className="flex h-full w-full max-w-[230px] flex-col justify-between bg-[#102E3C] p-4 text-white">
         <div className="flex flex-col gap-4">
@@ -65,23 +115,65 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
           {/* Navigation */}
           <nav className="flex flex-col gap-2">
             {menuItems.map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`group relative flex items-center gap-3 rounded-xl px-4 py-2.5 transition-all ${
-                  isActive(item.path) ? "bg-[#1A998F]" : "hover:bg-[#187F87]"
-                }`}
-              >
-                {isActive(item.path) && (
-                  <div className="absolute -left-2 top-1/2 h-0 w-0 -translate-y-1/2 border-y-8 border-l-8 border-y-transparent border-l-[#C4CFCE]" />
+              <div key={item.path} className="w-full">
+                {item.children ? (
+                  // Menu cha có children → toggle
+                  <button
+                    onClick={() => toggleMenu(item.path)}
+                    className={`flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-left transition-all
+                      ${isActive(item.path) ? "bg-[#1A998F]" : "hover:bg-[#187F87]"}`}
+                  >
+                    <span className="material-symbols-outlined">
+                      {item.icon}
+                    </span>
+                    <p className="text-sm font-medium leading-normal">
+                      {item.label}
+                    </p>
+                    <span className="ml-auto material-symbols-outlined">
+                      {openMenus.includes(item.path)
+                        ? "expand_less"
+                        : "expand_more"}
+                    </span>
+                  </button>
+                ) : (
+                  // Menu cha không có children → Link
+                  <Link
+                    to={item.path}
+                    className={`flex w-full items-center gap-3 rounded-xl px-4 py-2.5 transition-all
+                      ${isActive(item.path) ? "bg-[#1A998F]" : "hover:bg-[#187F87]"}`}
+                  >
+                    <span className="material-symbols-outlined">
+                      {item.icon}
+                    </span>
+                    <p className="text-sm font-medium leading-normal">
+                      {item.label}
+                    </p>
+                  </Link>
                 )}
-                <span className="material-symbols-outlined text-white">
-                  {item.icon}
-                </span>
-                <p className="text-sm font-medium leading-normal text-white">
-                  {item.label}
-                </p>
-              </Link>
+
+                {/* Sub-menu */}
+                {item.children && (
+                  <div
+                    className={`overflow-hidden transition-all duration-300 ${
+                      openMenus.includes(item.path)
+                        ? "max-h-60 mt-1"
+                        : "max-h-0"
+                    }`}
+                  >
+                    {item.children.map((child) => (
+                      <Link
+                        key={child.path}
+                        to={child.path}
+                        className={`block rounded-lg px-4 py-2 text-sm hover:bg-[#1A7C7B] ${
+                          isActive(child.path) ? "bg-[#1A998F]" : ""
+                        }`}
+                      >
+                        {child.label}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
             ))}
           </nav>
         </div>
@@ -89,7 +181,7 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
         {/* Settings */}
         <Link
           to="/settings"
-          className="group flex items-center gap-3 rounded-xl px-4 py-2.5 hover:bg-[#187F87] transition-all"
+          className="flex items-center gap-3 rounded-xl px-4 py-2.5 hover:bg-[#187F87] transition-all"
         >
           <span className="material-symbols-outlined text-white">settings</span>
           <p className="text-sm font-medium leading-normal text-white">
@@ -113,8 +205,7 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
                   placeholder="Tìm kiếm sản phẩm, nhân viên,..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="flex-1 border-none! bg-transparent text-sm text-[#155665] 
-             placeholder:text-gray-400 focus:outline-none! focus:ring-0! focus-visible:ring-0! focus:border-none!"
+                  className="flex-1 border-none! bg-transparent text-sm text-[#155665] placeholder:text-gray-400 focus:outline-none! focus:ring-0! focus-visible:ring-0! focus:border-none!"
                 />
               </div>
 
@@ -141,7 +232,6 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
 
             {/* User Section */}
             <div className="flex items-center gap-4">
-              {/* Notifications button */}
               <NotificationsButton />
               <UserMenu user={user} />
             </div>
