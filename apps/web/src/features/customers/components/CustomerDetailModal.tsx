@@ -1,7 +1,7 @@
 "use client";
 
-import { Modal } from "antd";
 import { type Customer } from "@/features/customers/data/customers";
+import { Modal } from "antd";
 
 interface CustomerDetailModalProps {
   customer: Customer | null;
@@ -58,18 +58,14 @@ const CustomerDetailModal = ({
             <span className="text-gray-900">{customer.type}</span>
           </div>
 
-          <div className="flex justify-between bg-gray-50 p-3 rounded-md shadow-sm">
-            <span className="font-semibold text-gray-700">Trạng thái:</span>
-            <span
-              className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                customer.status === "Hoạt động"
-                  ? "bg-green-100 text-green-700"
-                  : "bg-red-100 text-red-700"
-              }`}
-            >
-              {customer.status}
-            </span>
-          </div>
+          {customer.note && (
+            <div className="bg-gray-50 p-3 rounded-md shadow-sm flex flex-col">
+              <span className="font-semibold text-gray-700">Ghi chú:</span>
+              <span className="text-gray-900 wrap-break-word">
+                {customer.note}
+              </span>
+            </div>
+          )}
 
           <div className="flex justify-between bg-gray-50 p-3 rounded-md shadow-sm">
             <span className="font-semibold text-gray-700">Ngày đăng ký:</span>

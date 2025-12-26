@@ -8,7 +8,7 @@ import { useMemo, useState } from "react";
 
 const CustomerPage = () => {
   const [searchText, setSearchText] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [customerTypeFilter, setCustomerTypeFilter] = useState("all");
 
   const filteredCustomers = useMemo(() => {
     return mockCustomers.filter((customer) => {
@@ -18,11 +18,11 @@ const CustomerPage = () => {
         customer.id.toLowerCase().includes(searchText.toLowerCase());
 
       const matchesStatus =
-        statusFilter === "all" || customer.status === statusFilter;
+        customerTypeFilter === "all" || customer.type === customerTypeFilter;
 
       return matchesSearch && matchesStatus;
     });
-  }, [searchText, statusFilter]);
+  }, [searchText, customerTypeFilter]);
 
   return (
     <div className="flex flex-col gap-4 w-full">
@@ -47,8 +47,8 @@ const CustomerPage = () => {
 
         <div className="w-full sm:w-auto">
           <CustomerFilterSelect
-            value={statusFilter}
-            onChange={setStatusFilter}
+            value={customerTypeFilter}
+            onChange={setCustomerTypeFilter}
           />
         </div>
       </div>

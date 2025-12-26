@@ -16,6 +16,7 @@ export * from './otp-type.enum';
 export * from './payment-method.enum';
 export * from './payment-status.enum';
 export * from './product-type.enum';
+export * from './product-unit.enum';
 export * from './publisher-status.enum';
 export * from './purchase-status.enum';
 export * from './return-exchange-detail-status.enum';

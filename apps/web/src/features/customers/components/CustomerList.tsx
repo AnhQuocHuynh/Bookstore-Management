@@ -57,11 +57,8 @@ const CustomerList = ({ customers = mockCustomers }: CustomerListProps) => {
                 <TableHead className="px-4 sm:px-6 py-3 hidden lg:table-cell">
                   Loại KH
                 </TableHead>
-                <TableHead className="px-4 sm:px-6 py-3 hidden lg:table-cell">
-                  Trạng thái
-                </TableHead>
                 <TableHead className="px-4 sm:px-6 py-3 text-right hidden sm:table-cell">
-                  Ngày đăng ký
+                  Ngày tạo hồ sơ
                 </TableHead>
                 <TableHead className="px-4 sm:px-6 py-3 text-center w-20">
                   Xem
@@ -89,17 +86,16 @@ const CustomerList = ({ customers = mockCustomers }: CustomerListProps) => {
                       {customer.email}
                     </TableCell>
                     <TableCell className="px-4 sm:px-6 py-4 hidden lg:table-cell">
-                      {customer.type}
-                    </TableCell>
-                    <TableCell className="px-4 sm:px-6 py-4 hidden lg:table-cell">
                       <span
-                        className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${
-                          customer.status === "Hoạt động"
-                            ? "bg-green-100 text-green-700"
-                            : "bg-red-100 text-red-700"
+                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                          customer.type === "Thành viên"
+                            ? "bg-green-100 text-green-800"
+                            : customer.type === "VIP"
+                              ? "bg-yellow-100 text-yellow-800"
+                              : "bg-gray-100 text-gray-800"
                         }`}
                       >
-                        {customer.status}
+                        {customer.type}
                       </span>
                     </TableCell>
                     <TableCell className="px-4 sm:px-6 py-4 text-right text-sm text-gray-600 hidden sm:table-cell">

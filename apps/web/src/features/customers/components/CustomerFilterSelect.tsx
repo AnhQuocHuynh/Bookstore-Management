@@ -20,12 +20,13 @@ const CustomerFilterSelect = ({
   return (
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger className="w-[180px]">
-        <SelectValue placeholder="Lọc theo trạng thái" />
+        <SelectValue placeholder="Lọc theo loại KH" />
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="all">Tất cả</SelectItem>
-        <SelectItem value="Hoạt động">Hoạt động</SelectItem>
-        <SelectItem value="Ngừng hoạt động">Ngừng hoạt động</SelectItem>
+        <SelectItem value="Thành viên">Thành viên</SelectItem>
+        <SelectItem value="VIP">VIP</SelectItem>
+        <SelectItem value="Khách thường">Khách thường</SelectItem>
       </SelectContent>
     </Select>
   );
