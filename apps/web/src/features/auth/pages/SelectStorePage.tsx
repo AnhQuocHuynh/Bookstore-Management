@@ -122,7 +122,7 @@ const SelectStorePage = () => {
     } catch (err: any) {
       console.error(err);
       message.error(
-        err?.response?.data?.message || "Đăng nhập vào cửa hàng thất bại"
+        err?.response?.data?.message || "Đăng nhập vào cửa hàng thất bại",
       );
     }
   };
