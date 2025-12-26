@@ -10,7 +10,7 @@ import { useState } from "react";
 
 export const DashboardHeader = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(
-    new Date()
+    new Date(),
   );
   const [open, setOpen] = useState(false);
 

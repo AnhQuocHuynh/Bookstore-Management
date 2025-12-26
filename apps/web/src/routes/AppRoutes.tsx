@@ -10,6 +10,7 @@ import { SuppliersPage } from "../features/suppliers/components/SuppliersPage";
 import SelectStorePage from "@/features/auth/pages/SelectStorePage";
 import VerifyEmailPage from "@/features/auth/pages/VerifyEmailPage";
 import VerifyEmailSuccessPage from "@/features/auth/pages/VerifyEmailSuccessPage";
+import CustomerPage from "@/features/customers/pages/CustomerPage";
 import { AuthLayout } from "../layouts/AuthLayout";
 import { MainLayout } from "../layouts/MainLayout";
 import { ProtectedRoute } from "./ProtectedRoute";
@@ -36,13 +37,6 @@ const InventoryPage = () => (
   <div>
     <h1 className="text-2xl font-bold mb-6">Kho hàng</h1>
     <p>Trang kho hàng đang được phát triển...</p>
-  </div>
-);
-
-const PartnersPage = () => (
-  <div>
-    <h1 className="text-2xl font-bold mb-6">Đối tác</h1>
-    <p>Trang đối tác đang được phát triển...</p>
   </div>
 );
 
@@ -120,10 +114,10 @@ export const AppRoutes = () => {
           }
         />
         <Route
-          path="/partners"
+          path="/dashboard/customers"
           element={
             <MainLayout>
-              <PartnersPage />
+              <CustomerPage />
             </MainLayout>
           }
         />

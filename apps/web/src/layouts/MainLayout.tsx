@@ -24,11 +24,11 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
   ];
 
   const filtered = suggestions.filter((item) =>
-    item.toLowerCase().includes(searchQuery.toLowerCase())
+    item.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   return (
-    <div className="relative flex h-screen w-full overflow-hidden bg-[#C4CFCE] font-['Inter']">
+    <div className="relative flex h-screen w-full bg-[#C4CFCE] font-['Inter']">
       {/* Sidebar desktop */}
       <div className="hidden lg:flex">
         <Sidebar />
@@ -96,12 +96,15 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
                   </div>
 
                   {isDropdownOpen && filtered.length > 0 && (
-                    <ul className="absolute z-50 mt-1 w-full rounded-lg bg-white shadow-lg">
+                    <ul
+                      className="absolute z-50 mt-1 w-full rounded-lg bg-white shadow-lg
+                    p-2"
+                    >
                       {filtered.map((item, idx) => (
                         <li
                           key={idx}
                           onMouseDown={() => setSearchQuery(item)}
-                          className="cursor-pointer px-4 py-2 hover:bg-gray-100"
+                          className="cursor-pointer px-4 py-2 hover:bg-gray-100 hover:rounded-lg"
                         >
                           {item}
                         </li>
@@ -138,12 +141,15 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
               </div>
 
               {isDropdownOpen && filtered.length > 0 && (
-                <ul className="absolute z-50 mt-1 w-full rounded-lg bg-white shadow-lg">
+                <ul
+                  className="absolute z-50 mt-1 w-full rounded-lg bg-white shadow-lg
+                p-2"
+                >
                   {filtered.map((item, idx) => (
                     <li
                       key={idx}
                       onMouseDown={() => setSearchQuery(item)}
-                      className="cursor-pointer px-4 py-2 hover:bg-gray-100"
+                      className="cursor-pointer px-4 py-2 hover:bg-gray-100 hover:rounded-lg"
                     >
                       {item}
                     </li>
