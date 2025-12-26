@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,9 +28,16 @@ export default function UserMenu({ user }: UserMenuProps) {
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="end" className="w-48">
-        <DropdownMenuItem>Thông tin cá nhân</DropdownMenuItem>
+        {/* ✅ React Router navigation like Sidebar */}
+        <DropdownMenuItem asChild>
+          <Link to="/users">Thông tin cá nhân</Link>
+        </DropdownMenuItem>
+
         <DropdownMenuItem>Cài đặt</DropdownMenuItem>
-        <DropdownMenuItem className="text-red-600">Đăng xuất</DropdownMenuItem>
+
+        <DropdownMenuItem className="text-red-600">
+          Đăng xuất
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

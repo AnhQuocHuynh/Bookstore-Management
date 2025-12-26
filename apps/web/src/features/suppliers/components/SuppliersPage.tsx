@@ -3,6 +3,7 @@ import { Card, Table, Button, Space, Spin, message } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import axios from "axios";
 
+/** ================= TYPES ================= */
 interface Supplier {
   key: number;
   id?: string;
@@ -19,19 +20,55 @@ interface Supplier {
   updateDate?: string;
 }
 
+/** ================= MOCK DATA ================= */
+const MOCK_SUPPLIERS: Supplier[] = [
+  {
+    key: 1,
+    id: "1",
+    supplierId: "NCC001",
+    name: "Công ty ABC",
+    email: "abc@gmail.com",
+    phoneNumber: "0901234567",
+    contactPerson: "Nguyễn Văn A",
+    status: "Hoạt động",
+    address: "123 Nguyễn Trãi, Hà Nội",
+    taxCode: "0101234567",
+    note: "Nhà cung cấp chính",
+    createdDate: "2024-01-10",
+    updateDate: "2024-06-15",
+  },
+  {
+    key: 2,
+    id: "2",
+    supplierId: "NCC002",
+    name: "Công ty XYZ",
+    email: "xyz@gmail.com",
+    phoneNumber: "0912345678",
+    contactPerson: "Trần Thị B",
+    status: "Ngưng hợp tác",
+    address: "456 Lê Lợi, TP.HCM",
+    taxCode: "0309876543",
+    note: "",
+    createdDate: "2023-11-20",
+    updateDate: "2024-05-01",
+  },
+];
+
+/** ================= PAGE ================= */
 export const SuppliersPage = () => {
-  const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(
-    null,
-  );
+  const [selectedSupplier, setSelectedSupplier] =
+    useState<Supplier | null>(null);
   const [data, setData] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
 
-  // Fetch suppliers list from API
+  /** ================= FETCH LIST ================= */
   useEffect(() => {
     const fetchSuppliers = async () => {
       try {
         setLoading(true);
+
+        /* ================= REAL API (COMMENTED) =================
         const response = await axios.get("/api/v1/suppliers", {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
@@ -63,10 +100,15 @@ export const SuppliersPage = () => {
 
           setData(formattedSuppliers);
         }
-      } catch (error: any) {
-        console.error("Failed to fetch suppliers:", error);
+        ========================================================== */
+
+        // ✅ MOCK DATA
+        setTimeout(() => {
+          setData(MOCK_SUPPLIERS);
+          setLoading(false);
+        }, 500);
+      } catch (error) {
         message.error("Không thể tải danh sách nhà cung cấp");
-      } finally {
         setLoading(false);
       }
     };
@@ -74,7 +116,7 @@ export const SuppliersPage = () => {
     fetchSuppliers();
   }, []);
 
-  // Fetch specific supplier details when row is clicked
+  /** ================= FETCH DETAIL ================= */
   const handleRowClick = async (record: Supplier) => {
     if (selectedSupplier?.key === record.key) {
       setSelectedSupplier(null);
@@ -83,6 +125,8 @@ export const SuppliersPage = () => {
 
     try {
       setDetailLoading(true);
+
+      /* ================= REAL API (COMMENTED) =================
       const response = await axios.get(`/api/v1/suppliers/${record.id}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
@@ -91,7 +135,7 @@ export const SuppliersPage = () => {
 
       if (response.data?.data) {
         const supplier = response.data.data;
-        const detailedSupplier: Supplier = {
+        setSelectedSupplier({
           key: supplier.id || record.key,
           id: supplier.id,
           supplierId: supplier.supplierCode || "N/A",
@@ -105,19 +149,22 @@ export const SuppliersPage = () => {
           note: supplier.note || "",
           createdDate: supplier.createdAt || "N/A",
           updateDate: supplier.updatedAt || "N/A",
-        };
-
-        setSelectedSupplier(detailedSupplier);
+        });
       }
-    } catch (error: any) {
-      console.error("Failed to fetch supplier details:", error);
+      ========================================================== */
+
+      // ✅ MOCK DETAIL
+      setTimeout(() => {
+        setSelectedSupplier(record);
+        setDetailLoading(false);
+      }, 300);
+    } catch (error) {
       message.error("Không thể tải chi tiết nhà cung cấp");
-    } finally {
       setDetailLoading(false);
     }
   };
 
-  /** ---------------- TABLE COLUMNS ---------------- */
+  /** ================= TABLE COLUMNS ================= */
   const columns = [
     {
       title: "STT",
@@ -152,11 +199,10 @@ export const SuppliersPage = () => {
   return (
     <div className="flex flex-col w-full bg-white min-h-screen">
       <div className="flex w-full items-start justify-start gap-6">
-        {/* LEFT — SUPPLIER TABLE */}
+        {/* LEFT — TABLE */}
         <div className="flex-1">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-2xl font-bold">Nhà cung cấp</h1>
-
             <Button type="primary" icon={<PlusOutlined />}>
               Thêm nhà cung cấp
             </Button>
@@ -197,53 +243,42 @@ export const SuppliersPage = () => {
                 <Spin />
               </div>
             ) : (
-              <>
-                {/* PHOTO PLACEHOLDER */}
-                {/* <div className="w-[250px] h-[250px] bg-gray-300 rounded-md" /> */}
-
-                <div className="mt-8 w-full space-y-2">
-                  <DetailItem
-                    label="Mã NCC"
-                    value={selectedSupplier.supplierId}
-                  />
-                  <DetailItem label="Tên NCC" value={selectedSupplier.name} />
-                  <DetailItem label="Email" value={selectedSupplier.email} />
-                  <DetailItem
-                    label="Số điện thoại"
-                    value={selectedSupplier.phoneNumber}
-                  />
-                  <DetailItem
-                    label="Người liên lạc"
-                    value={selectedSupplier.contactPerson}
-                  />
-                  <DetailItem
-                    label="Trạng thái"
-                    value={selectedSupplier.status}
-                  />
-                  <DetailItem
-                    label="Địa chỉ"
-                    value={selectedSupplier.address}
-                    multiline
-                  />
-                  <DetailItem
-                    label="Mã số thuế"
-                    value={selectedSupplier.taxCode}
-                  />
-                  <DetailItem
-                    label="Ghi chú"
-                    value={selectedSupplier.note}
-                    multiline
-                  />
-                  <DetailItem
-                    label="Ngày tạo"
-                    value={selectedSupplier.createdDate}
-                  />
-                  <DetailItem
-                    label="Ngày cập nhật"
-                    value={selectedSupplier.updateDate}
-                  />
-                </div>
-              </>
+              <div className="mt-8 w-full space-y-2">
+                <DetailItem label="Mã NCC" value={selectedSupplier.supplierId} />
+                <DetailItem label="Tên NCC" value={selectedSupplier.name} />
+                <DetailItem label="Email" value={selectedSupplier.email} />
+                <DetailItem
+                  label="Số điện thoại"
+                  value={selectedSupplier.phoneNumber}
+                />
+                <DetailItem
+                  label="Người liên lạc"
+                  value={selectedSupplier.contactPerson}
+                />
+                <DetailItem label="Trạng thái" value={selectedSupplier.status} />
+                <DetailItem
+                  label="Địa chỉ"
+                  value={selectedSupplier.address}
+                  multiline
+                />
+                <DetailItem
+                  label="Mã số thuế"
+                  value={selectedSupplier.taxCode}
+                />
+                <DetailItem
+                  label="Ghi chú"
+                  value={selectedSupplier.note}
+                  multiline
+                />
+                <DetailItem
+                  label="Ngày tạo"
+                  value={selectedSupplier.createdDate}
+                />
+                <DetailItem
+                  label="Ngày cập nhật"
+                  value={selectedSupplier.updateDate}
+                />
+              </div>
             )}
           </aside>
         )}
@@ -252,7 +287,7 @@ export const SuppliersPage = () => {
   );
 };
 
-/** Component used for each detail item */
+/** ================= DETAIL ITEM ================= */
 const DetailItem = ({
   label,
   value,
@@ -263,7 +298,9 @@ const DetailItem = ({
   multiline?: boolean;
 }) => (
   <div className="flex justify-between items-center mb-3 w-full gap-4">
-    <div className="text-gray-600 text-sm flex-shrink-0 w-[130px]">{label}</div>
+    <div className="text-gray-600 text-sm flex-shrink-0 w-[130px]">
+      {label}
+    </div>
     <div
       className={`text-lg font-semibold text-right ${
         multiline ? "whitespace-pre-line" : ""
