@@ -32,6 +32,7 @@ const { Option } = Select;
 export const UserEditPage = () => {
   const [form] = Form.useForm();
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [isChanged, setIsChanged] = useState(false);
   const { data: apiResponse, isLoading, isPending, error } = useCurrentUser();
   const { mutateAsync: updateUser, isPending: isSaving } = useUpdateCurrentUser();
   const loadingUser = (isLoading ?? false) || (isPending ?? false);
@@ -53,6 +54,35 @@ export const UserEditPage = () => {
       isActive: userData.isActive ?? false,
     });
   }, [userData, form]);
+
+  const handleCancel = () => {
+    if (!isChanged) {
+      navigate("/users");
+      return;
+    }
+
+    Modal.confirm({
+      title: "Bạn có chắc muốn hủy những thay đổi?",
+      icon: <ExclamationCircleOutlined />,
+      okText: "Có",
+      cancelText: "Không",
+      onOk() {
+        navigate("/users");
+      },
+    });
+  };
+
+  const handleSave = () => {
+    Modal.confirm({
+      title: "Bạn có chắc muốn lưu những thay đổi?",
+      icon: <ExclamationCircleOutlined />,
+      okText: "Có",
+      cancelText: "Không",
+      onOk() {
+        form.submit();
+      },
+    });
+  };
 
   const handleFinish = (values: any) => {
     const isValidHttpUrl = (input: string) => {
@@ -169,12 +199,12 @@ export const UserEditPage = () => {
             Chỉnh sửa người dùng
           </Title>
           <div className="flex space-x-3">
-            <Button className="bg-white border-gray-300 font-medium" onClick={() => navigate("/users")}> 
+            <Button className="bg-white border-gray-300 font-medium" onClick={handleCancel}> 
               Hủy bỏ
             </Button>
             <Button
               type="primary"
-              onClick={() => form.submit()}
+              onClick={handleSave}
               loading={isSaving}
               className="bg-teal-500 hover:bg-teal-400 border-none font-medium"
             >
@@ -198,6 +228,7 @@ export const UserEditPage = () => {
             isActive: false,
           }}
           onFinish={handleFinish}
+          onValuesChange={() => setIsChanged(true)}
         >
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             
