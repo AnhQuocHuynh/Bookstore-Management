@@ -29,60 +29,38 @@ const formSchema = z.object({
 const SelectStorePage = () => {
   const navigate = useNavigate();
   const { accessToken, tempCredentials, setStoreToken } = useAuthStore();
+
+  // Load danh sách cửa hàng
   const { data: stores, isLoading, error } = useBookStores(accessToken || "");
+
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [selectedStoreId, setSelectedStoreId] = useState<string>("");
   const [isLoginLoading, setIsLoginLoading] = useState<boolean>(false);
+  const [showPassword, setShowPassword] = useState(false);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       password: "",
     },
   });
-  const [showPassword, setShowPassword] = useState(false);
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (
-      !(
-        accessToken?.trim() &&
-        tempCredentials?.username?.trim() &&
-        selectedStoreId?.trim()
-      )
-    ) {
-      return;
-    }
-
-    setIsLoginLoading(true);
-
-    try {
-      const response = await authApi.bookstoreLogin(accessToken, {
-        username: tempCredentials.username.trim(),
-        password: values.password.trim(),
-        bookStoreId: selectedStoreId,
-      });
-
-      console.log(response);
-    } catch (error: any) {
-      console.error("Login Error:", error);
-      const msg = error.response?.data?.message || "Đăng nhập thất bại";
-      toast.error(msg);
-    } finally {
-      setIsLoginLoading(false);
-    }
-  }
-
+  // 1. Hàm xử lý đóng Modal
   const handleCancel = () => {
     form.reset();
     setIsOpen(false);
   };
 
+  // 2. Hàm xử lý khi chọn nhà sách
   const handleSelectStore = async (store: BookStore) => {
+    // Nếu là nhân viên -> Mở Modal nhập lại mật khẩu
     if (tempCredentials?.role === "EMPLOYEE") {
       setSelectedStoreId(store.id);
       setIsOpen(true);
       return;
     }
 
+    // Nếu là Owner -> Đăng nhập luôn (Logic cũ của bạn)
     if (!accessToken || !tempCredentials) {
       message.error("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.");
       navigate("/auth/login");
@@ -99,6 +77,7 @@ const SelectStorePage = () => {
 
       const response = await authApi.bookstoreLogin(accessToken, body);
       const newAccessToken = response.accessToken;
+
       if (!newAccessToken) throw new Error("Không nhận được Access Token");
 
       const finalUser = {
@@ -122,11 +101,86 @@ const SelectStorePage = () => {
     } catch (err: any) {
       console.error(err);
       message.error(
-        err?.response?.data?.message || "Đăng nhập vào cửa hàng thất bại",
+        err?.response?.data?.message || "Đăng nhập vào cửa hàng thất bại"
       );
     }
   };
 
+  // 3. Hàm Submit form nhập mật khẩu (Dành cho Employee)
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    // Kiểm tra dữ liệu đầu vào
+    if (
+      !(
+        accessToken?.trim() &&
+        tempCredentials?.username?.trim() &&
+        selectedStoreId?.trim()
+      )
+    ) {
+      toast.error("Thiếu thông tin đăng nhập hoặc chưa chọn cửa hàng");
+      return;
+    }
+
+    setIsLoginLoading(true);
+    try {
+      // Gọi API đăng nhập vào cửa hàng
+      const response = await authApi.bookstoreLogin(accessToken, {
+        username: tempCredentials.username.trim(),
+        password: values.password.trim(),
+        bookStoreId: selectedStoreId,
+      });
+
+      // Tìm tên cửa hàng để hiển thị
+      const selectedStoreInfo = stores?.find((s) => s.id === selectedStoreId);
+
+      // Lấy accessToken mới
+      const newAccessToken = response.accessToken;
+
+      if (!newAccessToken) {
+        throw new Error("Không nhận được Access Token từ hệ thống");
+      }
+
+      // Chuẩn bị dữ liệu user
+      const finalUser = {
+        id: response.profile.id,
+        email: response.profile.email,
+        name: response.profile.fullName,
+        role: response.profile.role,
+        avatar: response.profile.avatarUrl || undefined,
+      };
+
+      // Chuẩn bị dữ liệu cửa hàng
+      const storeData = {
+        id: response.bookStoreId,
+        name: selectedStoreInfo?.name || "Cửa hàng",
+        address: response.profile.address || selectedStoreInfo?.address,
+        phone: response.profile.phoneNumber || selectedStoreInfo?.phoneNumber,
+      };
+
+      // Lưu vào Store và chuyển hướng
+      setStoreToken(newAccessToken, storeData, finalUser);
+
+      message.success(`Đăng nhập thành công vào: ${storeData.name}`);
+      setIsOpen(false);
+      navigate("/dashboard");
+
+    } catch (error: any) {
+      console.error("Login Error Details:", error);
+
+      // Xử lý lỗi token hết hạn
+      if (error.response?.status === 410 || error.response?.status === 401) {
+        toast.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại từ đầu.");
+        navigate("/auth/login");
+      } else {
+        const msg = error.response?.data?.message || "Mật khẩu không đúng hoặc có lỗi xảy ra";
+        toast.error(msg);
+        form.setValue("password", ""); // Xóa mật khẩu
+      }
+    } finally {
+      setIsLoginLoading(false);
+    }
+  }
+
+  // Nếu không có token từ bước 1 -> Về login
   if (!accessToken) {
     navigate("/auth/login");
     return null;
@@ -134,24 +188,18 @@ const SelectStorePage = () => {
 
   return (
     <>
-      <div
-        className="relative min-h-screen bg-linear-to-br
-    from-teal-50 to-cyan-50 flex flex-col items-center p-6 mb-10"
-      >
-        {/* Decorative background shapes */}
+      <div className="relative min-h-screen bg-gradient-to-br from-teal-50 to-cyan-50 flex flex-col items-center p-6 mb-10">
+        {/* Background shapes */}
         <div className="absolute top-5 left-5 w-64 h-64 bg-teal-200 opacity-20 rounded-full -z-10"></div>
         <div className="absolute bottom-5 right-5 w-80 h-80 bg-cyan-200 opacity-20 rounded-full -z-10"></div>
 
-        {/* Hero section */}
+        {/* Header */}
         <div className="w-full mb-12 flex flex-col items-center text-center md:text-left">
-          {/* Logo bên trái */}
           <img
             src="/logo.png"
             alt="App Logo"
             className="w-24 h-24 md:w-40 md:h-40"
           />
-
-          {/* Title & description bên phải */}
           <div className="flex flex-col items-center text-center">
             <h1 className="text-4xl md:text-5xl font-extrabold text-teal-800">
               Chọn chi nhánh làm việc
@@ -186,22 +234,23 @@ const SelectStorePage = () => {
               <SelectStoreCard
                 key={store.id}
                 store={store}
-                onSelect={handleSelectStore}
+                onSelect={handleSelectStore} // Gọi hàm ở đây
               />
             ))}
           </div>
         )}
       </div>
 
+      {/* Modal nhập Password */}
       <Modal
         title="Xác nhận mật khẩu"
         open={isOpen}
-        onCancel={handleCancel}
+        onCancel={handleCancel} // Gọi hàm đóng modal
         centered
         footer={null}
       >
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
               name="password"
@@ -221,9 +270,9 @@ const SelectStorePage = () => {
                         className="absolute right-0 top-0 h-full w-12 flex items-center justify-center"
                       >
                         {showPassword ? (
-                          <EyeOff className="h-5 w-5" />
+                          <EyeOff className="h-5 w-5 text-gray-500" />
                         ) : (
-                          <Eye className="h-5 w-5" />
+                          <Eye className="h-5 w-5 text-gray-500" />
                         )}
                       </button>
                     </div>
@@ -232,8 +281,14 @@ const SelectStorePage = () => {
                 </FormItem>
               )}
             />
-            <Button type="primary" htmlType="submit" loading={isLoginLoading}>
-              {isLoginLoading ? "Đang xử lý đăng nhập..." : "Đăng nhập"}
+            <Button
+              type="primary"
+              htmlType="submit"
+              loading={isLoginLoading}
+              block
+              className="bg-teal-600 hover:bg-teal-700"
+            >
+              {isLoginLoading ? "Đang xử lý..." : "Đăng nhập"}
             </Button>
           </form>
         </Form>
