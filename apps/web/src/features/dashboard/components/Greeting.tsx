@@ -1,10 +1,8 @@
+import { UserProfile } from "@/features/auth";
 import React from "react";
 
 interface GreetingProps {
-  user?: {
-    name: string;
-    role: string; // tiếng Anh: "OWNER", "MANAGER", "STAFF"
-  };
+  user?: UserProfile;
 }
 
 const roleColors: Record<string, string> = {
@@ -26,7 +24,7 @@ export const Greeting: React.FC<GreetingProps> = ({ user }) => {
           className="text-xl sm:text-2xl font-bold"
           style={{ color: nameColor }}
         >
-          {user.name}!
+          {user.fullName}!
         </span>
       )}
     </div>

@@ -11,7 +11,7 @@ export const DashboardPage = () => {
   return (
     <div className="flex flex-col gap-4 sm:gap-6">
       {/* Tiêu đề tổng quan */}
-      <Greeting user={user || undefined} />
+      {user && <Greeting user={user || undefined} />}
 
       <DashboardHeader />
 

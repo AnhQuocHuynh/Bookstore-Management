@@ -1,7 +1,11 @@
 "use client";
 
-import { type Customer } from "@/features/customers/data/customers";
+import {
+  Customer,
+  CUSTOMER_TYPE_LABEL,
+} from "@/features/customers/types/customer.type";
 import { Modal } from "antd";
+import { format } from "date-fns";
 
 interface CustomerDetailModalProps {
   customer: Customer | null;
@@ -28,17 +32,17 @@ const CustomerDetailModal = ({
         <div className="flex flex-col gap-3 text-sm">
           <div className="flex justify-between bg-gray-50 p-3 rounded-md shadow-sm">
             <span className="font-semibold text-gray-700">Mã KH:</span>
-            <span className="text-gray-900">{customer.id}</span>
+            <span className="text-gray-900">{customer.customerCode}</span>
           </div>
 
           <div className="flex justify-between bg-gray-50 p-3 rounded-md shadow-sm">
             <span className="font-semibold text-gray-700">Tên:</span>
-            <span className="text-gray-900">{customer.name}</span>
+            <span className="text-gray-900">{customer.fullName}</span>
           </div>
 
           <div className="flex justify-between bg-gray-50 p-3 rounded-md shadow-sm">
             <span className="font-semibold text-gray-700">Số điện thoại:</span>
-            <span className="text-gray-900">{customer.phone}</span>
+            <span className="text-gray-900">{customer.phoneNumber}</span>
           </div>
 
           <div className="flex justify-between bg-gray-50 p-3 rounded-md shadow-sm">
@@ -55,7 +59,10 @@ const CustomerDetailModal = ({
 
           <div className="flex justify-between bg-gray-50 p-3 rounded-md shadow-sm">
             <span className="font-semibold text-gray-700">Loại KH:</span>
-            <span className="text-gray-900">{customer.type}</span>
+            <span className="text-gray-900">
+              {" "}
+              {CUSTOMER_TYPE_LABEL[customer.customerType] ?? "Không xác định"}
+            </span>
           </div>
 
           {customer.note && (
@@ -68,8 +75,10 @@ const CustomerDetailModal = ({
           )}
 
           <div className="flex justify-between bg-gray-50 p-3 rounded-md shadow-sm">
-            <span className="font-semibold text-gray-700">Ngày đăng ký:</span>
-            <span className="text-gray-900">{customer.createdAt}</span>
+            <span className="font-semibold text-gray-700">Ngày tạo hồ sơ:</span>
+            <span className="text-gray-900">
+              {format(new Date(customer.createdAt), "dd/MM/yyyy")}
+            </span>
           </div>
         </div>
       )}

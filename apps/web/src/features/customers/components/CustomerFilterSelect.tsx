@@ -24,9 +24,9 @@ const CustomerFilterSelect = ({
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="all">Tất cả</SelectItem>
-        <SelectItem value="Thành viên">Thành viên</SelectItem>
-        <SelectItem value="VIP">VIP</SelectItem>
-        <SelectItem value="Khách thường">Khách thường</SelectItem>
+        <SelectItem value="premium">Thành viên</SelectItem>
+        <SelectItem value="vip">VIP</SelectItem>
+        <SelectItem value="regular">Khách thường</SelectItem>
       </SelectContent>
     </Select>
   );

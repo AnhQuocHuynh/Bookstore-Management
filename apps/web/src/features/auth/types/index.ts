@@ -1,3 +1,5 @@
+import { EmployeeRole, UserRole } from "@bookstore/types";
+
 // Enums
 export const OtpTypeEnum = {
   SIGN_UP: "sign_up",
@@ -6,16 +8,6 @@ export const OtpTypeEnum = {
 } as const;
 
 export type OtpTypeEnum = (typeof OtpTypeEnum)[keyof typeof OtpTypeEnum];
-
-// User Role Enum (from backend)
-export const UserRole = {
-  ADMIN: "ADMIN",
-  OWNER: "OWNER",
-  EMPLOYEE: "EMPLOYEE",
-  STAFF: "STAFF",
-} as const;
-
-export type UserRole = (typeof UserRole)[keyof typeof UserRole];
 
 // Request DTOs
 export interface SignInDto {
@@ -61,29 +53,34 @@ export interface ResendOtpDto {
   type: OtpTypeEnum;
 }
 
+export interface EmployeeProfile {
+  username: string;
+  isFirstLogin: boolean;
+  employeeCode: string;
+  role: EmployeeRole;
+}
+
 // Response Types
 export interface UserProfile {
   id: string;
   email: string;
   fullName: string;
-  phoneNumber?: string;
-  avatarUrl?: string | null;
-  logoUrl?: string | null;
-  birthDate?: string;
-  address?: string | null;
+  phoneNumber: string;
+  avatarUrl: string;
+  birthDate: string;
+  address: string;
   isActive: boolean;
   isEmailVerified: boolean;
   role: UserRole;
   createdAt: string;
   updatedAt: string;
-  username?: string;
-  isFirstLogin?: boolean;
+  employeeProfile?: EmployeeProfile;
 }
 
 export interface SignInResponse {
   accessToken?: string; // For ADMIN
   token?: string; // For OWNER
-  profile: UserProfile;
+  profile: any;
 }
 
 export interface StoreInfo {

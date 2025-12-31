@@ -25,6 +25,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { PublishersModule } from './modules/publishers/publishers.module';
+import { CustomersModule } from '@/modules/customers/customers.module';
 
 @Module({
   imports: [
@@ -74,6 +75,7 @@ import { PublishersModule } from './modules/publishers/publishers.module';
     ReturnOrdersModule,
     TransactionsModule,
     ReportsModule,
+    CustomersModule,
   ],
 })
 export class AppModule {}

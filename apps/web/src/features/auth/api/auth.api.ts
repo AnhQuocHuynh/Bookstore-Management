@@ -141,8 +141,9 @@
 // };
 
 // src/features/auth/api/auth.api.ts
+import { BookStore } from "@/features/auth/types/bookstore.types";
 import { apiClient } from "@/lib/axios";
-import { SignInDto, SignInResponse, BookStore } from "../types";
+import { SignInResponse } from "../types";
 
 export const authApi = {
   systemLoginOwner: async (body: {
