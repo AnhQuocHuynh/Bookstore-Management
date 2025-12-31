@@ -19,6 +19,8 @@ import { SelectStoreCard } from "../components/SelectStoreCard";
 import { useBookStores } from "../hooks/useBookStores";
 import { BookStore } from "../types/bookstore.types";
 import { Eye, EyeOff } from "lucide-react";
+import { omit } from "lodash";
+import { UserProfile } from "@/features/auth/types";
 
 const formSchema = z.object({
   password: z.string().min(1, {
@@ -80,14 +82,6 @@ const SelectStorePage = () => {
 
       if (!newAccessToken) throw new Error("Không nhận được Access Token");
 
-      const finalUser = {
-        id: response.profile.id,
-        email: response.profile.email,
-        name: response.profile.fullName,
-        role: response.profile.role,
-        avatar: response.profile.avatarUrl || undefined,
-      };
-
       const storeInfo = {
         id: response.bookStoreId,
         name: store.name,
@@ -95,13 +89,13 @@ const SelectStorePage = () => {
         phone: response.profile.phoneNumber,
       };
 
-      setStoreToken(newAccessToken, storeInfo, finalUser);
+      setStoreToken(newAccessToken, storeInfo, response.profile);
       message.success(`Đã vào cửa hàng: ${store.name}`);
       navigate("/dashboard");
     } catch (err: any) {
       console.error(err);
       message.error(
-        err?.response?.data?.message || "Đăng nhập vào cửa hàng thất bại"
+        err?.response?.data?.message || "Đăng nhập vào cửa hàng thất bại",
       );
     }
   };
@@ -139,16 +133,6 @@ const SelectStorePage = () => {
         throw new Error("Không nhận được Access Token từ hệ thống");
       }
 
-      // Chuẩn bị dữ liệu user
-      const finalUser = {
-        id: response.profile.id,
-        email: response.profile.email,
-        name: response.profile.fullName,
-        role: response.profile.role,
-        avatar: response.profile.avatarUrl || undefined,
-      };
-
-      // Chuẩn bị dữ liệu cửa hàng
       const storeData = {
         id: response.bookStoreId,
         name: selectedStoreInfo?.name || "Cửa hàng",
@@ -156,22 +140,39 @@ const SelectStorePage = () => {
         phone: response.profile.phoneNumber || selectedStoreInfo?.phoneNumber,
       };
 
-      // Lưu vào Store và chuyển hướng
-      setStoreToken(newAccessToken, storeData, finalUser);
+      setStoreToken(newAccessToken, storeData, {
+        ...(omit(response.profile, [
+          "username",
+          "isFirstLogin",
+          "employeeCode",
+          "role",
+        ]) as UserProfile),
+        role: "EMPLOYEE",
+        isEmailVerified: true,
+        employeeProfile: {
+          username: response.profile.username || "",
+          isFirstLogin: response.profile.isFirstLogin || false,
+          employeeCode: response.profile.employeeCode || "",
+          role: response.profile.role || "STAFF",
+        },
+      });
 
       message.success(`Đăng nhập thành công vào: ${storeData.name}`);
       setIsOpen(false);
       navigate("/dashboard");
-
     } catch (error: any) {
       console.error("Login Error Details:", error);
 
       // Xử lý lỗi token hết hạn
       if (error.response?.status === 410 || error.response?.status === 401) {
-        toast.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại từ đầu.");
+        toast.error(
+          "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại từ đầu.",
+        );
         navigate("/auth/login");
       } else {
-        const msg = error.response?.data?.message || "Mật khẩu không đúng hoặc có lỗi xảy ra";
+        const msg =
+          error.response?.data?.message ||
+          "Mật khẩu không đúng hoặc có lỗi xảy ra";
         toast.error(msg);
         form.setValue("password", ""); // Xóa mật khẩu
       }
@@ -188,7 +189,10 @@ const SelectStorePage = () => {
 
   return (
     <>
-      <div className="relative min-h-screen bg-gradient-to-br from-teal-50 to-cyan-50 flex flex-col items-center p-6 mb-10">
+      <div
+        className="relative min-h-screen bg-linear-to-br from-teal-50 
+      to-cyan-50 flex flex-col items-center p-6 mb-10"
+      >
         {/* Background shapes */}
         <div className="absolute top-5 left-5 w-64 h-64 bg-teal-200 opacity-20 rounded-full -z-10"></div>
         <div className="absolute bottom-5 right-5 w-80 h-80 bg-cyan-200 opacity-20 rounded-full -z-10"></div>

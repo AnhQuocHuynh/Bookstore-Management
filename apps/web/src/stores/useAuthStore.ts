@@ -1,14 +1,6 @@
-// src/stores/useAuthStore.ts
+import { UserProfile } from "@/features/auth";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-
-export interface User {
-  id: string;
-  email: string;
-  name: string;
-  role: string;
-  avatar?: string;
-}
 
 export interface Store {
   id: string;
@@ -26,7 +18,7 @@ interface TempCredentials {
 }
 
 interface AuthState {
-  user: User | null;
+  user: UserProfile | null;
   accessToken: string | null; // Dùng chung cho cả System Token và Store Token
   currentStore: Store | null;
   isAuthenticated: boolean;
@@ -36,11 +28,11 @@ interface AuthState {
   setSystemToken: (
     token: string,
     tempCreds: TempCredentials,
-    user?: User,
+    user?: UserProfile,
   ) => void;
 
   // Action Login bước 2 (Update token mới)
-  setStoreToken: (newToken: string, store: Store, user: User) => void;
+  setStoreToken: (newToken: string, store: Store, user: UserProfile) => void;
 
   logout: () => void;
 }

@@ -10,17 +10,21 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import CustomerDetailModal from "@/features/customers/components/CustomerDetailModal";
-import { Customer, mockCustomers } from "@/features/customers/data/customers";
+import {
+  Customer,
+  CUSTOMER_TYPE_LABEL,
+} from "@/features/customers/types/customer.type";
 import { Eye, AlertCircle } from "lucide-react";
 import { useState } from "react";
+import { format } from "date-fns";
 
 const PAGE_SIZE = 5;
 
 interface CustomerListProps {
-  customers?: Customer[];
+  customers: Customer[];
 }
 
-const CustomerList = ({ customers = mockCustomers }: CustomerListProps) => {
+const CustomerList = ({ customers }: CustomerListProps) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
     null,
@@ -74,13 +78,13 @@ const CustomerList = ({ customers = mockCustomers }: CustomerListProps) => {
                     className="hover:bg-gray-50 transition"
                   >
                     <TableCell className="px-4 sm:px-6 py-4 font-medium">
-                      {customer.id}
+                      {customer.customerCode}
                     </TableCell>
                     <TableCell className="px-4 sm:px-6 py-4">
-                      {customer.name}
+                      {customer.fullName}
                     </TableCell>
                     <TableCell className="px-4 sm:px-6 py-4">
-                      {customer.phone}
+                      {customer.phoneNumber}
                     </TableCell>
                     <TableCell className="px-4 sm:px-6 py-4 hidden md:table-cell">
                       {customer.email}
@@ -88,18 +92,19 @@ const CustomerList = ({ customers = mockCustomers }: CustomerListProps) => {
                     <TableCell className="px-4 sm:px-6 py-4 hidden lg:table-cell">
                       <span
                         className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
-                          customer.type === "Thành viên"
+                          customer.customerType === "premium"
                             ? "bg-green-100 text-green-800"
-                            : customer.type === "VIP"
+                            : customer.customerType === "vip"
                               ? "bg-yellow-100 text-yellow-800"
                               : "bg-gray-100 text-gray-800"
                         }`}
                       >
-                        {customer.type}
+                        {CUSTOMER_TYPE_LABEL[customer.customerType] ??
+                          "Không xác định"}
                       </span>
                     </TableCell>
                     <TableCell className="px-4 sm:px-6 py-4 text-right text-sm text-gray-600 hidden sm:table-cell">
-                      {customer.createdAt}
+                      {format(new Date(customer.createdAt), "dd/MM/yyyy")}
                     </TableCell>
                     <TableCell className="px-4 sm:px-6 py-4 text-center">
                       <Button

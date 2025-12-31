@@ -5,22 +5,20 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User } from "@/stores/useAuthStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 
-interface UserMenuProps {
-  user: User | null;
-}
+export default function UserMenu() {
+  const { user } = useAuthStore();
 
-export default function UserMenu({ user }: UserMenuProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Avatar className="cursor-pointer">
-          {user?.avatar ? (
-            <AvatarImage src={user.avatar} alt={user.name || "User"} />
+          {user?.avatarUrl ? (
+            <AvatarImage src={user.avatarUrl} alt={user.fullName || "User"} />
           ) : (
             <AvatarFallback>
-              {user?.name ? user.name[0].toUpperCase() : "U"}
+              {user?.fullName ? user.fullName[0].toUpperCase() : "U"}
             </AvatarFallback>
           )}
         </Avatar>

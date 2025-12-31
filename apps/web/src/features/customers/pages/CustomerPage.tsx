@@ -1,28 +1,40 @@
 "use client";
 
+import Loading from "@/components/Loading";
 import CustomerFilterSelect from "@/features/customers/components/CustomerFilterSelect";
 import CustomerList from "@/features/customers/components/CustomerList";
 import CustomerSearchBar from "@/features/customers/components/CustomerSearchBar";
-import { mockCustomers } from "@/features/customers/data/customers";
+import { useGetCustomers } from "@/features/customers/hooks/use-get-customers";
+import { Customer } from "@/features/customers/types/customer.type";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { useMemo, useState } from "react";
 
 const CustomerPage = () => {
+  const { user } = useAuthStore();
   const [searchText, setSearchText] = useState("");
   const [customerTypeFilter, setCustomerTypeFilter] = useState("all");
+  const { data, isLoading } = useGetCustomers(user?.id ?? "");
+
+  const customers = useMemo<Customer[]>(() => {
+    return data?.data ?? [];
+  }, [data]);
 
   const filteredCustomers = useMemo(() => {
-    return mockCustomers.filter((customer) => {
+    return customers.filter((customer) => {
       const matchesSearch =
-        customer.name.toLowerCase().includes(searchText.toLowerCase()) ||
-        customer.phone.includes(searchText) ||
+        customer.fullName.toLowerCase().includes(searchText.toLowerCase()) ||
+        customer.phoneNumber.includes(searchText) ||
         customer.id.toLowerCase().includes(searchText.toLowerCase());
 
       const matchesStatus =
-        customerTypeFilter === "all" || customer.type === customerTypeFilter;
+        customerTypeFilter === "all" ||
+        customer.customerType === customerTypeFilter;
 
       return matchesSearch && matchesStatus;
     });
-  }, [searchText, customerTypeFilter]);
+  }, [customers, searchText, customerTypeFilter]);
+
+  if (isLoading) return <Loading text="Đang tải dữ liệu..." />;
 
   return (
     <div className="flex flex-col gap-4 w-full">

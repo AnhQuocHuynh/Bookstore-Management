@@ -4,14 +4,12 @@ import { Input } from "@/components/ui/input";
 import UserMenu from "@/components/UserMenu";
 import { Menu, Search } from "lucide-react";
 import { ReactNode, useState } from "react";
-import { useAuthStore } from "../stores/useAuthStore";
 
 interface MainLayoutProps {
   children: ReactNode;
 }
 
 export const MainLayout = ({ children }: MainLayoutProps) => {
-  const { user } = useAuthStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -117,7 +115,7 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
               {/* Right: Notifications + User */}
               <div className="flex items-center gap-4">
                 <NotificationsButton />
-                <UserMenu user={user} />
+                <UserMenu />
               </div>
             </div>
 

@@ -24,4 +24,3 @@ export * from './return-exchange-detail-type.enum';
 export * from './return-order-status.enum';
 export * from './supply-status.enum';
 export * from './task-status.enum';
-export * from './user-tenant-role.enum';
