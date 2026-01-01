@@ -204,4 +204,23 @@ export const authApi = {
     const response = await apiClient.post("/auth/sign-up", body);
     return response.data;
   },
+
+  resendOtp: async (body: { email: string; type: OtpTypeEnum }) => {
+    const response = await apiClient.post("/auth/resend-otp", body);
+    return response.data;
+  },
+
+  forgetPassword: async (body: { email: string }) => {
+    const response = await apiClient.post("/auth/forget-password", body);
+    return response.data;
+  },
+
+  resetPassword: async (body: {
+    authCode: string;
+    email: string;
+    newPassword: string;
+  }) => {
+    const response = await apiClient.post("/auth/reset-password", body);
+    return response.data;
+  },
 };

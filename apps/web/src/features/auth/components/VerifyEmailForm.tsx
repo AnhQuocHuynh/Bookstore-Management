@@ -13,6 +13,7 @@ import {
   InputOTPGroup,
   InputOTPSlot,
 } from "@/components/ui/input-otp";
+import { useResendOtp } from "@/features/auth/hooks/use-resend-otp";
 import { useVerifyOtp } from "@/features/auth/hooks/use-verify-otp";
 import { OtpTypeEnum } from "@/features/auth/types";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -39,6 +40,8 @@ const VerifyEmailForm = () => {
   });
   const { registerTemp, setRegisterTemp } = useAuthStore();
   const { mutate, isPending } = useVerifyOtp();
+  const { mutate: mutateResendOtp, isPending: isResendOtpPending } =
+    useResendOtp();
 
   const [resendTimer, setResendTimer] = useState(() => {
     const lastSent = localStorage.getItem("otpLastSent");
@@ -63,10 +66,23 @@ const VerifyEmailForm = () => {
   }, [resendTimer]);
 
   const handleResendOTP = () => {
-    console.log("Resend OTP request sent!");
-    localStorage.setItem("otpLastSent", Date.now().toString());
-    setResendTimer(RESEND_INTERVAL);
-    // TODO: gọi API gửi lại OTP
+    if (isResendOtpPending || !registerTemp) return;
+
+    mutateResendOtp(
+      {
+        email: registerTemp.email,
+        type: OtpTypeEnum.SIGN_UP,
+      },
+      {
+        onSuccess: (data: any) => {
+          if (data) {
+            toast.success("Mã OTP đã được gửi vào email của bạn.");
+            localStorage.setItem("otpLastSent", Date.now().toString());
+            setResendTimer(RESEND_INTERVAL);
+          }
+        },
+      },
+    );
   };
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {

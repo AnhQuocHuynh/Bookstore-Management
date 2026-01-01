@@ -12,9 +12,10 @@ import { useFormContext } from "react-hook-form";
 
 interface Step1SendEmailProps {
   onNext: () => void;
+  isPending: boolean;
 }
 
-const Step1SendEmail = ({ onNext }: Step1SendEmailProps) => {
+const Step1SendEmail = ({ onNext, isPending }: Step1SendEmailProps) => {
   const { control } = useFormContext<ForgetPasswordFormValues>();
   return (
     <div className="space-y-5">
@@ -32,8 +33,12 @@ const Step1SendEmail = ({ onNext }: Step1SendEmailProps) => {
         )}
       />
 
-      <Button onClick={onNext} className="w-full mt-2 cursor-pointer">
-        Gửi mã OTP
+      <Button
+        onClick={onNext}
+        disabled={isPending}
+        className="w-full mt-2 cursor-pointer"
+      >
+        {isPending ? "Đang xử lý..." : " Gửi mã OTP"}
       </Button>
     </div>
   );

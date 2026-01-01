@@ -685,7 +685,9 @@ export class AuthService {
     const user = await this.mainUserService.findUserByField('email', email);
 
     if (!user)
-      throw new NotFoundException(`This email has not been registered.`);
+      throw new NotFoundException(
+        `Email của bạn chưa được đăng ký trong hệ thống.`,
+      );
 
     if (user.role !== UserRole.OWNER) {
       throw new ForbiddenException(
@@ -698,23 +700,28 @@ export class AuthService {
       OtpTypeEnum.RESET_PASSWORD,
     );
 
-    if (validOtps.length > 0)
-      throw new UnauthorizedException('You still have an active OTP code.');
+    let otpCode: string = '';
 
-    const expiresAt = addMinutes(new Date(), 5);
+    if (validOtps.length > 0) {
+      otpCode = decryptPayload(validOtps[0].otp, this.configService);
+    } else {
+      const expiresAt = addMinutes(new Date(), 5);
 
-    const { otp } = await this.mainOtpService.createNewOtp(
-      6,
-      user.id,
-      expiresAt,
-      OtpTypeEnum.RESET_PASSWORD,
-    );
+      const { otp } = await this.mainOtpService.createNewOtp(
+        6,
+        user.id,
+        expiresAt,
+        OtpTypeEnum.RESET_PASSWORD,
+      );
+
+      otpCode = otp;
+    }
 
     await this.emailService.handleSendEmail(
       user.email,
       EmailTemplateNameEnum.EMAIL_RESET_PASSWORD,
       {
-        otp,
+        otp: otpCode,
       },
     );
 
@@ -729,7 +736,9 @@ export class AuthService {
     const user = await this.mainUserService.findUserByField('email', email);
 
     if (!user)
-      throw new NotFoundException(`This email has not been registered.`);
+      throw new NotFoundException(
+        `Email của bạn chưa được đăng ký trong hệ thống.`,
+      );
 
     if (user.role !== UserRole.OWNER) {
       throw new ForbiddenException(
@@ -763,7 +772,9 @@ export class AuthService {
     const user = await this.mainUserService.findUserByField('email', email);
 
     if (!user)
-      throw new NotFoundException(`This email has not been registered.`);
+      throw new NotFoundException(
+        `Email của bạn chưa được đăng ký trong hệ thống.`,
+      );
 
     if (user.role !== UserRole.OWNER) {
       throw new ForbiddenException(
@@ -848,7 +859,9 @@ export class AuthService {
     const user = await this.mainUserService.findUserByField('id', userId);
 
     if (!user)
-      throw new NotFoundException(`This email has not been registered.`);
+      throw new NotFoundException(
+        `Email của bạn chưa được đăng ký trong hệ thống.`,
+      );
 
     const isValidPassword = await verifyPassword(
       currentPassword,
