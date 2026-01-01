@@ -143,7 +143,8 @@
 // src/features/auth/api/auth.api.ts
 import { BookStore } from "@/features/auth/types/bookstore.types";
 import { apiClient } from "@/lib/axios";
-import { SignInResponse } from "../types";
+import { OtpTypeEnum, SignInResponse } from "../types";
+import { RegisterDto } from "@/features/auth/types/register";
 
 export const authApi = {
   systemLoginOwner: async (body: {
@@ -187,6 +188,20 @@ export const authApi = {
     const response = await apiClient.post("/auth/sign-in/bookstore", body, {
       params: { token },
     });
+    return response.data;
+  },
+
+  verifyOtp: async (body: {
+    email: string;
+    otp: string;
+    type: OtpTypeEnum;
+  }) => {
+    const response = await apiClient.post("/auth/verify-otp", body);
+    return response.data;
+  },
+
+  register: async (body: RegisterDto) => {
+    const response = await apiClient.post("/auth/sign-up", body);
     return response.data;
   },
 };

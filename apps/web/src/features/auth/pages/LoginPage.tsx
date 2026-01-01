@@ -1,23 +1,121 @@
+import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from "@/components/ui/input-otp";
 import { authApi } from "@/features/auth/api/auth.api";
 import LoginForm from "@/features/auth/components/LoginForm";
+import { useVerifyOtp } from "@/features/auth/hooks/use-verify-otp";
 import { loginSchema } from "@/features/auth/schema/login.schema";
+import { OtpTypeEnum } from "@/features/auth/types";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { maskEmail } from "@/utils";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Modal } from "antd";
+import { REGEXP_ONLY_DIGITS } from "input-otp";
+import { Loader2 } from "lucide-react";
 import { useState } from "react";
+import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { z } from "zod";
 
+const formSchema = z.object({
+  otp: z.string().length(6, "Mã xác thực không hợp lệ"),
+});
+
+const RESEND_INTERVAL = 60;
+
 const LoginPage = () => {
   const navigate = useNavigate();
-  const { setSystemToken } = useAuthStore();
-
+  const { setSystemToken, tempCredentials } = useAuthStore();
+  const [isOpen, setIsOpen] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [fullName, setFullName] = useState<string>("");
+  const [email, setEmail] = useState<string>("");
+  const { mutate, isPending } = useVerifyOtp();
+
+  const handleCancel = () => {
+    setIsOpen(false);
+    setTimeout(() => {
+      form.reset();
+    }, 500);
+  };
+
+  const handleResendOTP = () => {
+    console.log("Resend OTP request sent!");
+    localStorage.setItem("otpLastSent", Date.now().toString());
+    setResendTimer(RESEND_INTERVAL);
+    // TODO: gọi API gửi lại OTP
+  };
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: { otp: "" },
+  });
+
+  const onSubmit = (values: z.infer<typeof formSchema>) => {
+    if (!values.otp || !email.trim()) return;
+
+    mutate(
+      {
+        email,
+        otp: values.otp,
+        type: OtpTypeEnum.SIGN_UP,
+      },
+      {
+        onSuccess: async (data: any) => {
+          if (data) {
+            setIsOpen(false);
+
+            const isValidCredentials =
+              !!tempCredentials?.email &&
+              !!tempCredentials?.password &&
+              !!tempCredentials?.role;
+
+            if (isValidCredentials) {
+              form.reset();
+              await handleSubmit({
+                email: tempCredentials.email,
+                password: tempCredentials.password,
+                role: tempCredentials.role,
+              });
+            }
+          }
+        },
+      },
+    );
+  };
+
+  const [resendTimer, setResendTimer] = useState(() => {
+    const lastSent = localStorage.getItem("otpLastSent");
+    if (lastSent) {
+      const diff = Math.max(
+        RESEND_INTERVAL - Math.floor((Date.now() - Number(lastSent)) / 1000),
+        0,
+      );
+      return diff;
+    }
+    return 0;
+  });
 
   const handleSubmit = async (values: z.infer<typeof loginSchema>) => {
     setIsLoading(true);
     try {
       const { role, email, password, username } = values;
-      const isAdminOrOwnerRole = role === "admin" || role === "owner";
+      const isAdminOrOwnerRole =
+        role === "ADMIN" ||
+        role === "admin" ||
+        role === "OWNER" ||
+        role === "owner";
       let response;
 
       if (isAdminOrOwnerRole && email?.trim() && password?.trim()) {
@@ -58,6 +156,13 @@ const LoginPage = () => {
         userData as any,
       );
 
+      if (!response.profile.isEmailVerified) {
+        setIsOpen(true);
+        setFullName(response.profile.fullName);
+        setEmail(response.profile.email);
+        return;
+      }
+
       toast.success("Đăng nhập thành công!");
       navigate("/select-store");
     } catch (error: any) {
@@ -97,6 +202,91 @@ const LoginPage = () => {
 
         <LoginForm onSubmit={handleSubmit} isLoading={isLoading} />
       </div>
+
+      <Modal
+        title={
+          <div className="text-center space-y-1">
+            <h2 className="text-lg font-semibold">
+              Xin chào <span className="text-emerald-600">{fullName}</span>!
+            </h2>
+            <p className="text-sm text-gray-500 font-normal">
+              Bạn chưa xác thực email. Vui lòng kiểm tra mã xác thực được gửi
+              tới{" "}
+              <span className="font-medium text-gray-700">
+                {maskEmail(email)}
+              </span>{" "}
+              để tiếp tục làm việc với{" "}
+              <span className="font-medium text-gray-700">BookFlow</span>.
+            </p>
+          </div>
+        }
+        open={isOpen}
+        onCancel={handleCancel}
+        centered
+        footer={null}
+      >
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <FormField
+              control={form.control}
+              name="otp"
+              render={({ field }) => (
+                <FormItem className="flex flex-col gap-2 items-center">
+                  <FormControl>
+                    <InputOTP
+                      pattern={REGEXP_ONLY_DIGITS}
+                      maxLength={6}
+                      value={field.value || ""}
+                      onChange={field.onChange}
+                    >
+                      <InputOTPGroup>
+                        {[0, 1, 2, 3, 4, 5].map((i) => (
+                          <InputOTPSlot key={i} index={i} />
+                        ))}
+                      </InputOTPGroup>
+                    </InputOTP>
+                  </FormControl>
+                  <FormMessage className="text-red-500" />
+                </FormItem>
+              )}
+            />
+
+            <div className="text-center">
+              {resendTimer > 0 ? (
+                <p className="text-sm text-gray-500">
+                  Bạn có thể yêu cầu gửi lại mã xác thực sau{" "}
+                  <span className="font-bold">{resendTimer}</span> giây.
+                </p>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleResendOTP}
+                  className="text-sm font-semibold text-emerald-600 hover:underline cursor-pointer"
+                >
+                  Gửi lại mã xác thực
+                </button>
+              )}
+            </div>
+
+            <Button
+              type="submit"
+              disabled={isPending}
+              className="
+              w-full mt-2 cursor-pointer
+            "
+            >
+              {isPending ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  Đang xử lý...
+                </span>
+              ) : (
+                "Xác nhận"
+              )}
+            </Button>
+          </form>
+        </Form>
+      </Modal>
     </div>
   );
 };

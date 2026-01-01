@@ -4,7 +4,7 @@ import { Otp } from '@/database/main/entities';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { MoreThan, Repository } from 'typeorm';
+import { EntityManager, MoreThan, Repository } from 'typeorm';
 
 @Injectable()
 export class MainOtpService {
@@ -19,9 +19,11 @@ export class MainOtpService {
     expiresAt: Date,
     type: OtpTypeEnum,
     metadata?: Record<string, any>,
+    manager?: EntityManager,
   ) {
+    const repo = manager ? manager.getRepository(Otp) : this.otpRepo;
     const otp = generateOtp(length);
-    const otpRecord = this.otpRepo.create({
+    const otpRecord = repo.create({
       otp: encryptPayload(otp, this.configService),
       user: {
         id: userId,
@@ -32,7 +34,7 @@ export class MainOtpService {
         metadata,
       }),
     });
-    await this.otpRepo.save(otpRecord);
+    await repo.save(otpRecord);
     return {
       otp,
     };

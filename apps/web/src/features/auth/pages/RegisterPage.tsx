@@ -1,4 +1,3 @@
-import { ScrollArea } from "@/components/ui/scroll-area";
 import SocialLogin from "@/features/auth/components/SocialLogin";
 import Step1Store from "@/features/auth/components/Step1StoreInfo";
 import Step2Owner from "@/features/auth/components/Step2OwnerInfo";
@@ -29,6 +28,7 @@ export default function RegisterPage() {
       password: "",
       confirmPassword: "",
       email: "",
+      agreeTerms: false,
     },
   });
 

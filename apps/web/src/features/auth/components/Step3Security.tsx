@@ -10,11 +10,14 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { useSignUp } from "@/features/auth/hooks/use-sign-up";
 import { RegisterFormValues } from "@/features/auth/schema/register.schema";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 interface Step3SecurityProps {
   onBack: () => void;
@@ -25,10 +28,36 @@ export default function Step3Security({ onBack }: Step3SecurityProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const navigate = useNavigate();
+  const { setRegisterTemp } = useAuthStore();
+  const { mutate, isPending } = useSignUp();
 
   const onSubmit = (data: RegisterFormValues) => {
-    navigate("/auth/verify-email");
-    console.log("Submit:", data);
+    if (data) {
+      mutate(
+        {
+          email: data.email,
+          password: data.password,
+          fullName: data.fullName,
+          phoneNumber: data.phoneNumber,
+          birthDate: data.birthDate,
+          address: data.address,
+          createBookStoreDto: {
+            name: data.storeName,
+            phoneNumber: data.storePhoneNumber,
+            address: data.storeAddress,
+          },
+        },
+        {
+          onSuccess: (dataResponse: any) => {
+            if (dataResponse && dataResponse.message) {
+              toast.success(dataResponse.message);
+              setRegisterTemp(data);
+              navigate("/auth/verify-email");
+            }
+          },
+        },
+      );
+    }
   };
 
   return (
@@ -62,8 +91,8 @@ export default function Step3Security({ onBack }: Step3SecurityProps) {
                   <Button
                     type="button"
                     variant="ghost"
-                    className="absolute top-1/2 right-3 -translate-y-1/2 p-0 
-                               bg-transparent hover:bg-transparent focus:bg-transparent active:bg-transparent"
+                    className="absolute inset-y-0 right-3 flex items-center p-0
+             bg-transparent hover:bg-transparent focus:bg-transparent active:bg-transparent"
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? (
@@ -100,8 +129,8 @@ export default function Step3Security({ onBack }: Step3SecurityProps) {
                   <Button
                     type="button"
                     variant="ghost"
-                    className="absolute top-1/2 right-3 -translate-y-1/2 p-0 
-                               bg-transparent hover:bg-transparent focus:bg-transparent active:bg-transparent"
+                    className="absolute inset-y-0 right-3 flex items-center p-0
+             bg-transparent hover:bg-transparent focus:bg-transparent active:bg-transparent"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   >
                     {showConfirmPassword ? (
@@ -156,8 +185,13 @@ export default function Step3Security({ onBack }: Step3SecurityProps) {
         >
           Quay lại
         </Button>
-        <Button type="submit" className="flex-1 cursor-pointer">
-          Hoàn tất đăng ký
+
+        <Button
+          type="submit"
+          disabled={isPending}
+          className="flex-1 cursor-pointer"
+        >
+          {isPending ? "Đang xử lý..." : "Hoàn tất đăng ký"}
         </Button>
       </div>
     </form>

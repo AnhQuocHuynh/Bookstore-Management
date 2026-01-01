@@ -44,10 +44,11 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import { InjectDataSource } from '@nestjs/typeorm';
 import { addDays, addMinutes } from 'date-fns';
 import { Response } from 'express';
 import { omit } from 'lodash';
-import { MoreThan, Repository } from 'typeorm';
+import { DataSource, EntityManager, MoreThan, Repository } from 'typeorm';
 @Injectable()
 export class AuthService {
   constructor(
@@ -61,6 +62,7 @@ export class AuthService {
     private readonly mainAuthCodeService: MainAuthorizationCodeService,
     private readonly mainRefreshTokenService: MainRefreshTokenService,
     private readonly mainEmployeeMappingService: MainEmployeeMappingService,
+    @InjectDataSource() private readonly dataSource: DataSource,
   ) {}
 
   async signIn(signInDto: SignInDto, response: Response) {
@@ -93,6 +95,20 @@ export class AuthService {
       secret: this.configService.get('jwt_secret'),
       expiresIn: this.configService.get('jwt_expiration_time', '120s'),
     });
+
+    if (!user.isEmailVerified) {
+      const bookstores = await this.mainBookStoreService.findBookStores({
+        user,
+        isActive: false,
+      });
+
+      await this.processVerifyEmail(
+        user,
+        bookstores?.length > 0
+          ? (bookstores[0] as unknown as BookStore)
+          : undefined,
+      );
+    }
 
     return {
       token,
@@ -275,51 +291,64 @@ export class AuthService {
       address,
     } = signUpDto;
 
-    const existingEmail = await this.mainUserService.findUserByField(
-      'email',
-      email,
-    );
+    return this.dataSource.transaction(async (manager) => {
+      const userRepo = manager.getRepository(User);
+      const bookStoreRepo = manager.getRepository(BookStore);
 
-    if (existingEmail)
-      throw new ConflictException(`Email này đã được đăng ký.`);
+      const existingEmail = await this.mainUserService.findUserByField(
+        'email',
+        email,
+        userRepo,
+      );
 
-    await this.mainBookStoreService.checkDuplicateField(
-      'name',
-      createBookStoreDto.name,
-      email,
-      'tên',
-    );
+      if (existingEmail)
+        throw new ConflictException(`Email này đã được đăng ký.`);
 
-    await this.mainBookStoreService.checkDuplicateField(
-      'phoneNumber',
-      createBookStoreDto.phoneNumber,
-      email,
-      'số điện thoại',
-    );
+      await this.mainBookStoreService.checkDuplicateField(
+        'name',
+        createBookStoreDto.name,
+        email,
+        'tên',
+        bookStoreRepo,
+      );
 
-    const newUser = await this.mainUserService.createNewUser({
-      email,
-      password,
-      fullName,
-      phoneNumber,
-      address,
-      birthDate,
+      await this.mainBookStoreService.checkDuplicateField(
+        'phoneNumber',
+        createBookStoreDto.phoneNumber,
+        email,
+        'số điện thoại',
+        bookStoreRepo,
+      );
+
+      const newUser = await this.mainUserService.createNewUser(
+        {
+          email,
+          password,
+          fullName,
+          phoneNumber,
+          address,
+          birthDate,
+        },
+        userRepo,
+      );
+
+      const bookStoreData = await this.mainBookStoreService.createNewBookStore(
+        createBookStoreDto,
+        newUser.id,
+        manager,
+      );
+
+      await this.processVerifyEmail(
+        newUser,
+        bookStoreData ? bookStoreData : undefined,
+        manager,
+      );
+
+      return {
+        message:
+          'Mã OTP xác thực tài khoản đã được gửi đến email của bạn. Vui lòng kiểm tra để hoàn tất đăng ký.',
+      };
     });
-
-    const bookStoreData = await this.mainBookStoreService.createNewBookStore(
-      createBookStoreDto,
-      newUser.id,
-    );
-
-    await this.processVerifyEmail(
-      newUser,
-      bookStoreData ? bookStoreData : undefined,
-    );
-
-    return {
-      message:
-        'Mã OTP xác thực tài khoản đã được gửi đến email của bạn. Vui lòng kiểm tra để hoàn tất đăng ký.',
-    };
   }
 
   async verifyOtp(verifyOtpDto: VerifyOtpDto) {
@@ -624,7 +653,11 @@ export class AuthService {
     await repo.save(newRT);
   }
 
-  private async processVerifyEmail(user: User, bookStoreData?: BookStore) {
+  private async processVerifyEmail(
+    user: User,
+    bookStoreData?: BookStore,
+    manager?: EntityManager,
+  ) {
     const now = new Date();
     const expiresAt = new Date(now.getTime() + 10 * 60 * 1000);
     const metadata = bookStoreData
@@ -636,6 +669,7 @@ export class AuthService {
       expiresAt,
       OtpTypeEnum.SIGN_UP,
       metadata,
+      manager,
     );
     await this.emailService.handleSendEmail(
       user.email,
