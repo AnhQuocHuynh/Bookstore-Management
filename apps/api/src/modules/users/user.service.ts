@@ -140,6 +140,7 @@ export class UserService {
       email: employeeEmail,
       birthDate,
       employeeCode,
+      avatarUrl: 'https://github.com/shadcn.png',
     });
 
     await employeeRepo.save(newEmployee);
