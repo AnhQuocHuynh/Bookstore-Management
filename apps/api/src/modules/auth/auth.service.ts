@@ -93,7 +93,7 @@ export class AuthService {
 
     const token = this.jwtService.sign(payload, {
       secret: this.configService.get('jwt_secret'),
-      expiresIn: this.configService.get('jwt_expiration_time', '120s'),
+      expiresIn: '10m',
     });
 
     if (!user.isEmailVerified) {
@@ -231,6 +231,7 @@ export class AuthService {
           message:
             'Chào mừng! Vì đây là lần đăng nhập đầu tiên của bạn, vui lòng thay đổi mật khẩu.',
           isFirstLogin: true,
+          profile: omit(employee, ['password']),
         };
       }
 
@@ -272,7 +273,7 @@ export class AuthService {
 
     const token = this.jwtService.sign(payload, {
       secret: this.configService.get('jwt_secret'),
-      expiresIn: this.configService.get('jwt_expiration_time', '120s'),
+      expiresIn: '10m',
     });
 
     return {

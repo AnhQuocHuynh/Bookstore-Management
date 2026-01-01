@@ -6,9 +6,13 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { useAuthStore } from "@/stores/useAuthStore";
+import ChangeFirstLoginPassword from "@/features/auth/components/ChangeFirstLoginPassword";
+import { UserProfile } from "@/features/auth/types";
+import { Store, useAuthStore } from "@/stores/useAuthStore";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button, message, Modal, Spin } from "antd";
+import { omit } from "lodash";
+import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
@@ -18,9 +22,6 @@ import { authApi } from "../api/auth.api";
 import { SelectStoreCard } from "../components/SelectStoreCard";
 import { useBookStores } from "../hooks/useBookStores";
 import { BookStore } from "../types/bookstore.types";
-import { Eye, EyeOff } from "lucide-react";
-import { omit } from "lodash";
-import { UserProfile } from "@/features/auth/types";
 
 const formSchema = z.object({
   password: z.string().min(1, {
@@ -30,7 +31,12 @@ const formSchema = z.object({
 
 const SelectStorePage = () => {
   const navigate = useNavigate();
-  const { accessToken, tempCredentials, setStoreToken } = useAuthStore();
+  const { accessToken, tempCredentials, setStoreToken, setTokenFirstLogin } =
+    useAuthStore();
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [tempEmployeeProfile, setTempEmployeeProfile] =
+    useState<UserProfile | null>(null);
+  const [storeData, setStoreData] = useState<Store | null>(null);
 
   // Load danh sách cửa hàng
   const { data: stores, isLoading, error } = useBookStores(accessToken || "");
@@ -51,6 +57,10 @@ const SelectStorePage = () => {
   const handleCancel = () => {
     form.reset();
     setIsOpen(false);
+  };
+
+  const handleCancelModal = () => {
+    setIsModalOpen(false);
   };
 
   // 2. Hàm xử lý khi chọn nhà sách
@@ -89,9 +99,6 @@ const SelectStorePage = () => {
         phone: response.profile.phoneNumber,
       };
 
-      console.log(newAccessToken);
-      console.log(response.profile);
-
       setStoreToken(newAccessToken, storeInfo, response.profile);
       message.success(`Đã vào cửa hàng: ${store.name}`);
       navigate("/dashboard");
@@ -129,21 +136,7 @@ const SelectStorePage = () => {
       // Tìm tên cửa hàng để hiển thị
       const selectedStoreInfo = stores?.find((s) => s.id === selectedStoreId);
 
-      // Lấy accessToken mới
-      const newAccessToken = response.accessToken;
-
-      if (!newAccessToken) {
-        throw new Error("Không nhận được Access Token từ hệ thống");
-      }
-
-      const storeData = {
-        id: response.bookStoreId,
-        name: selectedStoreInfo?.name || "Cửa hàng",
-        address: response.profile.address || selectedStoreInfo?.address,
-        phone: response.profile.phoneNumber || selectedStoreInfo?.phoneNumber,
-      };
-
-      setStoreToken(newAccessToken, storeData, {
+      const tempProfile: UserProfile = {
         ...(omit(response.profile, [
           "username",
           "isFirstLogin",
@@ -158,20 +151,49 @@ const SelectStorePage = () => {
           employeeCode: response.profile.employeeCode || "",
           role: response.profile.role || "STAFF",
         },
-      });
+      };
 
-      message.success(`Đăng nhập thành công vào: ${storeData.name}`);
-      setIsOpen(false);
-      navigate("/dashboard");
+      const storeData = {
+        id: selectedStoreId,
+        name: selectedStoreInfo?.name || "Cửa hàng",
+        address: response.profile.address || selectedStoreInfo?.address,
+        phone: response.profile.phoneNumber || selectedStoreInfo?.phoneNumber,
+      };
+
+      setStoreData(storeData);
+
+      if (response?.isFirstLogin && response?.token) {
+        setIsModalOpen(true);
+        setTempEmployeeProfile(tempProfile);
+        setTokenFirstLogin(response.token);
+      } else {
+        const newAccessToken = response.accessToken;
+
+        if (!newAccessToken) {
+          throw new Error("Không nhận được Access Token từ hệ thống");
+        }
+
+        setStoreToken(newAccessToken, storeData, tempProfile);
+        message.success(`Đăng nhập thành công vào: ${storeData.name}`);
+        setIsOpen(false);
+        navigate("/dashboard");
+      }
     } catch (error: any) {
       console.error("Login Error Details:", error);
 
       // Xử lý lỗi token hết hạn
       if (error.response?.status === 410 || error.response?.status === 401) {
-        toast.error(
-          "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại từ đầu.",
-        );
-        navigate("/auth/login");
+        if (
+          error.response?.data?.message !==
+          "Thông tin đăng nhập không chính xác."
+        ) {
+          navigate("/auth/login");
+          toast.error(
+            "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại từ đầu.",
+          );
+        } else {
+          toast.error(error.response?.data?.message);
+        }
       } else {
         const msg =
           error.response?.data?.message ||
@@ -255,6 +277,7 @@ const SelectStorePage = () => {
         onCancel={handleCancel} // Gọi hàm đóng modal
         centered
         footer={null}
+        destroyOnHidden
       >
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -299,6 +322,50 @@ const SelectStorePage = () => {
             </Button>
           </form>
         </Form>
+      </Modal>
+
+      {/* Modal đổi mật khẩu lần đăng nhập đầu tiên (đối với nhân viên nhà sách) */}
+      <Modal
+        title={
+          <div className="text-center space-y-1">
+            <h2 className="text-lg font-semibold">
+              Xin chào nhân viên{" "}
+              <span className="text-emerald-600">
+                {tempEmployeeProfile?.fullName || "NV"}
+              </span>
+              !
+            </h2>
+
+            <p className="text-sm text-gray-500 font-normal">
+              Đây là lần đầu tiên bạn đăng nhập vào{" "}
+              <span className="font-medium text-gray-700">
+                {storeData?.name || "BookFlow"}
+              </span>
+              .
+              <br />
+              Vui lòng{" "}
+              <span className="font-medium text-gray-700">đổi mật khẩu</span> để
+              bảo mật tài khoản và tiếp tục làm việc với{" "}
+              <span className="font-medium text-gray-700">
+                {storeData?.name || "BookFlow"}
+              </span>
+              .
+            </p>
+          </div>
+        }
+        open={isModalOpen}
+        onCancel={handleCancelModal}
+        centered
+        footer={null}
+        destroyOnHidden
+      >
+        {storeData && (
+          <ChangeFirstLoginPassword
+            tempTokenLogin={accessToken}
+            username={tempCredentials?.username?.trim() ?? ""}
+            storeData={storeData}
+          />
+        )}
       </Modal>
     </>
   );

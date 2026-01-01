@@ -151,7 +151,11 @@ const LoginPage = () => {
       if (!token) throw new Error("Không nhận được token");
       let userData = null;
 
-      if (response.profile) {
+      const isEmployee = !!response?.token && !response?.profile;
+      const isAdmin = response?.accessToken;
+      const isOwner = !(isAdmin || isEmployee);
+
+      if (!isEmployee) {
         userData = {
           id: response.profile.id,
           email: response.profile.email,
@@ -167,12 +171,12 @@ const LoginPage = () => {
           email: isAdminOrOwnerRole ? values?.email?.trim() : undefined,
           username: !isAdminOrOwnerRole ? values?.username?.trim() : undefined,
           password: values.password ?? "",
-          role: isAdminOrOwnerRole ? "OWNER" : "EMPLOYEE",
+          role: isOwner ? "OWNER" : isAdmin ? "ADMIN" : "EMPLOYEE",
         },
         userData as any,
       );
 
-      if (!response.profile.isEmailVerified) {
+      if (!response?.profile?.isEmailVerified && isOwner) {
         setIsOpen(true);
         setFullName(response.profile.fullName);
         setEmail(response.profile.email);
