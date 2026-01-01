@@ -89,6 +89,9 @@ const SelectStorePage = () => {
         phone: response.profile.phoneNumber,
       };
 
+      console.log(newAccessToken);
+      console.log(response.profile);
+
       setStoreToken(newAccessToken, storeInfo, response.profile);
       message.success(`Đã vào cửa hàng: ${store.name}`);
       navigate("/dashboard");

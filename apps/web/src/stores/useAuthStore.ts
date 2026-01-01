@@ -17,12 +17,29 @@ interface TempCredentials {
   role: "OWNER" | "EMPLOYEE" | "ADMIN";
 }
 
+interface RegisterTemp {
+  storeName: string;
+  storePhoneNumber: string;
+  storeAddress: string;
+  fullName: string;
+  email: string;
+  phoneNumber: string;
+  birthDate: string;
+  address: string;
+  password: string;
+  confirmPassword: string;
+  agreeTerms: boolean;
+}
+
 interface AuthState {
   user: UserProfile | null;
   accessToken: string | null; // Dùng chung cho cả System Token và Store Token
   currentStore: Store | null;
   isAuthenticated: boolean;
   tempCredentials: TempCredentials | null;
+  registerTemp: RegisterTemp | null;
+
+  setRegisterTemp: (registerTemp: RegisterTemp | null) => void;
 
   // Action Login bước 1
   setSystemToken: (
@@ -45,6 +62,12 @@ export const useAuthStore = create<AuthState>()(
       currentStore: null,
       isAuthenticated: false,
       tempCredentials: null,
+      registerTemp: null,
+
+      setRegisterTemp: (registerTemp) =>
+        set({
+          registerTemp,
+        }),
 
       // Bước 1: Lưu token hệ thống
       setSystemToken: (token, tempCredentials, user) =>

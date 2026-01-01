@@ -6,7 +6,6 @@ import {
   FormControl,
   FormField,
   FormItem,
-  FormLabel,
   FormMessage,
 } from "@/components/ui/form";
 import {
@@ -14,11 +13,16 @@ import {
   InputOTPGroup,
   InputOTPSlot,
 } from "@/components/ui/input-otp";
+import { useVerifyOtp } from "@/features/auth/hooks/use-verify-otp";
+import { OtpTypeEnum } from "@/features/auth/types";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { REGEXP_ONLY_DIGITS } from "input-otp";
+import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { z } from "zod";
 
 const RESEND_INTERVAL = 60;
@@ -33,6 +37,8 @@ const VerifyEmailForm = () => {
     resolver: zodResolver(formSchema),
     defaultValues: { otp: "" },
   });
+  const { registerTemp, setRegisterTemp } = useAuthStore();
+  const { mutate, isPending } = useVerifyOtp();
 
   const [resendTimer, setResendTimer] = useState(() => {
     const lastSent = localStorage.getItem("otpLastSent");
@@ -64,9 +70,24 @@ const VerifyEmailForm = () => {
   };
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
-    console.log("OTP entered:", values.otp);
-    // TODO: call verify OTP API
-    navigate("/auth/verify-email/success");
+    if (!registerTemp) return;
+
+    mutate(
+      {
+        email: registerTemp.email,
+        otp: values.otp,
+        type: OtpTypeEnum.SIGN_UP,
+      },
+      {
+        onSuccess: (data: any) => {
+          if (data && data.message) {
+            setRegisterTemp(null);
+            toast.success(data.message);
+            navigate("/auth/verify-email/success");
+          }
+        },
+      },
+    );
   };
 
   return (
@@ -113,8 +134,21 @@ const VerifyEmailForm = () => {
           )}
         </div>
 
-        <Button type="submit" className="w-full mt-2 cursor-pointer">
-          Xác nhận
+        <Button
+          type="submit"
+          disabled={isPending}
+          className="
+              w-full mt-2 cursor-pointer
+            "
+        >
+          {isPending ? (
+            <span className="flex items-center gap-2">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              Đang xử lý...
+            </span>
+          ) : (
+            "Xác nhận"
+          )}
         </Button>
       </form>
     </Form>

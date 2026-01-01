@@ -138,7 +138,7 @@ const CustomerList = ({ customers }: CustomerListProps) => {
               Trang {currentPage} / {totalPages}
             </span>
 
-            <div className="flex gap-2">
+            <div className="flex gap-2 select-none">
               <Button
                 variant="outline"
                 size="sm"
