@@ -15,6 +15,8 @@ import {
   Modal,
   Spin,
   Empty,
+  Space,
+  theme,
 } from "antd";
 import {
   UserOutlined,
@@ -22,12 +24,11 @@ import {
   MailOutlined,
   ExclamationCircleOutlined,
 } from "@ant-design/icons";
-import moment from "moment";
+import dayjs from "dayjs";
 import { useCurrentUser, useUpdateCurrentUser } from "../hooks/useUsers";
 import { useNavigate } from "react-router-dom";
 
 const { Title, Text } = Typography;
-const { Option } = Select;
 
 export const UserEditPage = () => {
   const [form] = Form.useForm();
@@ -39,6 +40,7 @@ export const UserEditPage = () => {
   const navigate = useNavigate();
   const userData = apiResponse?.data;
   const logoUrl = Form.useWatch("logoUrl", form);
+  const { token } = theme.useToken();
 
   useEffect(() => {
     if (!userData) return;
@@ -47,7 +49,7 @@ export const UserEditPage = () => {
       phoneNumber: userData.phoneNumber || "",
       address: userData.address || "",
       logoUrl: userData.logoUrl || userData.avatarUrl || "",
-      birthDate: userData.birthDate ? moment(userData.birthDate) : undefined,
+      birthDate: userData.birthDate ? dayjs(userData.birthDate) : undefined,
       username: userData.username || "",
       email: userData.email || "",
       role: userData.role || "",
@@ -175,7 +177,7 @@ export const UserEditPage = () => {
 
   if (loadingUser) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <Spin size="large" />
       </div>
     );
@@ -183,34 +185,33 @@ export const UserEditPage = () => {
 
   if (error || !userData) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <Empty description="Không thể tải thông tin người dùng" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6 w-full">
-      <div className="w-full mx-auto space-y-6">
+    <div style={{ minHeight: "100vh", padding: "24px 48px" }}>
+      <div style={{ maxWidth: "100%", margin: "0 auto", width: "100%" }}>
         
         {/* --- HEADER & ACTIONS --- */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div style={{ display: "flex", flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: "16px", marginBottom: "24px" }}>
           <Title level={2} style={{ margin: 0 }}>
             Chỉnh sửa người dùng
           </Title>
-          <div className="flex space-x-3">
-            <Button className="bg-white border-gray-300 font-medium" onClick={handleCancel}> 
+          <Space>
+            <Button onClick={handleCancel}> 
               Hủy bỏ
             </Button>
             <Button
               type="primary"
               onClick={handleSave}
               loading={isSaving}
-              className="bg-teal-500 hover:bg-teal-400 border-none font-medium"
             >
               ✓ Lưu thay đổi
             </Button>
-          </div>
+          </Space>
         </div>
 
         <Form
@@ -230,37 +231,36 @@ export const UserEditPage = () => {
           onFinish={handleFinish}
           onValuesChange={() => setIsChanged(true)}
         >
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div style={{ display: "grid", gridTemplateColumns: "350px 1fr", gap: "32px" }}>
             
             {/* ================= LEFT COLUMN (Sidebar) ================= */}
-            <div className="space-y-6 lg:col-span-1">
+            <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
               {/* --- CARD 1: AVATAR UPLOAD --- */}
               <Card
                 bordered={false}
-                bodyStyle={{ padding: 0 }}
-                className="rounded-2xl overflow-hidden shadow-sm"
+                style={{ borderRadius: "12px", boxShadow: token.boxShadow }}
               >
-                <div className="h-[100px] bg-teal-600"></div>
-                <div className="px-6 pb-6 flex flex-col items-center -mt-[50px] relative z-10">
+                <div style={{ height: "100px", backgroundColor: token.colorPrimary }}></div>
+                <div style={{ padding: "24px", display: "flex", flexDirection: "column", alignItems: "center", marginTop: "-50px", position: "relative", zIndex: 10 }}>
                   <Upload showUploadList={false} onChange={handleUploadChange}>
-                    <div className="cursor-pointer group relative">
+                    <div style={{ cursor: "pointer", position: "relative" }}>
                       <Avatar
                         size={100}
                         icon={<UserOutlined />}
                         src={logoUrl || userData?.logoUrl || userData?.avatarUrl || "https://joeschmoe.io/api/v1/random"}
-                        className="border-4 border-white shadow-md bg-gray-200 group-hover:opacity-80 transition-opacity"
+                        style={{ border: `4px solid ${token.colorBgContainer}`, boxShadow: token.boxShadow }}
                       />
-                      <div className="absolute inset-0 bg-black bg-opacity-30 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white text-xl">
+                      <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0, 0, 0, 0.3)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", opacity: 0, transition: "opacity 0.3s", color: "white", fontSize: "20px" }}>
                         <UploadOutlined />
                       </div>
                     </div>
                   </Upload>
-                  <Text className="text-center mt-4 text-gray-500 text-sm">
+                  <Text style={{ textAlign: "center", marginTop: "16px", color: token.colorTextSecondary, fontSize: "12px" }}>
                     Nhấn vào ảnh để tải lên mới.
                     <br />
                     Định dạng JPG, PNG tối đa 2MB.
                   </Text>
-                  <div className="w-full mt-4">
+                  <div style={{ width: "100%", marginTop: "16px" }}>
                     <Form.Item label="Logo URL" name="logoUrl">
                       <Input size="large" placeholder="https://..." />
                     </Form.Item>
@@ -270,40 +270,40 @@ export const UserEditPage = () => {
 
               {/* --- CARD 2: STATUS & ROLE --- */}
               <Card
-                title={<span className="font-bold">Trạng thái & Vai trò</span>}
+                title={<span style={{ fontWeight: "bold" }}>Trạng thái & Vai trò</span>}
                 bordered={false}
-                className="rounded-2xl shadow-sm"
+                style={{ borderRadius: "12px", boxShadow: token.boxShadow }}
               >
-                <Form.Item label="Vai trò" name="role" className="font-medium">
-                  <Select size="large" className="rounded-md w-full" disabled>
-                    <Option value="manager">Quản Lý</Option>
-                    <Option value="staff">Nhân Viên</Option>
-                    <Option value="admin">Quản Trị Viên</Option>
+                <Form.Item label="Vai trò" name="role" style={{ fontWeight: "500" }}>
+                  <Select size="large" disabled>
+                    <Select.Option value="manager">Quản Lý</Select.Option>
+                    <Select.Option value="staff">Nhân Viên</Select.Option>
+                    <Select.Option value="admin">Quản Trị Viên</Select.Option>
                   </Select>
                 </Form.Item>
 
-                <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl border border-gray-100">
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px", backgroundColor: token.colorBgElevated, borderRadius: "8px", border: `1px solid ${token.colorBorder}` }}>
                   <div>
-                    <div className="font-medium">Đang hoạt động</div>
-                    <div className="text-gray-500 text-sm">
+                    <div style={{ fontWeight: "500" }}>Đang hoạt động</div>
+                    <div style={{ color: token.colorTextSecondary, fontSize: "12px" }}>
                       Người dùng có thể đăng nhập
                     </div>
                   </div>
                   <Form.Item name="isActive" valuePropName="checked" noStyle>
-                    <Switch className="bg-gray-300" disabled />
+                    <Switch disabled />
                   </Form.Item>
                 </div>
               </Card>
             </div>
 
             {/* ================= RIGHT COLUMN (Content) ================= */}
-            <div className="space-y-6 lg:col-span-3">
+            <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
               {/* --- CARD 3: GENERAL INFO --- */}
               <Card
                 bordered={false}
-                className="rounded-2xl shadow-sm"
+                style={{ borderRadius: "12px", boxShadow: token.boxShadow }}
                 title={
-                  <div className="border-l-4 border-teal-500 pl-3 font-bold text-lg">
+                  <div style={{ borderLeft: `4px solid ${token.colorPrimary}`, paddingLeft: "12px", fontWeight: "bold", fontSize: "16px" }}>
                     Thông tin chung
                   </div>
                 }
@@ -312,12 +312,12 @@ export const UserEditPage = () => {
                   <Input size="large" />
                 </Form.Item>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                   <Form.Item label="Số điện thoại" name="phoneNumber">
                     <Input size="large" />
                   </Form.Item>
                   <Form.Item label="Ngày sinh" name="birthDate">
-                    <DatePicker size="large" format="DD/MM/YYYY" className="w-full" />
+                    <DatePicker size="large" format="DD/MM/YYYY" style={{ width: "100%" }} />
                   </Form.Item>
                 </div>
 
@@ -329,24 +329,24 @@ export const UserEditPage = () => {
               {/* --- CARD 4: SECURITY --- */}
               <Card
                 bordered={false}
-                className="rounded-2xl shadow-sm"
+                style={{ borderRadius: "12px", boxShadow: token.boxShadow }}
                 title={
-                  <div className="border-l-4 border-orange-500 pl-3 font-bold text-lg">
+                  <div style={{ borderLeft: `4px solid ${token.colorWarning}`, paddingLeft: "12px", fontWeight: "bold", fontSize: "16px" }}>
                     Bảo mật & Đăng nhập
                   </div>
                 }
               >
                 {/* --- CHANGED: Grid Layout for Email and Username --- */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                   <Form.Item label="Email đăng nhập">
                     <Input
                       size="large"
-                      prefix={<MailOutlined className="text-gray-400 mr-2" />}
+                      prefix={<MailOutlined style={{ color: token.colorTextSecondary, marginRight: "8px" }} />}
                       value={userData?.email}
                       disabled
-                      className="bg-gray-50 text-gray-500"
+                      style={{ backgroundColor: token.colorBgElevated, color: token.colorTextSecondary }}
                     />
-                    <div className="text-gray-400 text-xs mt-2">
+                    <div style={{ color: token.colorTextTertiary, fontSize: "12px", marginTop: "8px" }}>
                       Không thể thay đổi Email.
                     </div>
                   </Form.Item>
@@ -354,29 +354,28 @@ export const UserEditPage = () => {
                   <Form.Item 
                     label="Tên đăng nhập" 
                     name="username"
-                    //rules={[{ required: true, message: "Vui lòng nhập tên đăng nhập" }]}
                   >
                     <Input
                       size="large"
-                      prefix={<UserOutlined className="text-gray-400 mr-2" />}
+                      prefix={<UserOutlined style={{ color: token.colorTextSecondary, marginRight: "8px" }} />}
                       placeholder="Nhập username"
                       disabled
                     />
                   </Form.Item>
                 </div>
 
-                <div className="mt-6 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                <div style={{ marginTop: "24px", padding: "16px", backgroundColor: token.colorBgElevated, borderRadius: "8px", border: `1px solid ${token.colorBorder}` }}>
                   <Checkbox
                     checked={isChangingPassword}
                     onChange={(e) => setIsChangingPassword(e.target.checked)}
                     disabled
                   >
-                    <span className="font-medium">Đổi mật khẩu cho người dùng này</span>
+                    <span style={{ fontWeight: "500" }}>Đổi mật khẩu cho người dùng này</span>
                   </Checkbox>
 
                   {/* Conditional Password Inputs */}
                   {isChangingPassword && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-200">
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginTop: "16px", paddingTop: "16px", borderTop: `1px solid ${token.colorBorder}` }}>
                       <Form.Item
                         label="Mật khẩu mới"
                         name="newPassword"
@@ -410,22 +409,21 @@ export const UserEditPage = () => {
               {/* --- CARD 5: DELETE ZONE --- */}
               <Card
                 bordered={false}
-                className="rounded-2xl shadow-sm bg-red-50 border border-red-100"
-                bodyStyle={{ padding: '24px' }}
+                style={{ borderRadius: "12px", boxShadow: token.boxShadow, backgroundColor: token.colorErrorBg, borderColor: token.colorErrorBorder, border: `1px solid ${token.colorErrorBorder}` }}
               >
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div style={{ display: "flex", flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: "16px" }}>
                   <div>
-                    <Title level={4} type="danger" style={{ margin: 0, fontWeight: 'bold' }}>
+                    <Title level={4} style={{ margin: 0, fontWeight: "bold", color: token.colorError }}>
                       Xóa tài khoản
                     </Title>
-                    <Text type="danger">
+                    <Text style={{ color: token.colorError }}>
                       Hành động này không thể hoàn tác. Tất cả dữ liệu liên quan sẽ bị ẩn.
                     </Text>
                   </div>
                   <Button
                     danger
                     size="large"
-                    className="bg-white font-medium min-w-[150px]"
+                    style={{ minWidth: "150px" }}
                     onClick={handleDeleteAccount}
                   >
                     Xóa người dùng

@@ -92,7 +92,7 @@ export const AppRoutes = () => {
           }
         />
         <Route
-          path="/products"
+          path="/dashboard/products"
           element={
             <MainLayout>
               <ProductsPage />

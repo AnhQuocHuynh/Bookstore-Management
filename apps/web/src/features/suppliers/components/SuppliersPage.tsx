@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { Card, Table, Button, Space, Spin, message } from "antd";
-import { PlusOutlined } from "@ant-design/icons";
-import axios from "axios";
+import { message } from "antd";
+import { ActionButton } from "./ActionButton";
+import { SupplierTable, TableHeader } from "./SupplierTable";
+import { SupplierDetailPanel } from "./SupplierDetailPanel";
+import { SorterButton } from "./SorterButton";
+import { MOCK_SUPPLIERS } from "./mockData";
 
 /** ================= TYPES ================= */
 interface Supplier {
@@ -20,47 +23,19 @@ interface Supplier {
   updateDate?: string;
 }
 
-/** ================= MOCK DATA ================= */
-const MOCK_SUPPLIERS: Supplier[] = [
-  {
-    key: 1,
-    id: "1",
-    supplierId: "NCC001",
-    name: "Công ty ABC",
-    email: "abc@gmail.com",
-    phoneNumber: "0901234567",
-    contactPerson: "Nguyễn Văn A",
-    status: "Hoạt động",
-    address: "123 Nguyễn Trãi, Hà Nội",
-    taxCode: "0101234567",
-    note: "Nhà cung cấp chính",
-    createdDate: "2024-01-10",
-    updateDate: "2024-06-15",
-  },
-  {
-    key: 2,
-    id: "2",
-    supplierId: "NCC002",
-    name: "Công ty XYZ",
-    email: "xyz@gmail.com",
-    phoneNumber: "0912345678",
-    contactPerson: "Trần Thị B",
-    status: "Ngưng hợp tác",
-    address: "456 Lê Lợi, TP.HCM",
-    taxCode: "0309876543",
-    note: "",
-    createdDate: "2023-11-20",
-    updateDate: "2024-05-01",
-  },
-];
-
 /** ================= PAGE ================= */
 export const SuppliersPage = () => {
   const [selectedSupplier, setSelectedSupplier] =
     useState<Supplier | null>(null);
   const [data, setData] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
-  const [detailLoading, setDetailLoading] = useState(false);
+  const [needsScroll, setNeedsScroll] = useState(false);
+  const [scrollTop, setScrollTop] = useState(0);
+  const [thumbHeight, setThumbHeight] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [sortBy, setSortBy] = useState<string>("name");
+  const tableContainerRef = React.useRef<HTMLDivElement>(null);
+  const scrollbarTrackRef = React.useRef<HTMLDivElement>(null);
 
   /** ================= FETCH LIST ================= */
   useEffect(() => {
@@ -104,7 +79,8 @@ export const SuppliersPage = () => {
 
         // ✅ MOCK DATA
         setTimeout(() => {
-          setData(MOCK_SUPPLIERS);
+          const sortedData = sortSuppliers(MOCK_SUPPLIERS, sortBy);
+          setData(sortedData);
           setLoading(false);
         }, 500);
       } catch (error) {
@@ -114,199 +90,275 @@ export const SuppliersPage = () => {
     };
 
     fetchSuppliers();
-  }, []);
+  }, [sortBy]);
 
-  /** ================= FETCH DETAIL ================= */
-  const handleRowClick = async (record: Supplier) => {
-    if (selectedSupplier?.key === record.key) {
-      setSelectedSupplier(null);
-      return;
-    }
-
-    try {
-      setDetailLoading(true);
-
-      /* ================= REAL API (COMMENTED) =================
-      const response = await axios.get(`/api/v1/suppliers/${record.id}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-        },
-      });
-
-      if (response.data?.data) {
-        const supplier = response.data.data;
-        setSelectedSupplier({
-          key: supplier.id || record.key,
-          id: supplier.id,
-          supplierId: supplier.supplierCode || "N/A",
-          name: supplier.name || "N/A",
-          email: supplier.email || "N/A",
-          phoneNumber: supplier.phoneNumber || "N/A",
-          contactPerson: supplier.contactPerson || "N/A",
-          status: supplier.status || "N/A",
-          address: supplier.address || "N/A",
-          taxCode: supplier.taxCode || "N/A",
-          note: supplier.note || "",
-          createdDate: supplier.createdAt || "N/A",
-          updateDate: supplier.updatedAt || "N/A",
-        });
-      }
-      ========================================================== */
-
-      // ✅ MOCK DETAIL
-      setTimeout(() => {
-        setSelectedSupplier(record);
-        setDetailLoading(false);
-      }, 300);
-    } catch (error) {
-      message.error("Không thể tải chi tiết nhà cung cấp");
-      setDetailLoading(false);
-    }
+  /** ================= HANDLE ROW CLICK ================= */
+  const handleRowClick = (record: Supplier) => {
+    setSelectedSupplier(record);
   };
 
-  /** ================= TABLE COLUMNS ================= */
-  const columns = [
-    {
-      title: "STT",
-      key: "index",
-      render: (_: any, __: any, index: number) => index + 1,
-      width: 70,
-    },
-    { title: "Mã NCC", dataIndex: "supplierId", key: "supplierId" },
-    { title: "Tên NCC", dataIndex: "name", key: "name" },
-    { title: "Email", dataIndex: "email", key: "email" },
-    { title: "Số điện thoại", dataIndex: "phoneNumber", key: "phoneNumber" },
-    {
-      title: "Người liên lạc",
-      dataIndex: "contactPerson",
-      key: "contactPerson",
-    },
-    { title: "Trạng thái", dataIndex: "status", key: "status" },
-    {
-      title: "Hành động",
-      key: "action",
-      render: () => (
-        <Space>
-          <Button type="link">Sửa</Button>
-          <Button type="link" danger>
-            Xóa
-          </Button>
-        </Space>
-      ),
-    },
-  ];
+  /** ================= SORT SUPPLIERS ================= */
+  const sortSuppliers = (suppliers: Supplier[], sortKey: string): Supplier[] => {
+    const sorted = [...suppliers].sort((a, b) => {
+      let aValue = "";
+      let bValue = "";
+
+      if (sortKey === "name") {
+        aValue = a.name.toLowerCase();
+        bValue = b.name.toLowerCase();
+      } else if (sortKey === "contactPerson") {
+        aValue = a.contactPerson.toLowerCase();
+        bValue = b.contactPerson.toLowerCase();
+      } else if (sortKey === "supplierId") {
+        aValue = a.supplierId.toLowerCase();
+        bValue = b.supplierId.toLowerCase();
+      }
+
+      return aValue.localeCompare(bValue, "vi");
+    });
+
+    return sorted;
+  };
+
+  /** ================= HANDLE SORT CHANGE ================= */
+  const handleSortChange = (sortKey: string) => {
+    setSortBy(sortKey);
+    const sortedData = sortSuppliers(data, sortKey);
+    setData(sortedData);
+  };
+
+  /** ================= CHECK IF SCROLLING NEEDED ================= */
+  const checkScrollNeeded = () => {
+    // If more than 5 rows, scrolling will be needed (each row is 48px, header is 48px)
+    // Estimate: header 48px + 5 rows = 288px. If content exceeds container height
+    const rowHeight = 48; // h-12 = 48px
+    const headerHeight = 48;
+    const maxVisibleRows = Math.floor((window.innerHeight - 200) / rowHeight);
+    setNeedsScroll(data.length > maxVisibleRows);
+  };
+
+  useEffect(() => {
+    checkScrollNeeded();
+    window.addEventListener("resize", checkScrollNeeded);
+    return () => window.removeEventListener("resize", checkScrollNeeded);
+  }, [data]);
+
+  /** ================= HANDLE TABLE SCROLL ================= */
+  const handleTableScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.currentTarget;
+    const scrollTop = target.scrollTop;
+    const scrollHeight = target.scrollHeight;
+    const clientHeight = target.clientHeight;
+
+    setScrollTop(scrollTop);
+
+    // Calculate thumb height
+    const proportion = clientHeight / scrollHeight;
+    const trackHeight = target.clientHeight - 24; // Subtract top/bottom padding
+    const calculatedThumbHeight = Math.max(proportion * trackHeight, 40); // Min thumb height of 40px
+    setThumbHeight(calculatedThumbHeight);
+  };
+
+  /** ================= HANDLE SCROLLBAR THUMB DRAG ================= */
+  const handleThumbMouseDown = () => {
+    setIsDragging(true);
+  };
+
+  React.useEffect(() => {
+    if (!isDragging) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!tableContainerRef.current || !scrollbarTrackRef.current) return;
+
+      const track = scrollbarTrackRef.current;
+      const table = tableContainerRef.current;
+
+      const trackRect = track.getBoundingClientRect();
+      const thumbHeight = Math.max(
+        (table.clientHeight / table.scrollHeight) * (table.clientHeight - 24),
+        40
+      );
+      const trackHeight = track.clientHeight;
+
+      let newTop = e.clientY - trackRect.top - thumbHeight / 2;
+      newTop = Math.max(0, Math.min(newTop, trackHeight - thumbHeight));
+
+      const proportion = newTop / (trackHeight - thumbHeight);
+      const scrollPosition = proportion * (table.scrollHeight - table.clientHeight);
+
+      table.scrollTop = scrollPosition;
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isDragging]);
+
+  /** ================= HANDLE SCROLLBAR TRACK CLICK ================= */
+  const handleScrollbarClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!tableContainerRef.current || !scrollbarTrackRef.current) return;
+
+    const track = scrollbarTrackRef.current;
+    const table = tableContainerRef.current;
+    const clickY = e.clientY - track.getBoundingClientRect().top;
+
+    const thumbHeight = Math.max(
+      (table.clientHeight / table.scrollHeight) * (table.clientHeight - 24),
+      40
+    );
+    const trackHeight = track.clientHeight;
+
+    let newTop = clickY - thumbHeight / 2;
+    newTop = Math.max(0, Math.min(newTop, trackHeight - thumbHeight));
+
+    const proportion = newTop / (trackHeight - thumbHeight);
+    const scrollPosition = proportion * (table.scrollHeight - table.clientHeight);
+
+    table.scrollTop = scrollPosition;
+  };
 
   return (
-    <div className="flex flex-col w-full bg-white min-h-screen">
-      <div className="flex w-full items-start justify-start gap-6">
-        {/* LEFT — TABLE */}
-        <div className="flex-1">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold">Nhà cung cấp</h1>
-            <Button type="primary" icon={<PlusOutlined />}>
-              Thêm nhà cung cấp
-            </Button>
+    <div className="relative w-full h-full overflow-hidden">
+      {/* Header */}
+      <header className="flex flex-col w-[calc(100%_-_64px)] items-start absolute top-[11px] left-8">
+        <h1 className="relative flex items-center justify-start self-stretch mt-[-1.00px] font-bold text-[#102e3c] text-4xl tracking-[-0.75px] leading-[37.5px]">
+          Danh sách Nhà cung cấp
+        </h1>
+      </header>
+
+      
+      {/* Action Buttons */}
+      <section className="absolute top-[7px] right-7 h-[58px] flex items-center">
+  {/* Sorter — bigger gap */}
+  <div className="mr-10">
+    <SorterButton
+      onSortChange={handleSortChange}
+      currentSort={sortBy}
+    />
+  </div>
+
+  {/* Action buttons — smaller gap */}
+  <div className="flex items-center gap-2.5">
+    <ActionButton label="Xóa" variant="outlined" />
+    <ActionButton label="Sửa" variant="outlined" />
+    <ActionButton label="Tạo Mới" variant="filled" />
+  </div>
+</section>
+
+
+      {/* Main Section */}
+      <main>
+        <section className="absolute top-[70px] left-6 right-6 bottom-6 bg-white rounded-[20px] overflow-hidden border border-solid border-[#102e3c] shadow-[0px_1px_2px_#0000000d]">
+          {/* Custom Scrollbar Slider */}
+          {needsScroll && (
+            <div
+              ref={scrollbarTrackRef}
+              className={`absolute top-[72px] bottom-3 w-[15px] bg-[#d4e5e4] rounded-[999px] cursor-pointer transition-all duration-300 ${
+                selectedSupplier ? "right-[480px]" : "right-[20px]"
+              }`}
+              role="scrollbar"
+              aria-orientation="vertical"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              onClick={handleScrollbarClick}
+            >
+              <div 
+                className={`w-[15px] bg-[#102e3c] rounded-[999px] hover:bg-[#1a998f] transition-colors cursor-grab active:cursor-grabbing ${
+                  isDragging ? "bg-[#1a998f]" : ""
+                }`}
+                style={{
+                  height: `${thumbHeight || 40}px`,
+                  transform: `translateY(${
+                    tableContainerRef.current
+                      ? (scrollTop / (tableContainerRef.current.scrollHeight - tableContainerRef.current.clientHeight)) *
+                        (tableContainerRef.current.clientHeight - 24 - (thumbHeight || 40))
+                      : 0
+                  }px)`,
+                  transition: isDragging ? "none" : "transform 0.1s ease-out",
+                }}
+                onMouseDown={handleThumbMouseDown}
+              />
+            </div>
+          )}
+
+          {/* Navigation Controls */}
+          <button
+  type="button"
+  aria-label="Toggle detail panel"
+  className={`absolute top-[15px] w-12 h-12
+    cursor-pointer
+    hover:opacity-70
+    transition-all duration-300
+    outline-none border-none
+    focus:outline-none focus:ring-0
+    active:outline-none
+    ${
+      selectedSupplier
+        ? "right-[462px] rotate-90"
+        : "right-[2px] rotate-0"
+    }`}
+  onClick={() => {
+    if (selectedSupplier) {
+      setSelectedSupplier(null);
+    } else if (data.length > 0) {
+      setSelectedSupplier(data[0]);
+    }
+  }}
+>
+
+            <svg className="w-full h-full" viewBox="0 0 48 48" fill="none">
+              <path d="M31 10H22L32 24L22 38H31L41 24L31 10Z" fill="#102E3C" />
+              <path d="M17 10H8L18 24L8 38H17L27 24L17 10Z" fill="#102E3C" />
+            </svg>
+          </button>
+
+          {/* Table Wrapper - Contains both header and scrollable body */}
+          <div 
+            className={`absolute top-3 bottom-3 left-[13px] rounded-[20px] transition-all duration-300 flex flex-col ${
+              selectedSupplier ? "right-[525px]" : "right-[65px]"
+            }`}
+          >
+            {/* Table Header (Sticky) */}
+            <div className="flex-shrink-0">
+              <TableHeader />
+            </div>
+
+            {/* Table Container (Scrollable) */}
+            <div 
+              ref={tableContainerRef}
+              className="flex flex-col items-start overflow-y-auto flex-1"
+              style={{
+                scrollbarWidth: "none",
+                msOverflowStyle: "none",
+              }}
+              onScroll={handleTableScroll}
+            >
+              <style>{`
+                div::-webkit-scrollbar {
+                  display: none;
+                }
+              `}</style>
+              <SupplierTable
+                data={data}
+                loading={loading}
+                selectedSupplier={selectedSupplier}
+                onRowClick={handleRowClick}
+              />
+            </div>
           </div>
 
-          <Card>
-            {loading ? (
-              <div className="flex justify-center py-10">
-                <Spin />
-              </div>
-            ) : (
-              <Table
-                columns={columns}
-                dataSource={data}
-                onRow={(record) => ({
-                  onClick: () => handleRowClick(record),
-                })}
-                rowClassName={() =>
-                  "cursor-pointer hover:bg-gray-100 transition-colors"
-                }
-              />
-            )}
-          </Card>
-        </div>
-
-        {/* RIGHT — DETAIL PANEL */}
-        {selectedSupplier && (
-          <aside className="relative w-[400px] bg-white border-2 border-teal-600 rounded-xl p-6 flex flex-col items-center shadow-md">
-            <button
-              onClick={() => setSelectedSupplier(null)}
-              className="absolute top-3 right-3 text-gray-600 hover:text-black text-xl"
-            >
-              ✕
-            </button>
-
-            {detailLoading ? (
-              <div className="flex justify-center py-10 w-full">
-                <Spin />
-              </div>
-            ) : (
-              <div className="mt-8 w-full space-y-2">
-                <DetailItem label="Mã NCC" value={selectedSupplier.supplierId} />
-                <DetailItem label="Tên NCC" value={selectedSupplier.name} />
-                <DetailItem label="Email" value={selectedSupplier.email} />
-                <DetailItem
-                  label="Số điện thoại"
-                  value={selectedSupplier.phoneNumber}
-                />
-                <DetailItem
-                  label="Người liên lạc"
-                  value={selectedSupplier.contactPerson}
-                />
-                <DetailItem label="Trạng thái" value={selectedSupplier.status} />
-                <DetailItem
-                  label="Địa chỉ"
-                  value={selectedSupplier.address}
-                  multiline
-                />
-                <DetailItem
-                  label="Mã số thuế"
-                  value={selectedSupplier.taxCode}
-                />
-                <DetailItem
-                  label="Ghi chú"
-                  value={selectedSupplier.note}
-                  multiline
-                />
-                <DetailItem
-                  label="Ngày tạo"
-                  value={selectedSupplier.createdDate}
-                />
-                <DetailItem
-                  label="Ngày cập nhật"
-                  value={selectedSupplier.updateDate}
-                />
-              </div>
-            )}
-          </aside>
-        )}
-      </div>
+          {/* Detail Panel */}
+          <SupplierDetailPanel selectedSupplier={selectedSupplier} />
+        </section>
+      </main>
     </div>
   );
 };
-
-/** ================= DETAIL ITEM ================= */
-const DetailItem = ({
-  label,
-  value,
-  multiline,
-}: {
-  label: string;
-  value?: string;
-  multiline?: boolean;
-}) => (
-  <div className="flex justify-between items-center mb-3 w-full gap-4">
-    <div className="text-gray-600 text-sm flex-shrink-0 w-[130px]">
-      {label}
-    </div>
-    <div
-      className={`text-lg font-semibold text-right ${
-        multiline ? "whitespace-pre-line" : ""
-      }`}
-    >
-      {value || "--"}
-    </div>
-  </div>
-);
