@@ -38,6 +38,9 @@ interface AuthState {
   isAuthenticated: boolean;
   tempCredentials: TempCredentials | null;
   registerTemp: RegisterTemp | null;
+  tokenFirstLogin: string | null;
+
+  setTokenFirstLogin: (tokenFirstLogin: string) => void;
 
   setRegisterTemp: (registerTemp: RegisterTemp | null) => void;
 
@@ -63,6 +66,12 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       tempCredentials: null,
       registerTemp: null,
+      tokenFirstLogin: null,
+
+      setTokenFirstLogin: (token) =>
+        set({
+          tokenFirstLogin: token,
+        }),
 
       setRegisterTemp: (registerTemp) =>
         set({

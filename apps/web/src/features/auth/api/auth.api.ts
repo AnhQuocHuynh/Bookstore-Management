@@ -145,6 +145,7 @@ import { BookStore } from "@/features/auth/types/bookstore.types";
 import { apiClient } from "@/lib/axios";
 import { OtpTypeEnum, SignInResponse } from "../types";
 import { RegisterDto } from "@/features/auth/types/register";
+import { omit } from "lodash";
 
 export const authApi = {
   systemLoginOwner: async (body: {
@@ -221,6 +222,33 @@ export const authApi = {
     newPassword: string;
   }) => {
     const response = await apiClient.post("/auth/reset-password", body);
+    return response.data;
+  },
+
+  changeFirstLoginPassword: async (body: {
+    token: string;
+    currentPassword: string;
+    newPassword: string;
+  }) => {
+    const response = await apiClient.patch("/users/me/password", body);
+    return response.data;
+  },
+
+  loginBookStoreEmployee: async (body: {
+    username: string;
+    password: string;
+    bookStoreId: string;
+    token: string;
+  }) => {
+    const response = await apiClient.post(
+      "/auth/sign-in/bookstore",
+      omit(body, ["token"]),
+      {
+        params: {
+          token: body.token,
+        },
+      },
+    );
     return response.data;
   },
 };

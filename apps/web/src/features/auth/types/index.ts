@@ -81,6 +81,7 @@ export interface SignInResponse {
   accessToken?: string; // For ADMIN
   token?: string; // For OWNER
   profile: any;
+  isFirstLogin?: boolean;
 }
 
 export interface StoreInfo {
