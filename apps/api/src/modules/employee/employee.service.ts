@@ -4,6 +4,7 @@ import {
   GetEmployeesQueryDto,
   UpdateEmployeeDto,
   ToggleEmployeeStatusDto,
+  UpdateEmployeeRoleDto,
 } from '@/common/dtos';
 import { Employee } from '@/database/tenant/entities';
 import { TenantService } from '@/tenants/tenant.service';
@@ -180,5 +181,36 @@ export class EmployeeService {
     await employeeRepo.save(employee);
 
     return this.getEmployee(bookStoreId, { id });
+  }
+
+  async updateEmployeeRole(
+    id: string,
+    updateEmployeeRoleDto: UpdateEmployeeRoleDto,
+    bookStoreId: string,
+  ) {
+    const dataSource = await this.tenantService.getTenantConnection({
+      bookStoreId,
+    });
+
+    const employeeRepo = dataSource.getRepository(Employee);
+
+    const employee = await employeeRepo.findOne({
+      where: {
+        id,
+      },
+    });
+
+    if (!employee) {
+      throw new NotFoundException('Không tìm thấy thông tin nhân viên.');
+    }
+
+    const { role } = updateEmployeeRoleDto;
+
+    employee.role = role;
+    await employeeRepo.save(employee);
+
+    return this.getEmployee(bookStoreId, {
+      id,
+    });
   }
 }
