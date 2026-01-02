@@ -1,9 +1,15 @@
-import { ALGORITHM, CHARS, IV_LENGTH } from '@/common/constants';
+import {
+  ALGORITHM,
+  CHARS,
+  EmployeeRoleLabelMap,
+  IV_LENGTH,
+} from '@/common/constants';
+import { EmployeeRole, NotificationType } from '@/common/enums';
 import { BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as bcryptjs from 'bcryptjs';
 import crypto from 'crypto';
-import { addDays } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
 import Decimal from 'decimal.js';
 import { CookieOptions, Response } from 'express';
 
@@ -181,3 +187,113 @@ export function calculateGrowth(
   if (previous === 0) return null;
   return ((current - previous) / previous) * 100;
 }
+
+export const handleGenerateUserNotificationContent = (
+  type: NotificationType,
+  metadata: Record<string, any>,
+): string[] => {
+  const time = metadata.time
+    ? formatInTimeZone(
+        new Date(metadata.time),
+        'Asia/Ho_Chi_Minh',
+        'dd/MM/yyyy HH:mm:ss',
+      )
+    : formatInTimeZone(new Date(), 'Asia/Ho_Chi_Minh', 'dd/MM/yyyy HH:mm:ss');
+
+  switch (type) {
+    case NotificationType.ROLE_CHANGED:
+      if (metadata.isOwner) {
+        return [
+          `Nhân viên ${metadata.employeeName || 'Không rõ'} vừa được cập nhật quyền thành '${metadata.role || 'N/A'}'.`,
+          `Thời gian thực hiện: ${time}.`,
+        ];
+      }
+      return [
+        `Quyền truy cập của bạn đã được cập nhật thành '${metadata.role || 'N/A'}'.`,
+        `Thời gian cập nhật: ${time}.`,
+      ];
+
+    case NotificationType.EMPLOYEE_ADDED:
+      return [
+        `Nhân viên ${metadata.employeeName || 'Không rõ'} vừa được thêm vào hệ thống.`,
+        `Thời gian tạo: ${time}.`,
+      ];
+
+    case NotificationType.ACCOUNT_CREATED:
+      return [
+        `Chào mừng ${metadata.fullName || 'bạn'} đến với hệ thống nhà sách.`,
+        `Tài khoản của bạn đã sẵn sàng sử dụng từ ${time}.`,
+      ];
+
+    case NotificationType.SYSTEM_ALERT:
+      return [
+        `Cảnh báo hệ thống: ${metadata.description || 'Không rõ nội dung'}.`,
+        `Thời gian ghi nhận: ${time}. Vui lòng kiểm tra.`,
+      ];
+
+    case NotificationType.GENERAL_ANNOUNCEMENT:
+      return [
+        `${metadata.title || 'Thông báo chung'}.`,
+        `Thời gian phát hành: ${time}.`,
+      ];
+
+    case NotificationType.SHIFT_ASSIGNED:
+      if (metadata.isOwner) {
+        return [
+          `Nhân viên ${metadata.employeeName || 'Không rõ'} được phân công ca làm việc.`,
+          `Ca: ${metadata.shift || 'N/A'} · Ngày: ${metadata.date || 'N/A'}.`,
+        ];
+      }
+      return [
+        `Bạn được phân công ca ${metadata.shift || 'N/A'}.`,
+        `Ngày làm việc: ${metadata.date || 'N/A'}.`,
+      ];
+
+    case NotificationType.RETURN_REQUEST:
+      return [
+        `Khách hàng ${metadata.customerName || 'Không rõ'} yêu cầu trả/đổi sản phẩm.`,
+        `Sản phẩm: ${metadata.itemName || 'N/A'} · Thời gian: ${time}.`,
+      ];
+
+    case NotificationType.PURCHASE_ORDER_CREATED:
+      return [
+        `Đã tạo đơn mua mới từ nhà cung cấp ${metadata.supplierName || 'N/A'}.`,
+        `Mã đơn: ${metadata.orderCode || 'N/A'} · Thời gian: ${time}.`,
+      ];
+
+    case NotificationType.ITEM_RECEIVED:
+      return [
+        `Đã nhập kho ${metadata.quantity || 0} sản phẩm.`,
+        `Sản phẩm: ${metadata.itemName || 'N/A'} · Thời gian: ${time}.`,
+      ];
+
+    case NotificationType.ITEM_UPDATED: {
+      const delta = Number(metadata.delta || 0);
+      const action = delta > 0 ? 'tăng' : delta < 0 ? 'giảm' : 'điều chỉnh';
+
+      return [
+        `Tồn kho sản phẩm đã được ${action}.`,
+        `Sản phẩm: ${metadata.itemName || 'N/A'} · Thay đổi: ${delta > 0 ? '+' : ''}${delta} · Số lượng hiện tại: ${metadata.quantity || 0}.`,
+      ];
+    }
+
+    case NotificationType.STOCK_LOW:
+      return [
+        `Cảnh báo tồn kho thấp cho sản phẩm ${metadata.itemName || 'N/A'}.`,
+        `Số lượng còn lại: ${metadata.quantity || 0} · Thời gian: ${time}.`,
+      ];
+
+    case NotificationType.ITEM_OUT_OF_STOCK:
+      return [
+        `Sản phẩm ${metadata.itemName || 'N/A'} đã hết hàng.`,
+        `Thời gian ghi nhận: ${time}.`,
+      ];
+
+    default:
+      return [`Bạn có một thông báo mới.`, `Thời gian: ${time}.`];
+  }
+};
+export const getEmployeeRoleLabel = (role?: EmployeeRole): string => {
+  if (!role) return 'Không rõ vai trò';
+  return EmployeeRoleLabelMap[role] ?? 'Không rõ vai trò';
+};

@@ -69,7 +69,7 @@ export const SupplierAddPanel: React.FC<SupplierAddPanelProps> = ({
         },
         body: {
           backgroundColor: "#D4E5E4",
-        }
+        },
       }}
       title={
         <div
@@ -100,7 +100,12 @@ export const SupplierAddPanel: React.FC<SupplierAddPanelProps> = ({
         }}
       />
       <Form
-        style={{ paddingLeft: 50, paddingRight: 50, position: "relative", zIndex: 1 }}
+        style={{
+          paddingLeft: 50,
+          paddingRight: 50,
+          position: "relative",
+          zIndex: 1,
+        }}
         form={form}
         layout="horizontal"
         labelAlign="left"
@@ -109,7 +114,10 @@ export const SupplierAddPanel: React.FC<SupplierAddPanelProps> = ({
         wrapperCol={{ flex: "1" }}
         requiredMark={false}
       >
-        <Form.Item name="name" label={<span style={labelStyle}>Tên Nhà cung cấp:</span>}>
+        <Form.Item
+          name="name"
+          label={<span style={labelStyle}>Tên Nhà cung cấp:</span>}
+        >
           <Input style={inputStyle} />
         </Form.Item>
 
@@ -121,11 +129,17 @@ export const SupplierAddPanel: React.FC<SupplierAddPanelProps> = ({
           <Input style={inputStyle} />
         </Form.Item>
 
-        <Form.Item name="address" label={<span style={labelStyle}>Địa chỉ:</span>}>
+        <Form.Item
+          name="address"
+          label={<span style={labelStyle}>Địa chỉ:</span>}
+        >
           <Input.TextArea autoSize style={{ ...inputStyle, resize: "none" }} />
         </Form.Item>
 
-        <Form.Item name="status" label={<span style={labelStyle}>Trạng thái</span>}>
+        <Form.Item
+          name="status"
+          label={<span style={labelStyle}>Trạng thái</span>}
+        >
           <Select
             variant="borderless"
             style={{
@@ -141,7 +155,10 @@ export const SupplierAddPanel: React.FC<SupplierAddPanelProps> = ({
           />
         </Form.Item>
 
-        <Form.Item name="taxCode" label={<span style={labelStyle}>Người liên lạc</span>}>
+        <Form.Item
+          name="taxCode"
+          label={<span style={labelStyle}>Người liên lạc</span>}
+        >
           <Select
             variant="borderless"
             style={{
@@ -163,7 +180,9 @@ export const SupplierAddPanel: React.FC<SupplierAddPanelProps> = ({
           <Input style={inputStyle} />
         </Form.Item>
 
-        <div style={{ marginTop: 60, display: "flex", justifyContent: "center" }}>
+        <div
+          style={{ marginTop: 60, display: "flex", justifyContent: "center" }}
+        >
           <Button
             type="primary"
             onClick={handleSubmit}

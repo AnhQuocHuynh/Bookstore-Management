@@ -9,6 +9,7 @@ import {
   DisplayShelf,
   Employee,
   Inventory,
+  Notification,
   Otp,
   Publisher,
   PurchaseOrder,
@@ -19,6 +20,7 @@ import {
   SchedulerEntry,
   Shift,
   Supplier,
+  UserNotification,
 } from '@/database/tenant/entities';
 import { Global, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -47,6 +49,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
       ReturnOrderDetail,
       SchedulerEntry,
       Shift,
+      Notification,
+      UserNotification,
     ]),
   ],
   exports: [TypeOrmModule],

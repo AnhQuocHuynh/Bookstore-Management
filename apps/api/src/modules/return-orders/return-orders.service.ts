@@ -21,6 +21,7 @@ import {
   ReturnOrderDetail,
   Transaction,
 } from '@/database/tenant/entities';
+import { NotificationsService } from '@/modules/notifications/notifications.service';
 import { TenantService } from '@/tenants/tenant.service';
 import {
   BadRequestException,
@@ -32,7 +33,10 @@ import { EntityManager, FindOptionsRelations } from 'typeorm';
 
 @Injectable()
 export class ReturnOrdersService {
-  constructor(private readonly tenantService: TenantService) {}
+  constructor(
+    private readonly tenantService: TenantService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   private async findReturnOrderById(
     manager: EntityManager,
