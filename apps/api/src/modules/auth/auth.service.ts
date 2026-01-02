@@ -220,6 +220,12 @@ export class AuthService {
         throw new UnauthorizedException('Thông tin đăng nhập không chính xác.');
       }
 
+      if (!employee.isActive) {
+        throw new ForbiddenException(
+          'Tài khoản của bạn đã bị khoá bởi chủ nhà sách này.',
+        );
+      }
+
       if (employee.isFirstLogin) {
         const token = await this.jwtService.signAsync({
           username: employee.username,
