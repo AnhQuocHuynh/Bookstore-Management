@@ -60,7 +60,7 @@ export default function NotificationsButton() {
       </Button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-3 w-90 rounded-xl bg-white shadow-xl border border-gray-100 z-50">
+        <div className="absolute right-0 mt-3 w-92 rounded-xl bg-white shadow-xl border border-gray-100 z-50">
           {isLoading ? (
             <Loading />
           ) : (
@@ -99,13 +99,15 @@ export default function NotificationsButton() {
               </div>
 
               {/* Notification List */}
-              <ScrollArea className="h-[220px] px-2 pb-2">
+              <ScrollArea
+                className={`${displayedNotifications.length > 0 ? "h-[220px]" : "h-[90px]"} px-2 pb-2`}
+              >
                 {displayedNotifications.length === 0 ? (
                   <div className="px-4 py-6 text-center text-sm text-gray-400">
                     Không có thông báo
                   </div>
                 ) : (
-                  <ul className="space-y-1">
+                  <ul className="space-y-2">
                     {displayedNotifications.map((note) => (
                       <li
                         key={note.id}
