@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { message } from "antd";
+import { message, Modal } from "antd";
 import { ActionButton } from "./ActionButton";
 import { SupplierTable, TableHeader } from "./SupplierTable";
 import { SupplierDetailPanel } from "./SupplierDetailPanel";
 import { SorterButton } from "./SorterButton";
+import { SupplierAddPanel, SupplierFormData } from "./SupplierAddPanel";
+import { SupplierEditPanel } from "./SupplierEditPanel";
 import { MOCK_SUPPLIERS } from "./mockData";
 
 /** ================= TYPES ================= */
@@ -27,6 +29,8 @@ interface Supplier {
 export const SuppliersPage = () => {
   const [selectedSupplier, setSelectedSupplier] =
     useState<Supplier | null>(null);
+  const [isAddPanelOpen, setIsAddPanelOpen] = useState(false);
+  const [isEditPanelOpen, setIsEditPanelOpen] = useState(false);
   const [data, setData] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
   const [needsScroll, setNeedsScroll] = useState(false);
@@ -95,6 +99,80 @@ export const SuppliersPage = () => {
   /** ================= HANDLE ROW CLICK ================= */
   const handleRowClick = (record: Supplier) => {
     setSelectedSupplier(record);
+  };
+
+  /** ================= HANDLE ADD SUPPLIER ================= */
+  const handleAddSupplier = (data: SupplierFormData) => {
+    const newSupplier: Supplier = {
+      key: Math.max(...MOCK_SUPPLIERS.map(s => s.key), 0) + 1,
+      supplierId: `SUP${Date.now()}`,
+      name: data.name,
+      email: data.email,
+      phoneNumber: data.phone,
+      contactPerson: data.contactPerson,
+      status: data.status,
+      address: data.address,
+      taxCode: data.taxCode,
+      note: data.note,
+      createdDate: new Date().toLocaleDateString("vi-VN"),
+      updateDate: new Date().toLocaleDateString("vi-VN"),
+    };
+
+    setData((prev) => [newSupplier, ...prev]);
+    setIsAddPanelOpen(false);
+  };
+
+  /** ================= HANDLE EDIT SUPPLIER ================= */
+  const handleEditClick = () => {
+    if (!selectedSupplier) {
+      message.warning("Bạn chưa chọn nhà cung cấp");
+      return;
+    }
+    setIsEditPanelOpen(true);
+  };
+
+  const handleEditSupplier = (formData: SupplierFormData) => {
+    if (!selectedSupplier) return;
+
+    setData((prev) =>
+      prev.map((supplier) =>
+        supplier.key === selectedSupplier.key
+          ? {
+              ...supplier,
+              name: formData.name,
+              email: formData.email,
+              phoneNumber: formData.phone,
+              contactPerson: formData.contactPerson,
+              status: formData.status,
+              address: formData.address,
+              taxCode: formData.taxCode,
+              note: formData.note,
+              updateDate: new Date().toLocaleDateString("vi-VN"),
+            }
+          : supplier
+      )
+    );
+    setIsEditPanelOpen(false);
+  };
+
+  /** ================= HANDLE DELETE SUPPLIER ================= */
+  const handleDeleteClick = () => {
+    if (!selectedSupplier) {
+      message.warning("Bạn chưa chọn nhà cung cấp");
+      return;
+    }
+
+    Modal.confirm({
+      title: "Bạn có chắc chắn muốn xóa nhà cung cấp?",
+      okText: "Xóa",
+      cancelText: "Hủy",
+      okButtonProps: { danger: true },
+      onOk: () => {
+        setData((prev) => prev.filter((s) => s.key !== selectedSupplier.key));
+        setSelectedSupplier(null);
+        message.success("Đã xóa nhà cung cấp thành công");
+      },
+    });
   };
 
   /** ================= SORT SUPPLIERS ================= */
@@ -247,9 +325,9 @@ export const SuppliersPage = () => {
 
   {/* Action buttons — smaller gap */}
   <div className="flex items-center gap-2.5">
-    <ActionButton label="Xóa" variant="outlined" />
-    <ActionButton label="Sửa" variant="outlined" />
-    <ActionButton label="Tạo Mới" variant="filled" />
+    <ActionButton label="Xóa" variant="outlined" onClick={handleDeleteClick} />
+    <ActionButton label="Sửa" variant="outlined" onClick={handleEditClick} />
+    <ActionButton label="Tạo Mới" variant="filled" onClick={() => setIsAddPanelOpen(true)} />
   </div>
 </section>
 
@@ -359,6 +437,34 @@ export const SuppliersPage = () => {
           <SupplierDetailPanel selectedSupplier={selectedSupplier} />
         </section>
       </main>
+
+      {/* Add Supplier Modal */}
+      <SupplierAddPanel
+        isOpen={isAddPanelOpen}
+        onClose={() => setIsAddPanelOpen(false)}
+        onSubmit={handleAddSupplier}
+      />
+
+      {/* Edit Supplier Modal */}
+      <SupplierEditPanel
+        isOpen={isEditPanelOpen}
+        onClose={() => setIsEditPanelOpen(false)}
+        onSubmit={handleEditSupplier}
+        initialData={
+          selectedSupplier
+            ? {
+                name: selectedSupplier.name,
+                email: selectedSupplier.email,
+                phone: selectedSupplier.phoneNumber,
+                address: selectedSupplier.address || "",
+                status: selectedSupplier.status as "Hoạt động" | "Ngưng hoạt động",
+                taxCode: selectedSupplier.taxCode || "",
+                contactPerson: selectedSupplier.contactPerson,
+                note: selectedSupplier.note || "",
+              }
+            : undefined
+        }
+      />
     </div>
   );
 };
