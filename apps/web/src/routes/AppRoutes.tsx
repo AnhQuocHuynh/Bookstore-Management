@@ -6,6 +6,8 @@ import { DashboardPage } from "../features/dashboard/pages/DashboardPage";
 import { EmployeesPage } from "../features/employees/components/EmployeesPage";
 import { ProductsPage } from "../features/products/components/ProductsPage";
 import { SuppliersPage } from "../features/suppliers/components/SuppliersPage";
+import { UsersPage } from "../features/users/components/UsersPage";
+import { UserEditPage } from "../features/users/components/UserEditPage";
 
 import SelectStorePage from "@/features/auth/pages/SelectStorePage";
 import VerifyEmailPage from "@/features/auth/pages/VerifyEmailPage";
@@ -90,7 +92,7 @@ export const AppRoutes = () => {
           }
         />
         <Route
-          path="/products"
+          path="/dashboard/products"
           element={
             <MainLayout>
               <ProductsPage />
@@ -130,10 +132,26 @@ export const AppRoutes = () => {
           }
         />
         <Route
-          path="/suppliers"
+          path="/dashboard/suppliers"
           element={
             <MainLayout>
               <SuppliersPage />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/users"
+          element={
+            <MainLayout>
+              <UsersPage />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/users/edit"
+          element={
+            <MainLayout>
+              <UserEditPage />
             </MainLayout>
           }
         />

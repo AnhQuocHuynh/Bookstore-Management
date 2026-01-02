@@ -22,5 +22,9 @@
   "workspaces": [
     "apps/*",
     "packages/*"
-  ]
+  ],
+  "dependencies": {
+    "moment": "^2.30.1",
+    "recharts": "^3.6.0"
+  }
 }
