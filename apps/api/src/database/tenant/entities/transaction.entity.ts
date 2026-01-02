@@ -39,6 +39,7 @@ export class Transaction {
     precision: 12,
     scale: 2,
     transformer: DecimalTransformer,
+    default: 0,
   })
   totalAmount: number;
 
