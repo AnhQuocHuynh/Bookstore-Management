@@ -33,9 +33,7 @@ export default function UserMenu() {
 
         <DropdownMenuItem>Cài đặt</DropdownMenuItem>
 
-        <DropdownMenuItem className="text-red-600">
-          Đăng xuất
-        </DropdownMenuItem>
+        <DropdownMenuItem className="text-red-600">Đăng xuất</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

@@ -27,8 +27,9 @@ interface Supplier {
 
 /** ================= PAGE ================= */
 export const SuppliersPage = () => {
-  const [selectedSupplier, setSelectedSupplier] =
-    useState<Supplier | null>(null);
+  const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(
+    null,
+  );
   const [isAddPanelOpen, setIsAddPanelOpen] = useState(false);
   const [isEditPanelOpen, setIsEditPanelOpen] = useState(false);
   const [data, setData] = useState<Supplier[]>([]);
@@ -104,7 +105,7 @@ export const SuppliersPage = () => {
   /** ================= HANDLE ADD SUPPLIER ================= */
   const handleAddSupplier = (data: SupplierFormData) => {
     const newSupplier: Supplier = {
-      key: Math.max(...MOCK_SUPPLIERS.map(s => s.key), 0) + 1,
+      key: Math.max(...MOCK_SUPPLIERS.map((s) => s.key), 0) + 1,
       supplierId: `SUP${Date.now()}`,
       name: data.name,
       email: data.email,
@@ -149,8 +150,8 @@ export const SuppliersPage = () => {
               note: formData.note,
               updateDate: new Date().toLocaleDateString("vi-VN"),
             }
-          : supplier
-      )
+          : supplier,
+      ),
     );
     setIsEditPanelOpen(false);
   };
@@ -176,7 +177,10 @@ export const SuppliersPage = () => {
   };
 
   /** ================= SORT SUPPLIERS ================= */
-  const sortSuppliers = (suppliers: Supplier[], sortKey: string): Supplier[] => {
+  const sortSuppliers = (
+    suppliers: Supplier[],
+    sortKey: string,
+  ): Supplier[] => {
     const sorted = [...suppliers].sort((a, b) => {
       let aValue = "";
       let bValue = "";
@@ -254,7 +258,7 @@ export const SuppliersPage = () => {
       const trackRect = track.getBoundingClientRect();
       const thumbHeight = Math.max(
         (table.clientHeight / table.scrollHeight) * (table.clientHeight - 24),
-        40
+        40,
       );
       const trackHeight = track.clientHeight;
 
@@ -262,7 +266,8 @@ export const SuppliersPage = () => {
       newTop = Math.max(0, Math.min(newTop, trackHeight - thumbHeight));
 
       const proportion = newTop / (trackHeight - thumbHeight);
-      const scrollPosition = proportion * (table.scrollHeight - table.clientHeight);
+      const scrollPosition =
+        proportion * (table.scrollHeight - table.clientHeight);
 
       table.scrollTop = scrollPosition;
     };
@@ -290,7 +295,7 @@ export const SuppliersPage = () => {
 
     const thumbHeight = Math.max(
       (table.clientHeight / table.scrollHeight) * (table.clientHeight - 24),
-      40
+      40,
     );
     const trackHeight = track.clientHeight;
 
@@ -298,7 +303,8 @@ export const SuppliersPage = () => {
     newTop = Math.max(0, Math.min(newTop, trackHeight - thumbHeight));
 
     const proportion = newTop / (trackHeight - thumbHeight);
-    const scrollPosition = proportion * (table.scrollHeight - table.clientHeight);
+    const scrollPosition =
+      proportion * (table.scrollHeight - table.clientHeight);
 
     table.scrollTop = scrollPosition;
   };
@@ -312,25 +318,32 @@ export const SuppliersPage = () => {
         </h1>
       </header>
 
-      
       {/* Action Buttons */}
       <section className="absolute top-[7px] right-7 h-[58px] flex items-center">
-  {/* Sorter — bigger gap */}
-  <div className="mr-10">
-    <SorterButton
-      onSortChange={handleSortChange}
-      currentSort={sortBy}
-    />
-  </div>
+        {/* Sorter — bigger gap */}
+        <div className="mr-10">
+          <SorterButton onSortChange={handleSortChange} currentSort={sortBy} />
+        </div>
 
-  {/* Action buttons — smaller gap */}
-  <div className="flex items-center gap-2.5">
-    <ActionButton label="Xóa" variant="outlined" onClick={handleDeleteClick} />
-    <ActionButton label="Sửa" variant="outlined" onClick={handleEditClick} />
-    <ActionButton label="Tạo Mới" variant="filled" onClick={() => setIsAddPanelOpen(true)} />
-  </div>
-</section>
-
+        {/* Action buttons — smaller gap */}
+        <div className="flex items-center gap-2.5">
+          <ActionButton
+            label="Xóa"
+            variant="outlined"
+            onClick={handleDeleteClick}
+          />
+          <ActionButton
+            label="Sửa"
+            variant="outlined"
+            onClick={handleEditClick}
+          />
+          <ActionButton
+            label="Tạo Mới"
+            variant="filled"
+            onClick={() => setIsAddPanelOpen(true)}
+          />
+        </div>
+      </section>
 
       {/* Main Section */}
       <main>
@@ -348,7 +361,7 @@ export const SuppliersPage = () => {
               aria-valuemax={100}
               onClick={handleScrollbarClick}
             >
-              <div 
+              <div
                 className={`w-[15px] bg-[#102e3c] rounded-[999px] hover:bg-[#1a998f] transition-colors cursor-grab active:cursor-grabbing ${
                   isDragging ? "bg-[#1a998f]" : ""
                 }`}
@@ -356,8 +369,12 @@ export const SuppliersPage = () => {
                   height: `${thumbHeight || 40}px`,
                   transform: `translateY(${
                     tableContainerRef.current
-                      ? (scrollTop / (tableContainerRef.current.scrollHeight - tableContainerRef.current.clientHeight)) *
-                        (tableContainerRef.current.clientHeight - 24 - (thumbHeight || 40))
+                      ? (scrollTop /
+                          (tableContainerRef.current.scrollHeight -
+                            tableContainerRef.current.clientHeight)) *
+                        (tableContainerRef.current.clientHeight -
+                          24 -
+                          (thumbHeight || 40))
                       : 0
                   }px)`,
                   transition: isDragging ? "none" : "transform 0.1s ease-out",
@@ -369,29 +386,24 @@ export const SuppliersPage = () => {
 
           {/* Navigation Controls */}
           <button
-  type="button"
-  aria-label="Toggle detail panel"
-  className={`absolute top-[15px] w-12 h-12
+            type="button"
+            aria-label="Toggle detail panel"
+            className={`absolute top-[15px] w-12 h-12
     cursor-pointer
     hover:opacity-70
     transition-all duration-300
     outline-none border-none
     focus:outline-none focus:ring-0
     active:outline-none
-    ${
-      selectedSupplier
-        ? "right-[462px] rotate-90"
-        : "right-[2px] rotate-0"
-    }`}
-  onClick={() => {
-    if (selectedSupplier) {
-      setSelectedSupplier(null);
-    } else if (data.length > 0) {
-      setSelectedSupplier(data[0]);
-    }
-  }}
->
-
+    ${selectedSupplier ? "right-[462px] rotate-90" : "right-[2px] rotate-0"}`}
+            onClick={() => {
+              if (selectedSupplier) {
+                setSelectedSupplier(null);
+              } else if (data.length > 0) {
+                setSelectedSupplier(data[0]);
+              }
+            }}
+          >
             <svg className="w-full h-full" viewBox="0 0 48 48" fill="none">
               <path d="M31 10H22L32 24L22 38H31L41 24L31 10Z" fill="#102E3C" />
               <path d="M17 10H8L18 24L8 38H17L27 24L17 10Z" fill="#102E3C" />
@@ -399,7 +411,7 @@ export const SuppliersPage = () => {
           </button>
 
           {/* Table Wrapper - Contains both header and scrollable body */}
-          <div 
+          <div
             className={`absolute top-3 bottom-3 left-[13px] rounded-[20px] transition-all duration-300 flex flex-col ${
               selectedSupplier ? "right-[525px]" : "right-[65px]"
             }`}
@@ -410,7 +422,7 @@ export const SuppliersPage = () => {
             </div>
 
             {/* Table Container (Scrollable) */}
-            <div 
+            <div
               ref={tableContainerRef}
               className="flex flex-col items-start overflow-y-auto flex-1"
               style={{
@@ -457,7 +469,9 @@ export const SuppliersPage = () => {
                 email: selectedSupplier.email,
                 phone: selectedSupplier.phoneNumber,
                 address: selectedSupplier.address || "",
-                status: selectedSupplier.status as "Hoạt động" | "Ngưng hoạt động",
+                status: selectedSupplier.status as
+                  | "Hoạt động"
+                  | "Ngưng hoạt động",
                 taxCode: selectedSupplier.taxCode || "",
                 contactPerson: selectedSupplier.contactPerson,
                 note: selectedSupplier.note || "",

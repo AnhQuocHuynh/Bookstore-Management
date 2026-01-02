@@ -1,4 +1,4 @@
-import { BookStoreId, Roles } from '@/common/decorators';
+import { BookStoreId, Roles, UserSession } from '@/common/decorators';
 import {
   GetEmployeeQueryDto,
   GetEmployeesQueryDto,
@@ -27,6 +27,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { EmployeeService } from './employee.service';
+import { TUserSession } from '@/common/utils';
 
 @Controller('employee')
 @ApiTags('EmployeeController')
@@ -247,12 +248,12 @@ export class EmployeeController {
   async updateEmployeeRole(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateEmployeeRoleDto: UpdateEmployeeRoleDto,
-    @BookStoreId() bookStoreId: string,
+    @UserSession() userSession: TUserSession,
   ) {
     return this.employeeService.updateEmployeeRole(
       id,
       updateEmployeeRoleDto,
-      bookStoreId,
+      userSession,
     );
   }
 }

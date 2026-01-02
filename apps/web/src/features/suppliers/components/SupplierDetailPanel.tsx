@@ -36,10 +36,7 @@ export const SupplierDetailPanel: React.FC<SupplierDetailPanelProps> = ({
       <div className="flex mt-[27px] w-[383px] relative flex-col items-start">
         <DetailRow label="Tên NCC" value={selectedSupplier.name} />
         <DetailRow label="Email" value={selectedSupplier.email} />
-        <DetailRow
-          label="Số điện thoại"
-          value={selectedSupplier.phoneNumber}
-        />
+        <DetailRow label="Số điện thoại" value={selectedSupplier.phoneNumber} />
         <DetailRow
           label="Địa chỉ"
           value={selectedSupplier.address}
