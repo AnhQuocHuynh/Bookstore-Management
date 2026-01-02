@@ -58,6 +58,11 @@ export class TransactionsService {
       const newTransaction = transactionRepo.create({
         cashier: employee,
         ...(note?.trim() && { note }),
+        totalAmount: 0,
+        discountAmount: 0,
+        taxAmount: 0,
+        finalAmount: 0,
+        details: [],
       });
 
       await transactionRepo.save(newTransaction);
@@ -133,7 +138,8 @@ export class TransactionsService {
       }
 
       if (discountAmount) {
-        this.recalcTransaction(transaction);
+        transaction.finalAmount =
+          transaction.totalAmount + transaction.taxAmount - discountAmount;
       }
 
       return transactionRepo.save(transaction);
@@ -209,12 +215,10 @@ export class TransactionsService {
         );
       }
 
-      if (quantity && quantity >= transactionDetail.quantity) {
-        transaction.details.filter((d) => d.id !== transactionDetail.id);
-        await transactionDetailRepo.delete({
-          id: transactionDetailId,
-        });
-        return transactionRepo.save(transaction);
+      if (quantity && quantity > transactionDetail.quantity) {
+        throw new BadRequestException(
+          'Bạn đang thêm chi tiết vào đơn hàng. Vui lòng gọi API thêm chi tiết vào đơn hàng.',
+        );
       }
 
       const updatableFields: (keyof typeof updateTransactionDetailDto)[] = [
@@ -240,7 +244,13 @@ export class TransactionsService {
             id: transactionId,
           },
           relations: {
-            details: true,
+            details: {
+              product: {
+                inventory: true,
+                book: true,
+              },
+            },
+            cashier: true,
           },
         });
 
@@ -252,7 +262,9 @@ export class TransactionsService {
 
         this.recalcTransaction(transaction);
 
-        return transactionRepo.save(transaction);
+        return omit(await transactionRepo.save(transaction), [
+          'cashier.password',
+        ]);
       }
 
       return transaction;
@@ -313,6 +325,7 @@ export class TransactionsService {
         },
         relations: {
           cashier: true,
+          details: true,
         },
       });
 
@@ -342,7 +355,13 @@ export class TransactionsService {
           id: transactionId,
         },
         relations: {
-          details: true,
+          details: {
+            product: {
+              inventory: true,
+              book: true,
+            },
+          },
+          cashier: true,
         },
       });
 
@@ -354,7 +373,9 @@ export class TransactionsService {
 
       this.recalcTransaction(updatedTransaction);
 
-      return transactionRepo.save(updatedTransaction);
+      return omit(await transactionRepo.save(updatedTransaction), [
+        'cashier.password',
+      ]);
     });
   }
 
@@ -367,16 +388,41 @@ export class TransactionsService {
     const { productId, quantity, unitPrice } = dto;
 
     const product = await productRepo.findOne({
-      where: {
-        id: productId,
-      },
-      relations: {
-        inventory: true,
-      },
+      where: { id: productId },
+      relations: { inventory: true },
     });
 
     if (!product) {
-      throw new NotFoundException('Không tìm thấy thông tin sản phảm');
+      throw new NotFoundException('Không tìm thấy thông tin sản phẩm');
+    }
+
+    const existingDetail = await transactionDetailRepo.findOne({
+      where: {
+        transaction: { id: transaction.id },
+        product: { id: productId },
+      },
+    });
+
+    const incomingQty = new Decimal(quantity);
+
+    if (existingDetail) {
+      const newQty = new Decimal(existingDetail.quantity).plus(incomingQty);
+
+      if (product.inventory.availableQuantity < newQty.toNumber()) {
+        throw new BadRequestException(
+          `Sản phẩm "${product.name}" chỉ còn ${product.inventory.availableQuantity} trong kho, không đủ để xuất ${newQty.toNumber()} cái.`,
+        );
+      }
+
+      const price = new Decimal(unitPrice ?? existingDetail.unitPrice);
+
+      existingDetail.quantity = newQty.toNumber();
+      existingDetail.unitPrice = price.toNumber();
+      existingDetail.totalPrice = Number(
+        price.times(newQty).minus(existingDetail.discount).toFixed(2),
+      );
+
+      return transactionDetailRepo.save(existingDetail);
     }
 
     if (product.inventory.availableQuantity < quantity) {
@@ -394,6 +440,7 @@ export class TransactionsService {
       quantity,
       unitPrice: price.toNumber(),
       totalPrice: Number(price.times(qty).toFixed(2)),
+      discount: 0,
     });
 
     return transactionDetailRepo.save(newTransactionDetail);
