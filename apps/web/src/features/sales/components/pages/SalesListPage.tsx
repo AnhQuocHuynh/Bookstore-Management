@@ -4,74 +4,64 @@ import React, { useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, Calendar, Filter, FileText, X, User, ChevronRight, Printer } from "lucide-react";
+import { Search, Calendar, Filter, FileText, X, User, ChevronRight, Printer, Loader2 } from "lucide-react";
 import { formatCurrency, formatDateTime } from "@/utils";
 import { cn } from "@/lib/utils";
+import { useTransactions } from "../../hooks/use-transactions"
+import { Transaction } from "../../types/sales.types";
 
-// --- Types ---
-interface SaleItem {
-    productName: string;
-    quantity: number;
-    unitPrice: number;
-    totalPrice: number;
-    note?: string;
-}
-
-interface SaleTransaction {
-    id: string;
-    code: string;
-    date: string;
-    staffName: string;
-    totalItems: number;
-    totalAmount: number;
-    discount: number;
-    customerGiven: number;
-    paymentMethod: "Tiền mặt" | "Chuyển khoản" | "Thẻ";
-    status: "completed" | "cancelled" | "pending";
-    items: SaleItem[];
-}
-
-// --- Mock Data ---
-const MOCK_SALES: SaleTransaction[] = Array.from({ length: 20 }).map((_, i) => ({
-    id: `sale-${i + 1}`,
-    code: `#${2000 + i}`,
-    date: new Date(2025, 10, 27, 9, 30 + i).toISOString(),
-    // FIX: Xóa " - Ca Sáng", chỉ để lại tên nhân viên
-    staffName: `Nguyễn Văn ${String.fromCharCode(65 + (i % 5))}`,
-    totalItems: 3 + (i % 5),
-    totalAmount: 100000 + i * 50000,
-    discount: i % 3 === 0 ? 10000 : 0,
-    customerGiven: 100000 + i * 50000 + 5000,
-    paymentMethod: i % 2 === 0 ? "Tiền mặt" : "Chuyển khoản",
-    status: "completed",
-    items: Array.from({ length: 5 + (i % 10) }).map((_, j) => ({
-        productName: `Sản phẩm mẫu ${j + 1} - ${i}`,
-        quantity: j + 1,
-        unitPrice: 20000,
-        totalPrice: (j + 1) * 20000,
-        note: j % 2 === 0 ? "Ghi chú..." : undefined
-    })),
-}));
+// Hàm helper để map phương thức thanh toán sang tiếng Việt
+const getPaymentMethodLabel = (method: string | null) => {
+    switch (method) {
+        case "bank_transfer": return "Chuyển khoản";
+        case "cash": return "Tiền mặt";
+        case "card": return "Thẻ";
+        default: return "Chưa thanh toán";
+    }
+};
 
 export const SalesListPage = () => {
-    const [selectedSale, setSelectedSale] = useState<SaleTransaction | null>(null);
+    // --- Data Fetching ---
+    // Tạm thời chưa truyền params ngày tháng, bạn có thể state hóa nó sau
+    const { data: transactions, isLoading, isError } = useTransactions();
+
+    const [selectedSale, setSelectedSale] = useState<Transaction | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
 
+    // --- Filter Logic ---
     const filteredSales = useMemo(() => {
-        return MOCK_SALES.filter(
-            (sale) =>
-                sale.staffName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                sale.code.includes(searchTerm)
-        );
-    }, [searchTerm]);
+        if (!transactions) return [];
 
-    const handleRowClick = (sale: SaleTransaction) => {
+        return transactions.filter((sale) => {
+            const searchLower = searchTerm.toLowerCase();
+            // Tìm theo ID (lấy 8 ký tự đầu làm mã đơn) hoặc tên nhân viên
+            const shortCode = sale.id.substring(0, 8).toUpperCase();
+            const staffName = sale.cashier?.fullName?.toLowerCase() || "";
+
+            return shortCode.includes(searchLower) || staffName.includes(searchLower);
+        });
+    }, [transactions, searchTerm]);
+
+    const handleRowClick = (sale: Transaction) => {
         setSelectedSale(sale);
     };
 
     const handleCloseDetail = () => {
         setSelectedSale(null);
     };
+
+    // Tính tổng số lượng sản phẩm trong đơn (vì API trả về mảng details)
+    const calculateTotalItems = (sale: Transaction) => {
+        return sale.details.reduce((acc, item) => acc + item.quantity, 0);
+    };
+
+    if (isLoading) {
+        return (
+            <div className="flex h-full items-center justify-center bg-slate-50">
+                <Loader2 className="w-10 h-10 animate-spin text-teal-600" />
+            </div>
+        );
+    }
 
     return (
         <div className="flex flex-col h-[calc(100vh-100px)] gap-4 p-2 bg-slate-50 font-['Inter'] overflow-hidden">
@@ -120,9 +110,10 @@ export const SalesListPage = () => {
                         <div className="w-12 text-center">STT</div>
                         <div className="w-24 text-center">Mã đơn</div>
 
-                        {/* FIX: Mở rộng cột thời gian từ w-36 lên w-48 (khoảng 192px) để hiển thị đủ ngày giờ */}
+                        {/* Cột Thời gian */}
                         <div className={cn("px-4 transition-all", selectedSale ? "flex-1" : "w-48")}>Thời gian</div>
 
+                        {/* Cột Nhân viên */}
                         <div className={cn("px-4", selectedSale ? "hidden" : "hidden sm:block flex-1")}>Nhân Viên</div>
 
                         <div className={cn("w-20 text-center", selectedSale ? "hidden" : "block")}>Số SP</div>
@@ -133,43 +124,59 @@ export const SalesListPage = () => {
 
                     {/* Table Body */}
                     <div className="flex-1 overflow-y-auto custom-scrollbar">
-                        {filteredSales.map((sale, index) => (
-                            <div
-                                key={sale.id}
-                                onClick={() => handleRowClick(sale)}
-                                className={cn(
-                                    "w-full h-12 flex items-center px-4 border-b border-gray-100 cursor-pointer transition-all text-sm text-cyan-950 group select-none",
-                                    selectedSale?.id === sale.id
-                                        ? "bg-teal-50 border-l-4 border-l-teal-600 pl-[12px]"
-                                        : "hover:bg-gray-50 bg-white border-l-4 border-l-transparent",
-                                    index % 2 !== 0 && selectedSale?.id !== sale.id ? "bg-gray-50/30" : ""
-                                )}
-                            >
-                                <div className="w-12 text-center text-gray-500 text-xs">{index + 1}</div>
-                                <div className="w-24 text-center font-bold text-teal-700">{sale.code}</div>
+                        {filteredSales.map((sale, index) => {
+                            const shortCode = sale.id.substring(0, 8).toUpperCase(); // Giả lập mã ngắn từ UUID
+                            const totalItems = calculateTotalItems(sale);
 
-                                {/* FIX: Cập nhật Body cột thời gian cho khớp Header (w-48) */}
-                                <div className={cn("px-4 truncate text-xs sm:text-sm text-gray-600", selectedSale ? "flex-1" : "w-48")}>
-                                    {formatDateTime(sale.date)}
-                                </div>
+                            return (
+                                <div
+                                    key={sale.id}
+                                    onClick={() => handleRowClick(sale)}
+                                    className={cn(
+                                        "w-full h-12 flex items-center px-4 border-b border-gray-100 cursor-pointer transition-all text-sm text-cyan-950 group select-none",
+                                        selectedSale?.id === sale.id
+                                            ? "bg-teal-50 border-l-4 border-l-teal-600 pl-[12px]"
+                                            : "hover:bg-gray-50 bg-white border-l-4 border-l-transparent",
+                                        index % 2 !== 0 && selectedSale?.id !== sale.id ? "bg-gray-50/30" : ""
+                                    )}
+                                >
+                                    <div className="w-12 text-center text-gray-500 text-xs">{index + 1}</div>
+                                    <div className="w-24 text-center font-bold text-teal-700 truncate" title={shortCode}>
+                                        #{shortCode}
+                                    </div>
 
-                                <div className={cn("px-4 truncate font-medium", selectedSale ? "hidden" : "hidden sm:block flex-1")}>
-                                    {sale.staffName}
-                                </div>
+                                    <div className={cn("px-4 truncate text-xs sm:text-sm text-gray-600", selectedSale ? "flex-1" : "w-48")}>
+                                        {formatDateTime(sale.createdAt)}
+                                    </div>
 
-                                <div className={cn("w-20 text-center", selectedSale ? "hidden" : "block")}>{sale.totalItems}</div>
-                                <div className="w-28 text-right pr-2 font-bold">{formatCurrency(sale.totalAmount)}</div>
+                                    <div className={cn("px-4 truncate font-medium", selectedSale ? "hidden" : "hidden sm:block flex-1")}>
+                                        {sale.cashier.fullName}
+                                    </div>
 
-                                <div className={cn("w-28 text-center", selectedSale ? "hidden" : "hidden md:block")}>
-                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700 border border-green-200">
-                                        HOÀN THÀNH
-                                    </span>
+                                    <div className={cn("w-20 text-center", selectedSale ? "hidden" : "block")}>
+                                        {totalItems}
+                                    </div>
+
+                                    {/* Dùng finalAmount (số tiền thực trả) */}
+                                    <div className="w-28 text-right pr-2 font-bold">{formatCurrency(sale.finalAmount)}</div>
+
+                                    <div className={cn("w-28 text-center", selectedSale ? "hidden" : "hidden md:block")}>
+                                        {sale.isCompleted ? (
+                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700 border border-green-200">
+                                                HOÀN THÀNH
+                                            </span>
+                                        ) : (
+                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-yellow-100 text-yellow-700 border border-yellow-200">
+                                                CHƯA XONG
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="w-8 flex justify-center">
+                                        <ChevronRight className={cn("w-4 h-4 text-gray-300 transition-transform", selectedSale?.id === sale.id && "text-teal-600 translate-x-1")} />
+                                    </div>
                                 </div>
-                                <div className="w-8 flex justify-center">
-                                    <ChevronRight className={cn("w-4 h-4 text-gray-300 transition-transform", selectedSale?.id === sale.id && "text-teal-600 translate-x-1")} />
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        })}
 
                         {filteredSales.length === 0 && (
                             <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-2">
@@ -194,11 +201,15 @@ export const SalesListPage = () => {
                             <div className="flex-shrink-0 bg-cyan-950 p-4 text-white flex justify-between items-start">
                                 <div>
                                     <div className="flex items-center gap-2">
-                                        <h2 className="text-xl font-bold">{selectedSale.code}</h2>
-                                        <Badge className="bg-green-500 hover:bg-green-600 text-white text-[10px] h-5">Hoàn thành</Badge>
+                                        <h2 className="text-xl font-bold">#{selectedSale.id.substring(0, 8).toUpperCase()}</h2>
+                                        {selectedSale.isCompleted ? (
+                                            <Badge className="bg-green-500 hover:bg-green-600 text-white text-[10px] h-5">Hoàn thành</Badge>
+                                        ) : (
+                                            <Badge className="bg-yellow-500 hover:bg-yellow-600 text-white text-[10px] h-5">Chưa xong</Badge>
+                                        )}
                                     </div>
                                     <p className="text-cyan-200 text-xs mt-1 flex items-center gap-1">
-                                        <Calendar className="w-3 h-3" /> {formatDateTime(selectedSale.date)}
+                                        <Calendar className="w-3 h-3" /> {formatDateTime(selectedSale.createdAt)}
                                     </p>
                                 </div>
                                 <button
@@ -217,20 +228,20 @@ export const SalesListPage = () => {
                                     </div>
                                     <div className="flex flex-col">
                                         <span className="text-xs text-gray-500">Nhân viên</span>
-                                        <span className="font-bold">{selectedSale.staffName}</span>
+                                        <span className="font-bold">{selectedSale.cashier.fullName}</span>
                                     </div>
                                 </div>
                                 <div className="text-right">
                                     <span className="text-xs text-gray-500">Số lượng SP</span>
-                                    <p className="font-bold text-cyan-900">{selectedSale.totalItems}</p>
+                                    <p className="font-bold text-cyan-900">{calculateTotalItems(selectedSale)}</p>
                                 </div>
                             </div>
 
                             {/* 3. Product List */}
                             <div className="flex-1 overflow-y-auto custom-scrollbar p-3 bg-white">
                                 <div className="space-y-3">
-                                    {selectedSale.items.map((item, idx) => (
-                                        <div key={idx} className="flex flex-col border border-gray-100 rounded-lg p-3 hover:shadow-sm transition-shadow bg-gray-50/30">
+                                    {selectedSale.details.map((item) => (
+                                        <div key={item.id} className="flex flex-col border border-gray-100 rounded-lg p-3 hover:shadow-sm transition-shadow bg-gray-50/30">
                                             <div className="flex justify-between items-start gap-2">
                                                 <span className="text-sm font-semibold text-cyan-950 line-clamp-2 leading-tight">
                                                     {item.productName}
@@ -246,6 +257,7 @@ export const SalesListPage = () => {
                                                     </span>
                                                     <span>x {formatCurrency(item.unitPrice)}</span>
                                                 </div>
+                                                {/* Nếu có ghi chú trong detail thì hiển thị */}
                                                 {item.note && <span className="italic text-gray-400 text-[10px]">{item.note}</span>}
                                             </div>
                                         </div>
@@ -258,16 +270,19 @@ export const SalesListPage = () => {
                                 <div className="space-y-1 text-xs sm:text-sm">
                                     <div className="flex justify-between">
                                         <span className="text-gray-500">Hình thức</span>
-                                        <span className="font-medium text-cyan-900">{selectedSale.paymentMethod}</span>
+                                        <span className="font-medium text-cyan-900">
+                                            {getPaymentMethodLabel(selectedSale.paymentMethod)}
+                                        </span>
                                     </div>
                                     <div className="flex justify-between">
                                         <span className="text-gray-500">Tổng tiền hàng</span>
-                                        <span className="font-medium">{formatCurrency(selectedSale.totalAmount + selectedSale.discount)}</span>
+                                        {/* API trả về totalAmount (chưa trừ discount) */}
+                                        <span className="font-medium">{formatCurrency(selectedSale.totalAmount)}</span>
                                     </div>
-                                    {selectedSale.discount > 0 && (
+                                    {selectedSale.discountAmount > 0 && (
                                         <div className="flex justify-between text-red-500">
                                             <span>Giảm giá</span>
-                                            <span>-{formatCurrency(selectedSale.discount)}</span>
+                                            <span>-{formatCurrency(selectedSale.discountAmount)}</span>
                                         </div>
                                     )}
 
@@ -275,13 +290,16 @@ export const SalesListPage = () => {
 
                                     <div className="flex justify-between items-end">
                                         <span className="text-base font-bold text-cyan-950">Khách cần trả</span>
-                                        <span className="text-xl font-extrabold text-teal-700">{formatCurrency(selectedSale.totalAmount)}</span>
+                                        <span className="text-xl font-extrabold text-teal-700">{formatCurrency(selectedSale.finalAmount)}</span>
                                     </div>
 
-                                    <div className="flex justify-between items-center pt-1 text-xs text-gray-500">
-                                        <span>Khách đưa: {formatCurrency(selectedSale.customerGiven)}</span>
-                                        <span>Trả lại: <b className="text-cyan-900">{formatCurrency(selectedSale.customerGiven - selectedSale.totalAmount)}</b></span>
-                                    </div>
+                                    {/* API JSON không có trường customerGiven (tiền khách đưa) và tiền thừa.
+                                Tôi sẽ ẩn dòng này hoặc giả lập nếu cần. Tạm thời hiển thị Ghi chú chung nếu có */}
+                                    {selectedSale.note && (
+                                        <div className="pt-2 text-xs italic text-gray-500 border-t border-gray-200 mt-2">
+                                            Ghi chú: {selectedSale.note}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Action Button */}

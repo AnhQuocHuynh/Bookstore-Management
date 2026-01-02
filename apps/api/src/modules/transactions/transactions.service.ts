@@ -27,7 +27,7 @@ import { Repository } from 'typeorm';
 
 @Injectable()
 export class TransactionsService {
-  constructor(private readonly tenantService: TenantService) {}
+  constructor(private readonly tenantService: TenantService) { }
 
   async createTransaction(
     createTransactionDto: CreateTransactionDto,
@@ -473,6 +473,7 @@ export class TransactionsService {
       .createQueryBuilder('transaction')
       .leftJoinAndSelect('transaction.cashier', 'cashier')
       .leftJoinAndSelect('transaction.details', 'details')
+      .leftJoinAndSelect('details.product', 'product')
       .leftJoinAndSelect('transaction.returnOrders', 'returnOrders');
 
     if (cashierId) {
@@ -536,6 +537,12 @@ export class TransactionsService {
     return transactions.map((t) => ({
       ...t,
       cashier: omit(t.cashier, ['password']),
+      details: t.details.map((detail) => ({
+        ...detail,
+        productName: detail.product?.name, // <--- Lấy tên sản phẩm ra ngoài
+        // product: detail.product // Bỏ comment dòng này nếu bạn muốn giữ cả cục object product
+      })),
+
     }));
   }
 
