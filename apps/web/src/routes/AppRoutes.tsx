@@ -7,6 +7,7 @@ import { EmployeesPage } from "../features/employees/components/EmployeesPage";
 import { ProductsPage } from "../features/products/components/ProductsPage";
 import { SuppliersPage } from "../features/suppliers/components/SuppliersPage";
 import { CreateSalesPage } from "../features/sales/components/pages/CreateSalesPage";
+import { SalesListPage } from "../features/sales/components/pages/SalesListPage";
 
 import SelectStorePage from "@/features/auth/pages/SelectStorePage";
 import VerifyEmailPage from "@/features/auth/pages/VerifyEmailPage";
@@ -103,6 +104,14 @@ export const AppRoutes = () => {
           element={
             <MainLayout>
               <CreateSalesPage />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/sales/list"
+          element={
+            <MainLayout>
+              <SalesListPage />
             </MainLayout>
           }
         />
