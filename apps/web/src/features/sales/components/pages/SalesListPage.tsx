@@ -1,16 +1,28 @@
 // src/features/sales/pages/SalesListPage.tsx
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, Calendar, Filter, FileText, X, User, ChevronRight, Printer, Loader2 } from "lucide-react";
+import { Calendar as CalendarIcon, Filter, FileText, X, User, ChevronRight, Printer, Loader2, Search } from "lucide-react";
 import { formatCurrency, formatDateTime } from "@/utils";
 import { cn } from "@/lib/utils";
-import { useTransactions } from "../../hooks/use-transactions"
+import { useTransactions } from "../../hooks/use-transactions";
 import { Transaction } from "../../types/sales.types";
 
-// Hàm helper để map phương thức thanh toán sang tiếng Việt
+// --- Imports cho Date Range Picker ---
+import { addDays, format, isValid, parse, isAfter } from "date-fns";
+import { DateRange } from "react-day-picker";
+import { vi } from "date-fns/locale";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Label } from "@/components/ui/label";
+
+// Helper map payment method
 const getPaymentMethodLabel = (method: string | null) => {
     switch (method) {
         case "bank_transfer": return "Chuyển khoản";
@@ -21,47 +33,108 @@ const getPaymentMethodLabel = (method: string | null) => {
 };
 
 export const SalesListPage = () => {
-    // --- Data Fetching ---
-    // Tạm thời chưa truyền params ngày tháng, bạn có thể state hóa nó sau
-    const { data: transactions, isLoading, isError } = useTransactions();
+    // --- State Date Range ---
+    const [date, setDate] = useState<DateRange | undefined>({
+        from: addDays(new Date(), -30),
+        to: new Date(),
+    });
+
+    // State cho input nhập tay (đồng bộ với date)
+    const [fromDateInput, setFromDateInput] = useState("");
+    const [toDateInput, setToDateInput] = useState("");
+
+    useEffect(() => {
+        // Chỉ cập nhật nếu giá trị thực sự khác biệt để tránh render loop
+        const newFromText = date?.from ? format(date.from, "dd/MM/yyyy") : "";
+        const newToText = date?.to ? format(date.to, "dd/MM/yyyy") : "";
+
+        if (fromDateInput !== newFromText) {
+            setFromDateInput(newFromText);
+        }
+
+        if (toDateInput !== newToText) {
+            setToDateInput(newToText);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [date]); // Chỉ chạy khi object `date` thay đổi
 
     const [selectedSale, setSelectedSale] = useState<Transaction | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
 
+    // --- API Params ---
+    const apiParams = useMemo(() => {
+        if (!date?.from) return undefined;
+        return {
+            from: date.from.toISOString(),
+            to: date.to ? date.to.toISOString() : date.from.toISOString(),
+        };
+    }, [date]);
+
+    const { data: transactions, isLoading } = useTransactions(apiParams);
+
     // --- Filter Logic ---
     const filteredSales = useMemo(() => {
         if (!transactions) return [];
-
         return transactions.filter((sale) => {
             const searchLower = searchTerm.toLowerCase();
-            // Tìm theo ID (lấy 8 ký tự đầu làm mã đơn) hoặc tên nhân viên
             const shortCode = sale.id.substring(0, 8).toUpperCase();
             const staffName = sale.cashier?.fullName?.toLowerCase() || "";
-
             return shortCode.includes(searchLower) || staffName.includes(searchLower);
         });
     }, [transactions, searchTerm]);
 
-    const handleRowClick = (sale: Transaction) => {
-        setSelectedSale(sale);
+    // --- Handlers ---
+    const handleRowClick = (sale: Transaction) => setSelectedSale(sale);
+    const handleCloseDetail = () => setSelectedSale(null);
+
+    const handleResetFilter = () => {
+        setDate(undefined);
+        setSearchTerm("");
+        setFromDateInput("");
+        setToDateInput("");
     };
 
-    const handleCloseDetail = () => {
-        setSelectedSale(null);
+    // Xử lý khi người dùng nhập tay ngày tháng
+    const handleDateInputChange = (type: 'from' | 'to', value: string) => {
+        if (type === 'from') setFromDateInput(value);
+        else setToDateInput(value);
+
+        // Chỉ parse khi đủ độ dài (dd/MM/yyyy = 10 chars)
+        if (value.length === 10) {
+            const parsedDate = parse(value, "dd/MM/yyyy", new Date());
+
+            if (isValid(parsedDate)) {
+                if (type === 'from') {
+                    // Logic: Nếu from > to hiện tại thì reset to
+                    if (date?.to && isAfter(parsedDate, date.to)) {
+                        setDate({ from: parsedDate, to: undefined });
+                        setToDateInput("");
+                    } else {
+                        // FIX TS: Luôn trả về object có đầy đủ from (dù lấy từ prev?.from)
+                        setDate((prev) => ({
+                            from: parsedDate,
+                            to: prev?.to
+                        }));
+                    }
+                } else {
+                    // Logic: Nếu to < from hiện tại thì bỏ qua (hoặc bạn có thể handle báo lỗi)
+                    if (date?.from && isAfter(date.from, parsedDate)) {
+                        // Invalid range logic here if needed
+                    } else {
+                        // FIX TS: Đảm bảo luôn có 'from'
+                        setDate((prev) => ({
+                            from: prev?.from,
+                            to: parsedDate
+                        }));
+                    }
+                }
+            }
+        }
     };
 
-    // Tính tổng số lượng sản phẩm trong đơn (vì API trả về mảng details)
     const calculateTotalItems = (sale: Transaction) => {
         return sale.details.reduce((acc, item) => acc + item.quantity, 0);
     };
-
-    if (isLoading) {
-        return (
-            <div className="flex h-full items-center justify-center bg-slate-50">
-                <Loader2 className="w-10 h-10 animate-spin text-teal-600" />
-            </div>
-        );
-    }
 
     return (
         <div className="flex flex-col h-[calc(100vh-100px)] gap-4 p-2 bg-slate-50 font-['Inter'] overflow-hidden">
@@ -73,14 +146,66 @@ export const SalesListPage = () => {
       `}</style>
 
             {/* Header & Filter Bar */}
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-1 flex-shrink-0">
+            <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-1 flex-shrink-0">
                 <div>
                     <h1 className="text-2xl font-bold text-cyan-950">Danh sách giao dịch</h1>
                     <p className="text-gray-500 text-sm">Quản lý lịch sử bán hàng</p>
                 </div>
 
-                <div className="flex items-center gap-3 w-full sm:w-auto">
-                    <div className="relative flex-1 sm:w-64 h-10">
+                {/* THANH CÔNG CỤ LỌC */}
+                <div className="flex flex-col sm:flex-row items-center gap-3 w-full xl:w-auto">
+
+                    {/* 1. Date Inputs & Picker (Nhập tay + Chọn lịch) */}
+                    <div className="flex items-center gap-2 bg-white border border-teal-600/30 rounded-md px-2 h-10 shadow-sm w-full sm:w-auto">
+                        <div className="flex items-center gap-1">
+                            <span className="text-xs text-gray-400 font-medium">Từ:</span>
+                            <Input
+                                value={fromDateInput}
+                                onChange={(e) => handleDateInputChange('from', e.target.value)}
+                                placeholder="dd/MM/yyyy"
+                                className="w-24 h-8 border-none shadow-none focus-visible:ring-0 p-0 text-sm text-center placeholder:text-gray-300"
+                                maxLength={10}
+                            />
+                        </div>
+                        <div className="w-[1px] h-4 bg-gray-200"></div>
+                        <div className="flex items-center gap-1">
+                            <span className="text-xs text-gray-400 font-medium">Đến:</span>
+                            <Input
+                                value={toDateInput}
+                                onChange={(e) => handleDateInputChange('to', e.target.value)}
+                                placeholder="dd/MM/yyyy"
+                                className="w-24 h-8 border-none shadow-none focus-visible:ring-0 p-0 text-sm text-center placeholder:text-gray-300"
+                                maxLength={10}
+                            />
+                        </div>
+
+                        {/* Nút mở lịch */}
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-teal-600 hover:text-teal-700 hover:bg-teal-50 ml-1"
+                                >
+                                    <CalendarIcon className="h-4 w-4" />
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="end">
+                                <Calendar
+                                    initialFocus
+                                    mode="range"
+                                    defaultMonth={date?.from}
+                                    selected={date}
+                                    onSelect={setDate}
+                                    numberOfMonths={2}
+                                    locale={vi}
+                                />
+                            </PopoverContent>
+                        </Popover>
+                    </div>
+
+                    {/* 2. Search Bar */}
+                    <div className="relative flex-1 w-full sm:w-64 h-10">
                         <div className="absolute left-0 top-0 bottom-0 w-10 flex items-center justify-center text-gray-400 pointer-events-none">
                             <Search className="w-4 h-4" />
                         </div>
@@ -91,11 +216,16 @@ export const SalesListPage = () => {
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
-                    <Button variant="outline" size="sm" className="border-teal-600 text-teal-700 hover:bg-teal-50 h-10">
-                        <Calendar className="w-4 h-4 mr-2" /> Ngày
-                    </Button>
-                    <Button variant="outline" size="sm" className="border-teal-600 text-teal-700 hover:bg-teal-50 h-10">
-                        <Filter className="w-4 h-4 mr-2" /> Lọc
+
+                    {/* 3. Reset Button */}
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="border-dashed border-gray-300 text-gray-500 hover:bg-gray-100 h-10 hidden sm:flex"
+                        onClick={handleResetFilter}
+                        title="Xóa bộ lọc"
+                    >
+                        <X className="w-4 h-4 mr-1" /> Xóa lọc
                     </Button>
                 </div>
             </div>
@@ -109,13 +239,8 @@ export const SalesListPage = () => {
                     <div className="w-full bg-teal-600 h-11 flex items-center px-4 text-white font-bold text-xs uppercase tracking-wide flex-shrink-0">
                         <div className="w-12 text-center">STT</div>
                         <div className="w-24 text-center">Mã đơn</div>
-
-                        {/* Cột Thời gian */}
                         <div className={cn("px-4 transition-all", selectedSale ? "flex-1" : "w-48")}>Thời gian</div>
-
-                        {/* Cột Nhân viên */}
                         <div className={cn("px-4", selectedSale ? "hidden" : "hidden sm:block flex-1")}>Nhân Viên</div>
-
                         <div className={cn("w-20 text-center", selectedSale ? "hidden" : "block")}>Số SP</div>
                         <div className="w-28 text-right pr-2">Tổng Giá</div>
                         <div className={cn("w-28 text-center", selectedSale ? "hidden" : "hidden md:block")}>Trạng Thái</div>
@@ -123,9 +248,19 @@ export const SalesListPage = () => {
                     </div>
 
                     {/* Table Body */}
-                    <div className="flex-1 overflow-y-auto custom-scrollbar">
-                        {filteredSales.map((sale, index) => {
-                            const shortCode = sale.id.substring(0, 8).toUpperCase(); // Giả lập mã ngắn từ UUID
+                    <div className="flex-1 overflow-y-auto custom-scrollbar relative">
+                        {/* Loading State */}
+                        {isLoading && (
+                            <div className="absolute inset-0 bg-white/80 z-10 flex items-center justify-center">
+                                <div className="flex flex-col items-center gap-2">
+                                    <Loader2 className="w-8 h-8 animate-spin text-teal-600" />
+                                    <span className="text-sm text-teal-700 font-medium">Đang tải dữ liệu...</span>
+                                </div>
+                            </div>
+                        )}
+
+                        {!isLoading && filteredSales.map((sale, index) => {
+                            const shortCode = sale.id.substring(0, 8).toUpperCase();
                             const totalItems = calculateTotalItems(sale);
 
                             return (
@@ -157,7 +292,6 @@ export const SalesListPage = () => {
                                         {totalItems}
                                     </div>
 
-                                    {/* Dùng finalAmount (số tiền thực trả) */}
                                     <div className="w-28 text-right pr-2 font-bold">{formatCurrency(sale.finalAmount)}</div>
 
                                     <div className={cn("w-28 text-center", selectedSale ? "hidden" : "hidden md:block")}>
@@ -178,10 +312,13 @@ export const SalesListPage = () => {
                             );
                         })}
 
-                        {filteredSales.length === 0 && (
+                        {!isLoading && filteredSales.length === 0 && (
                             <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-2">
                                 <FileText className="w-12 h-12 opacity-20" />
-                                <p>Không tìm thấy giao dịch nào</p>
+                                <p>Không tìm thấy giao dịch nào trong khoảng thời gian này</p>
+                                <Button variant="link" onClick={handleResetFilter} className="text-teal-600">
+                                    Xóa bộ lọc ngày
+                                </Button>
                             </div>
                         )}
                     </div>
@@ -209,7 +346,7 @@ export const SalesListPage = () => {
                                         )}
                                     </div>
                                     <p className="text-cyan-200 text-xs mt-1 flex items-center gap-1">
-                                        <Calendar className="w-3 h-3" /> {formatDateTime(selectedSale.createdAt)}
+                                        <CalendarIcon className="w-3 h-3" /> {formatDateTime(selectedSale.createdAt)}
                                     </p>
                                 </div>
                                 <button
@@ -257,7 +394,6 @@ export const SalesListPage = () => {
                                                     </span>
                                                     <span>x {formatCurrency(item.unitPrice)}</span>
                                                 </div>
-                                                {/* Nếu có ghi chú trong detail thì hiển thị */}
                                                 {item.note && <span className="italic text-gray-400 text-[10px]">{item.note}</span>}
                                             </div>
                                         </div>
@@ -276,7 +412,6 @@ export const SalesListPage = () => {
                                     </div>
                                     <div className="flex justify-between">
                                         <span className="text-gray-500">Tổng tiền hàng</span>
-                                        {/* API trả về totalAmount (chưa trừ discount) */}
                                         <span className="font-medium">{formatCurrency(selectedSale.totalAmount)}</span>
                                     </div>
                                     {selectedSale.discountAmount > 0 && (
@@ -293,8 +428,6 @@ export const SalesListPage = () => {
                                         <span className="text-xl font-extrabold text-teal-700">{formatCurrency(selectedSale.finalAmount)}</span>
                                     </div>
 
-                                    {/* API JSON không có trường customerGiven (tiền khách đưa) và tiền thừa.
-                                Tôi sẽ ẩn dòng này hoặc giả lập nếu cần. Tạm thời hiển thị Ghi chú chung nếu có */}
                                     {selectedSale.note && (
                                         <div className="pt-2 text-xs italic text-gray-500 border-t border-gray-200 mt-2">
                                             Ghi chú: {selectedSale.note}
