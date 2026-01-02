@@ -29,6 +29,7 @@ import { useCurrentUser, useUpdateCurrentUser } from "../hooks/useUsers";
 import { useNavigate } from "react-router-dom";
 
 const { Title, Text } = Typography;
+const softShadow = "0 2px 8px rgba(0, 0, 0, 0.08)";
 
 export const UserEditPage = () => {
   const [form] = Form.useForm();
@@ -69,6 +70,7 @@ export const UserEditPage = () => {
       icon: <ExclamationCircleOutlined />,
       okText: "Có",
       cancelText: "Không",
+      centered: true,
       onOk() {
         navigate("/users");
       },
@@ -81,6 +83,7 @@ export const UserEditPage = () => {
       icon: <ExclamationCircleOutlined />,
       okText: "Có",
       cancelText: "Không",
+      centered: true,
       onOk() {
         form.submit();
       },
@@ -155,6 +158,7 @@ export const UserEditPage = () => {
       okText: "Xóa",
       okType: "danger",
       cancelText: "Hủy",
+      centered: true,
       onOk() {
         message.success("Đã xóa tài khoản.");
       },
@@ -267,7 +271,7 @@ export const UserEditPage = () => {
               {/* --- CARD 1: AVATAR UPLOAD --- */}
               <Card
                 bordered={false}
-                style={{ borderRadius: "12px", boxShadow: token.boxShadow }}
+                style={{ borderRadius: "12px", boxShadow: softShadow }}
               >
                 <div
                   style={{
@@ -299,7 +303,7 @@ export const UserEditPage = () => {
                         }
                         style={{
                           border: `4px solid ${token.colorBgContainer}`,
-                          boxShadow: token.boxShadow,
+                          boxShadow: softShadow,
                         }}
                       />
                       <div
@@ -333,11 +337,6 @@ export const UserEditPage = () => {
                     <br />
                     Định dạng JPG, PNG tối đa 2MB.
                   </Text>
-                  <div style={{ width: "100%", marginTop: "16px" }}>
-                    <Form.Item label="Logo URL" name="logoUrl">
-                      <Input size="large" placeholder="https://..." />
-                    </Form.Item>
-                  </div>
                 </div>
               </Card>
 
@@ -349,7 +348,7 @@ export const UserEditPage = () => {
                   </span>
                 }
                 bordered={false}
-                style={{ borderRadius: "12px", boxShadow: token.boxShadow }}
+                style={{ borderRadius: "12px", boxShadow: softShadow }}
               >
                 <Form.Item
                   label="Vai trò"
@@ -399,7 +398,7 @@ export const UserEditPage = () => {
               {/* --- CARD 3: GENERAL INFO --- */}
               <Card
                 bordered={false}
-                style={{ borderRadius: "12px", boxShadow: token.boxShadow }}
+                style={{ borderRadius: "12px", boxShadow: softShadow }}
                 title={
                   <div
                     style={{
@@ -448,7 +447,7 @@ export const UserEditPage = () => {
               {/* --- CARD 4: SECURITY --- */}
               <Card
                 bordered={false}
-                style={{ borderRadius: "12px", boxShadow: token.boxShadow }}
+                style={{ borderRadius: "12px", boxShadow: softShadow }}
                 title={
                   <div
                     style={{
@@ -597,7 +596,7 @@ export const UserEditPage = () => {
                 bordered={false}
                 style={{
                   borderRadius: "12px",
-                  boxShadow: token.boxShadow,
+                  boxShadow: softShadow,
                   backgroundColor: token.colorErrorBg,
                   borderColor: token.colorErrorBorder,
                   border: `1px solid ${token.colorErrorBorder}`,

@@ -22,16 +22,15 @@ import { useCurrentUser } from "../hooks/useUsers";
 
 const { Title, Text } = Typography;
 
-export const UsersPage = () => {
+export const UsersPage: React.FC = () => {
   const navigate = useNavigate();
   const { data: apiResponse, isLoading, error } = useCurrentUser();
 
-  // Transform API data to match the component structure
   const userInfo = apiResponse?.data
     ? {
         name: apiResponse.data.fullName || "N/A",
         username: apiResponse.data.username || "N/A",
-        role: apiResponse.data.role || "User",
+        role: apiResponse.data.role || "USER",
         id: `#USER-${apiResponse.data.id?.slice(-4).toUpperCase() || "0000"}`,
         avatarUrl:
           apiResponse.data.avatarUrl || "https://joeschmoe.io/api/v1/random",
@@ -48,42 +47,30 @@ export const UsersPage = () => {
           ? new Date(apiResponse.data.updatedAt).toLocaleDateString("vi-VN")
           : "N/A",
       }
-    : {
-        name: "Loading...",
-        username: "Loading...",
-        role: "User",
-        id: "#USER-0000",
-        avatarUrl: "https://joeschmoe.io/api/v1/random",
-        phone: "N/A",
-        email: "N/A",
-        dob: "N/A",
-        address: "N/A",
-        createdDate: "N/A",
-        updatedDate: "N/A",
-      };
+    : null;
 
   const activities = [
     {
       color: "green",
-      title: "Cập nhật thông tin hồ sơ",
-      description: "Người dùng đã thay đổi địa chỉ nhà.",
+      title: "Cập nhật hồ sơ",
+      description: "Người dùng đã thay đổi địa chỉ.",
       time: "Vừa xong",
     },
     {
-      color: "gray",
+      color: "blue",
       title: "Đăng nhập thành công",
-      description: "Đăng nhập từ IP 192.168.1.1",
+      description: "IP: 192.168.1.1",
       time: "2 giờ trước",
     },
     {
       color: "orange",
       title: "Đổi mật khẩu",
-      description: "Yêu cầu đổi mật khẩu định kỳ.",
+      description: "Thay đổi mật khẩu định kỳ",
       time: "01/01/2026",
     },
     {
       color: "gray",
-      title: "Tạo đơn hàng mới",
+      title: "Tạo đơn hàng",
       description: "Mã đơn: #ORD-9921",
       time: "28/12/2025",
     },
@@ -92,70 +79,80 @@ export const UsersPage = () => {
   return (
     <div className="w-full p-6">
       {isLoading && (
-        <div className="flex justify-center items-center h-96">
+        <div className="flex justify-center items-center h-[400px]">
           <Spin size="large" />
         </div>
       )}
 
       {error && (
-        <div className="flex justify-center items-center h-96">
-          <Empty description="Failed to load user data" />
+        <div className="flex justify-center items-center h-[400px]">
+          <Empty description="Không thể tải thông tin người dùng" />
         </div>
       )}
 
-      {!isLoading && !error && (
-        <div className="w-full space-y-6">
-          {/* --- TOP HEADER CARD --- */}
+      {!isLoading && !error && userInfo && (
+        <div className="space-y-6">
+          {/* ================= HEADER ================= */}
           <Card
             bordered={false}
             bodyStyle={{ padding: 0 }}
-            className="rounded-2xl overflow-hidden shadow-sm relative"
+            className="rounded-2xl overflow-hidden shadow-md"
           >
-            <div className="h-[180px] bg-teal-600"></div>
-            <div className="px-8 pb-8 pt-4 flex justify-between items-end bg-white relative">
-              <div className="flex items-end">
+            <div className="h-[220px] bg-gradient-to-r from-teal-500 via-emerald-500 to-cyan-500" />
+
+            <div className="px-8 pb-8 pt-6 flex justify-between items-end bg-white relative">
+              <div className="flex items-end gap-6">
                 <Avatar
                   size={160}
                   src={userInfo.avatarUrl}
                   icon={<UserOutlined />}
-                  className="border-4 border-white absolute -top-[100px] shadow-md bg-gray-200"
+                  className="border-4 border-white -mt-[120px] shadow-lg"
                 />
-                <div className="ml-[180px] mb-2">
-                  <Title level={2} className="mb-1">
+
+                <div className="space-y-2">
+                  <Title level={2} className="!mb-0">
                     {userInfo.name}
                   </Title>
-                  <div className="flex items-center space-x-3 text-gray-500">
+
+                  {userInfo.username && userInfo.username !== "N/A" ? (
+                    <Text type="secondary">@{userInfo.username}</Text>
+                  ) : (
+                    userInfo.email &&
+                    userInfo.email !== "N/A" && (
+                      <Text type="secondary">{userInfo.email}</Text>
+                    )
+                  )}
+
+                  <div className="flex items-center gap-3">
                     <Tag color="cyan" className="rounded-full px-3">
                       {userInfo.role}
                     </Tag>
-                    <span>• ID: {userInfo.id}</span>
+                    <Text type="secondary">{userInfo.id}</Text>
                   </div>
                 </div>
               </div>
+
               <Button
                 type="primary"
                 icon={<EditOutlined />}
                 onClick={() => navigate("/users/edit")}
-                className="bg-teal-500 hover:bg-teal-400 border-none rounded-full px-6 h-10 font-medium"
+                className="bg-teal-600 hover:bg-teal-500 border-none rounded-full px-6 h-11 shadow"
               >
-                Chỉnh sửa
+                Chỉnh sửa hồ sơ
               </Button>
             </div>
           </Card>
 
-          {/* --- MAIN CONTENT (TWO COLUMNS) --- */}
+          {/* ================= MAIN ================= */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* --- LEFT COLUMN --- */}
-            <div className="space-y-6 lg:col-span-1">
-              {/* Personal Info Card */}
+            {/* LEFT */}
+            <div className="space-y-6">
               <Card
-                title={
-                  <span className="text-lg font-bold">Thông tin cá nhân</span>
-                }
+                title="Thông tin cá nhân"
                 bordered={false}
-                className="rounded-2xl shadow-sm"
+                className="rounded-2xl shadow-sm hover:shadow-md transition"
               >
-                <div className="space-y-5">
+                <div className="space-y-6">
                   <InfoItem
                     icon={<PhoneOutlined />}
                     label="Số điện thoại"
@@ -166,7 +163,6 @@ export const UsersPage = () => {
                     label="Email"
                     value={userInfo.email}
                   />
-                  {/* ADDED USERNAME SECTION HERE */}
                   <InfoItem
                     icon={<UserOutlined />}
                     label="Tên đăng nhập"
@@ -185,60 +181,50 @@ export const UsersPage = () => {
                 </div>
               </Card>
 
-              {/* System Info Card */}
               <Card
-                title={<span className="text-lg font-bold">Hệ thống</span>}
+                title="Hệ thống"
                 bordered={false}
-                // Added min-h-[250px] to stretch vertically
-                className="rounded-2xl shadow-sm min-h-[250px]"
+                className="rounded-2xl shadow-sm hover:shadow-md transition"
               >
-                <div className="space-y-4 text-gray-600">
+                <div className="space-y-3 text-sm">
                   <div className="flex justify-between">
-                    <span>Ngày tạo:</span>
-                    <span className="font-medium text-gray-800">
-                      {userInfo.createdDate}
-                    </span>
+                    <span className="text-gray-500">Ngày tạo</span>
+                    <span className="font-medium">{userInfo.createdDate}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Lần sửa cuối:</span>
-                    <span className="font-medium text-gray-800">
-                      {userInfo.updatedDate}
-                    </span>
+                    <span className="text-gray-500">Cập nhật lần cuối</span>
+                    <span className="font-medium">{userInfo.updatedDate}</span>
                   </div>
                 </div>
               </Card>
             </div>
 
-            {/* --- RIGHT COLUMN (ACTIVITY) --- */}
+            {/* RIGHT */}
             <Card
               title={
                 <div className="flex justify-between items-center">
-                  <span className="text-lg font-bold">
-                    Lịch sử hoạt động gần đây
+                  <span className="text-lg font-semibold">
+                    Hoạt động gần đây
                   </span>
-                  <a href="#" className="text-teal-600 hover:underline text-sm">
+                  <Button type="link" className="text-teal-600 px-0">
                     Xem tất cả
-                  </a>
+                  </Button>
                 </div>
               }
               bordered={false}
-              // Added min-h-[600px] to stretch vertically significantly
               className="rounded-2xl shadow-sm lg:col-span-2 min-h-[600px]"
             >
-              <Timeline className="mt-4">
+              <Timeline className="mt-6">
                 {activities.map((item, index) => (
                   <Timeline.Item key={index} color={item.color}>
-                    <div className="flex justify-between items-start">
-                      <div className="space-y-1">
-                        <Text strong className="text-base">
-                          {item.title}
-                        </Text>
-                        <div className="text-gray-500">{item.description}</div>
+                    <div className="flex justify-between gap-6">
+                      <div>
+                        <Text strong>{item.title}</Text>
+                        <div className="text-gray-500 text-sm mt-1">
+                          {item.description}
+                        </div>
                       </div>
-                      <Text
-                        type="secondary"
-                        className="text-sm whitespace-nowrap ml-4"
-                      >
+                      <Text type="secondary" className="text-xs">
                         {item.time}
                       </Text>
                     </div>
@@ -253,21 +239,21 @@ export const UsersPage = () => {
   );
 };
 
-// Helper component for personal info items
-const InfoItem = ({
-  icon,
-  label,
-  value,
-}: {
+/* ================= SUB COMPONENT ================= */
+interface InfoItemProps {
   icon: React.ReactNode;
   label: string;
   value: string;
-}) => (
-  <div className="flex items-start space-x-4">
-    <div className="p-3 bg-gray-100 rounded-xl text-gray-500">{icon}</div>
+}
+
+const InfoItem: React.FC<InfoItemProps> = ({ icon, label, value }) => (
+  <div className="flex items-start gap-4">
+    <div className="p-3 rounded-xl bg-teal-50 text-teal-600">{icon}</div>
     <div>
-      <div className="text-gray-500 text-sm">{label}</div>
-      <div className="font-medium text-gray-800 text-base">{value}</div>
+      <div className="text-xs uppercase tracking-wide text-gray-400">
+        {label}
+      </div>
+      <div className="font-medium text-gray-800">{value}</div>
     </div>
   </div>
 );
