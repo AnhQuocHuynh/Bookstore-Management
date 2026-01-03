@@ -16,7 +16,11 @@ export default function UserMenu() {
       <DropdownMenuTrigger asChild>
         <Avatar className="cursor-pointer">
           {user?.avatarUrl ? (
-            <AvatarImage src={user.avatarUrl} alt={user.fullName || "User"} />
+            <AvatarImage
+              src={user.avatarUrl}
+              alt={user.fullName || "User"}
+              className="object-cover"
+            />
           ) : (
             <AvatarFallback>
               {user?.fullName ? user.fullName[0].toUpperCase() : "U"}

@@ -37,8 +37,8 @@ export class UpdateProfileDto {
   @IsNotEmpty({ message: 'Address không được để trống' })
   readonly address?: string;
 
-  @ApiPropertyOptional({ description: 'URL logo', format: 'url' })
+  @ApiPropertyOptional({ description: 'URL avatar', format: 'url' })
   @IsOptional()
-  @IsUrl({}, { message: 'LogoUrl phải là một URL hợp lệ' })
-  readonly logoUrl?: string;
+  @IsUrl({}, { message: 'AvatarUrl phải là một URL hợp lệ' })
+  readonly avatarUrl?: string;
 }

@@ -48,3 +48,11 @@ export const maskEmail = (email?: string) => {
 
   return `${name[0]}***${name[name.length - 1]}@${domain}`;
 };
+
+export const toBase64 = (file: File) =>
+  new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = (error) => reject(error);
+  });

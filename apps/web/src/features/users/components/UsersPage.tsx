@@ -1,24 +1,26 @@
-import React from "react";
+import { activities } from "@/features/users/data/activities";
 import {
-  Card,
-  Avatar,
-  Tag,
-  Button,
-  Timeline,
-  Typography,
-  Spin,
-  Empty,
-} from "antd";
-import {
-  EditOutlined,
-  PhoneOutlined,
-  MailOutlined,
   CalendarOutlined,
+  EditOutlined,
   EnvironmentOutlined,
+  MailOutlined,
+  PhoneOutlined,
   UserOutlined,
 } from "@ant-design/icons";
+import {
+  Avatar,
+  Button,
+  Card,
+  Empty,
+  Spin,
+  Tag,
+  Timeline,
+  Typography,
+} from "antd";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useCurrentUser } from "../hooks/useUsers";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const { Title, Text } = Typography;
 
@@ -49,33 +51,6 @@ export const UsersPage: React.FC = () => {
       }
     : null;
 
-  const activities = [
-    {
-      color: "green",
-      title: "Cập nhật hồ sơ",
-      description: "Người dùng đã thay đổi địa chỉ.",
-      time: "Vừa xong",
-    },
-    {
-      color: "blue",
-      title: "Đăng nhập thành công",
-      description: "IP: 192.168.1.1",
-      time: "2 giờ trước",
-    },
-    {
-      color: "orange",
-      title: "Đổi mật khẩu",
-      description: "Thay đổi mật khẩu định kỳ",
-      time: "01/01/2026",
-    },
-    {
-      color: "gray",
-      title: "Tạo đơn hàng",
-      description: "Mã đơn: #ORD-9921",
-      time: "28/12/2025",
-    },
-  ];
-
   return (
     <div className="w-full p-6">
       {isLoading && (
@@ -98,7 +73,7 @@ export const UsersPage: React.FC = () => {
             bodyStyle={{ padding: 0 }}
             className="rounded-2xl overflow-hidden shadow-md"
           >
-            <div className="h-[220px] bg-gradient-to-r from-teal-500 via-emerald-500 to-cyan-500" />
+            <div className="h-[220px] bg-linear-to-r from-teal-500 via-emerald-500 to-cyan-500" />
 
             <div className="px-8 pb-8 pt-6 flex justify-between items-end bg-white relative">
               <div className="flex items-end gap-6">
@@ -106,11 +81,11 @@ export const UsersPage: React.FC = () => {
                   size={160}
                   src={userInfo.avatarUrl}
                   icon={<UserOutlined />}
-                  className="border-4 border-white -mt-[120px] shadow-lg"
+                  className="border-4 border-white -mt-[120px] shadow-lg object-cover"
                 />
 
                 <div className="space-y-2">
-                  <Title level={2} className="!mb-0">
+                  <Title level={2} className="mb-0!">
                     {userInfo.name}
                   </Title>
 
@@ -127,7 +102,6 @@ export const UsersPage: React.FC = () => {
                     <Tag color="cyan" className="rounded-full px-3">
                       {userInfo.role}
                     </Tag>
-                    <Text type="secondary">{userInfo.id}</Text>
                   </div>
                 </div>
               </div>
@@ -214,23 +188,25 @@ export const UsersPage: React.FC = () => {
               bordered={false}
               className="rounded-2xl shadow-sm lg:col-span-2 min-h-[600px]"
             >
-              <Timeline className="mt-6">
-                {activities.map((item, index) => (
-                  <Timeline.Item key={index} color={item.color}>
-                    <div className="flex justify-between gap-6">
-                      <div>
-                        <Text strong>{item.title}</Text>
-                        <div className="text-gray-500 text-sm mt-1">
-                          {item.description}
+              <ScrollArea className="h-[600px] pr-4">
+                <Timeline className="mt-6">
+                  {activities.map((item, index) => (
+                    <Timeline.Item key={index} color={item.color}>
+                      <div className="flex justify-between gap-6">
+                        <div>
+                          <Text strong>{item.title}</Text>
+                          <div className="text-gray-500 text-sm mt-1">
+                            {item.description}
+                          </div>
                         </div>
+                        <Text type="secondary" className="text-xs">
+                          {item.time}
+                        </Text>
                       </div>
-                      <Text type="secondary" className="text-xs">
-                        {item.time}
-                      </Text>
-                    </div>
-                  </Timeline.Item>
-                ))}
-              </Timeline>
+                    </Timeline.Item>
+                  ))}
+                </Timeline>
+              </ScrollArea>
             </Card>
           </div>
         </div>
