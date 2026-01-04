@@ -28,12 +28,12 @@ const menuItems = [
     ],
   },
   {
-    path: "/dashboard/sales",
+    path: "/sales",
     label: "Giao dịch",
     icon: "receipt_long",
     children: [
-      { path: "/dashboard/sales/create", label: "Tạo giao dịch" },
-      { path: "/dashboard/sales/list", label: "Danh sách giao dịch" },
+      { path: "/sales/create", label: "Tạo giao dịch" },
+      { path: "/sales/list", label: "Danh sách giao dịch" },
     ],
   },
   { path: "/dashboard/customers", label: "Khách hàng", icon: "groups" },
@@ -96,10 +96,9 @@ const Sidebar = ({ onItemClick }: SidebarProps) => {
                 <button
                   onClick={() => toggleMenu(item.path)}
                   className={`flex w-full items-center gap-3 rounded-xl px-4 py-2.5 transition-all
-                    ${
-                      isActive(item.path)
-                        ? "bg-[#1A998F]"
-                        : "hover:bg-[#187F87]"
+                    ${isActive(item.path)
+                      ? "bg-[#1A998F]"
+                      : "hover:bg-[#187F87]"
                     }`}
                 >
                   <span className="material-symbols-outlined">{item.icon}</span>
@@ -115,10 +114,9 @@ const Sidebar = ({ onItemClick }: SidebarProps) => {
                   to={item.path}
                   onClick={onItemClick}
                   className={`flex items-center gap-3 rounded-xl px-4 py-2.5 transition-all
-                    ${
-                      isActive(item.path)
-                        ? "bg-[#1A998F]"
-                        : "hover:bg-[#187F87]"
+                    ${isActive(item.path)
+                      ? "bg-[#1A998F]"
+                      : "hover:bg-[#187F87]"
                     }`}
                 >
                   <span className="material-symbols-outlined">{item.icon}</span>
@@ -128,9 +126,8 @@ const Sidebar = ({ onItemClick }: SidebarProps) => {
 
               {item.children && (
                 <div
-                  className={`overflow-hidden transition-all duration-300 ${
-                    openMenus.includes(item.path) ? "max-h-60 mt-1" : "max-h-0"
-                  }`}
+                  className={`overflow-hidden transition-all duration-300 ${openMenus.includes(item.path) ? "max-h-60 mt-1" : "max-h-0"
+                    }`}
                 >
                   {item.children.map((child) => (
                     <Link

@@ -24,7 +24,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { EntityManager, FindOptionsRelations, Repository } from 'typeorm';
+import { EntityManager, FindOptionsRelations, Repository, Brackets } from 'typeorm';
 
 @Injectable()
 export class ProductsService {
@@ -34,7 +34,7 @@ export class ProductsService {
     private readonly supplierService: SupplierService,
     private readonly categoriesService: CategoriesService,
     private readonly inventoriesService: InventoriesService,
-  ) {}
+  ) { }
 
   async findProductByField(
     field: keyof Product,
@@ -198,7 +198,23 @@ export class ProductsService {
       isActive,
       sortBy,
       sortOrder,
+      keyword,
     } = getProductsQueryDto;
+
+    if (keyword?.trim()) {
+      const searchTerm = `%${keyword.trim()}%`;
+      qb.andWhere(
+        new Brackets((qb) => {
+          qb.where('product.name ILIKE :keyword', { keyword: searchTerm })
+            .orWhere('product.sku ILIKE :keyword', { keyword: searchTerm })
+            // Nếu sản phẩm là Sách, tìm luôn trong tên tác giả hoặc ISBN
+            .orWhere('book.isbn ILIKE :keyword', { keyword: searchTerm });
+
+          // Bạn có thể mở rộng thêm tìm kiếm theo danh mục nếu muốn:
+          // .orWhere('categories.name ILIKE :keyword', { keyword: searchTerm });
+        }),
+      );
+    }
 
     const exactFilters: Record<string, any> = {
       sku,

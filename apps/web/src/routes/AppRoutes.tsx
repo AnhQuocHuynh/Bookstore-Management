@@ -8,6 +8,8 @@ import { ProductsPage } from "../features/products/components/ProductsPage";
 import { SuppliersPage } from "../features/suppliers/components/SuppliersPage";
 import { UsersPage } from "../features/users/components/UsersPage";
 import { UserEditPage } from "../features/users/components/UserEditPage";
+import { CreateSalesPage } from "../features/sales/components/pages/CreateSalesPage";
+import { SalesListPage } from "../features/sales/components/pages/SalesListPage";
 
 import SelectStorePage from "@/features/auth/pages/SelectStorePage";
 import VerifyEmailPage from "@/features/auth/pages/VerifyEmailPage";
@@ -100,10 +102,18 @@ export const AppRoutes = () => {
           }
         />
         <Route
-          path="/sales"
+          path="/sales/create" // Đổi path nếu cần hoặc giữ /sales/create
           element={
             <MainLayout>
-              <SalesPage />
+              <CreateSalesPage />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/sales/list"
+          element={
+            <MainLayout>
+              <SalesListPage />
             </MainLayout>
           }
         />

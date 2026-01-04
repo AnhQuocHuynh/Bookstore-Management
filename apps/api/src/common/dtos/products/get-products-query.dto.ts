@@ -2,7 +2,7 @@ import { IsNonEmptyString } from '@/common/decorators';
 import { ProductType } from '@/common/enums';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsBoolean, IsEnum, IsIn, IsOptional } from 'class-validator';
+import { IsBoolean, IsEnum, IsIn, IsOptional, IsString } from 'class-validator';
 
 export class GetProductsQueryDto {
   @ApiPropertyOptional({
@@ -95,4 +95,12 @@ export class GetProductsQueryDto {
     message: 'sortOrder chỉ nhận giá trị asc hoặc desc',
   })
   readonly sortOrder?: 'asc' | 'desc';
+
+  @ApiPropertyOptional({
+    description: 'Từ khóa tìm kiếm chung (Tên, SKU, Tên sách...)',
+    example: 'Harry Potter',
+  })
+  @IsOptional()
+  @IsString()
+  readonly keyword?: string;
 }
