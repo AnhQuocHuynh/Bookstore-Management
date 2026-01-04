@@ -1,4 +1,9 @@
-import { assignDefined } from '@/common/utils';
+import {
+  assignDefined,
+  getEmployeeRoleLabel,
+  handleGenerateUserNotificationContent,
+  TUserSession,
+} from '@/common/utils';
 import {
   GetEmployeeQueryDto,
   GetEmployeesQueryDto,
@@ -15,10 +20,15 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { FindOptionsWhere } from 'typeorm';
+import { NotificationsService } from '@/modules/notifications/notifications.service';
+import { NotificationType, ReceiverType } from '@/common/enums';
 
 @Injectable()
 export class EmployeeService {
-  constructor(private readonly tenantService: TenantService) {}
+  constructor(
+    private readonly tenantService: TenantService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   async getEmployees(bookStoreId: string, query: GetEmployeesQueryDto) {
     const dataSource = await this.tenantService.getTenantConnection({
@@ -186,8 +196,9 @@ export class EmployeeService {
   async updateEmployeeRole(
     id: string,
     updateEmployeeRoleDto: UpdateEmployeeRoleDto,
-    bookStoreId: string,
+    userSession: TUserSession,
   ) {
+    const { bookStoreId, userId } = userSession;
     const dataSource = await this.tenantService.getTenantConnection({
       bookStoreId,
     });
@@ -209,7 +220,42 @@ export class EmployeeService {
     employee.role = role;
     await employeeRepo.save(employee);
 
-    return this.getEmployee(bookStoreId, {
+    await this.notificationsService.createNotification(
+      {
+        receiverId: employee.id,
+        receiverType: ReceiverType.EMPLOYEE,
+        content: handleGenerateUserNotificationContent(
+          NotificationType.ROLE_CHANGED,
+          {
+            isOwner: false,
+            role: getEmployeeRoleLabel(role),
+            time: new Date(),
+          },
+        ),
+        notificationType: NotificationType.ROLE_CHANGED,
+      },
+      bookStoreId,
+    );
+
+    await this.notificationsService.createNotification(
+      {
+        receiverId: userId,
+        receiverType: ReceiverType.OWNER,
+        content: handleGenerateUserNotificationContent(
+          NotificationType.ROLE_CHANGED,
+          {
+            isOwner: true,
+            role: getEmployeeRoleLabel(role),
+            time: new Date(),
+            employeeName: employee.fullName,
+          },
+        ),
+        notificationType: NotificationType.ROLE_CHANGED,
+      },
+      bookStoreId,
+    );
+
+    return this.getEmployee(bookStoreId ?? '', {
       id,
     });
   }

@@ -4,20 +4,22 @@ import { TenantDatabaseModule } from '@/database/tenant/tenant-database.module';
 import { AdminModule } from '@/modules/admin/admin.module';
 import { AuthModule } from '@/modules/auth/auth.module';
 import { BookStoreModule } from '@/modules/bookstore/bookstore.module';
+import { CustomersModule } from '@/modules/customers/customers.module';
 import { DisplayModule } from '@/modules/display/display.module';
 import { EmailModule } from '@/modules/email/email.module';
 import { EmployeeModule } from '@/modules/employee/employee.module';
 import { FilesModule } from '@/modules/files/files.module';
 import { InventoriesModule } from '@/modules/inventories/inventories.module';
+import { NotificationsModule } from '@/modules/notifications/notifications.module';
 import { ProductsModule } from '@/modules/products/products.module';
 import { PurchaseOrdersModule } from '@/modules/purchase-orders/purchase-orders.module';
 import { ReportsModule } from '@/modules/reports/reports.module';
+import { ReturnOrdersModule } from '@/modules/return-orders/return-orders.module';
 import { ScheduleModule } from '@/modules/schedule/schedule.module';
 import { ShiftModule } from '@/modules/shifts/shifts.module';
 import { SupplierModule } from '@/modules/suppliers/supplier.module';
 import { TransactionsModule } from '@/modules/transactions/transactions.module';
 import { UserModule } from '@/modules/users/user.module';
-import { ReturnOrdersModule } from '@/modules/return-orders/return-orders.module';
 import { TenantModule } from '@/tenants/tenant.module';
 import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
@@ -25,7 +27,6 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { PublishersModule } from './modules/publishers/publishers.module';
-import { CustomersModule } from '@/modules/customers/customers.module';
 
 @Module({
   imports: [
@@ -76,6 +77,7 @@ import { CustomersModule } from '@/modules/customers/customers.module';
     TransactionsModule,
     ReportsModule,
     CustomersModule,
+    NotificationsModule,
   ],
 })
 export class AppModule {}

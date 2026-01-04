@@ -1,12 +1,15 @@
 import {
   AuthorizationCodeTypeEnum,
   EmailTemplateNameEnum,
+  NotificationType,
   OtpTypeEnum,
+  ReceiverType,
 } from '@/common/enums';
 import {
   decryptPayload,
   encryptPayload,
   generateOtp,
+  handleGenerateUserNotificationContent,
   setCookie,
   verifyPassword,
 } from '@/common/utils/helpers';
@@ -31,6 +34,7 @@ import {
   VerifyOtpDto,
 } from '@/modules/auth/dto';
 import { EmailService } from '@/modules/email/email.service';
+import { NotificationsService } from '@/modules/notifications/notifications.service';
 import { UserRole } from '@/modules/users/enums';
 import { TenantService } from '@/tenants/tenant.service';
 import {
@@ -63,6 +67,7 @@ export class AuthService {
     private readonly mainRefreshTokenService: MainRefreshTokenService,
     private readonly mainEmployeeMappingService: MainEmployeeMappingService,
     @InjectDataSource() private readonly dataSource: DataSource,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async signIn(signInDto: SignInDto, response: Response) {
@@ -417,6 +422,22 @@ export class AuthService {
       }
 
       if (type === OtpTypeEnum.SIGN_UP && bookStore) {
+        await this.notificationsService.createNotification(
+          {
+            receiverId: user.id,
+            receiverType: ReceiverType.OWNER,
+            content: handleGenerateUserNotificationContent(
+              NotificationType.ACCOUNT_CREATED,
+              {
+                time: new Date(),
+                fullName: user.fullName,
+              },
+            ),
+            notificationType: NotificationType.ACCOUNT_CREATED,
+          },
+          bookStoreId,
+        );
+
         await this.emailService.handleSendEmail(
           user.email,
           EmailTemplateNameEnum.EMAIL_STORE_REGISTRATION,
