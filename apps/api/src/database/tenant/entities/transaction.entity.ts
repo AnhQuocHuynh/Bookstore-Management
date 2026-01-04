@@ -84,6 +84,24 @@ export class Transaction {
   note?: string;
 
   @Column({
+    type: 'decimal',
+    precision: 12,
+    scale: 2,
+    default: 0,
+    transformer: DecimalTransformer,
+  })
+  paidAmount: number;
+
+  @Column({
+    type: 'decimal',
+    precision: 12,
+    scale: 2,
+    default: 0,
+    transformer: DecimalTransformer,
+  })
+  changeAmount: number;
+
+  @Column({
     type: 'boolean',
     default: false,
   })

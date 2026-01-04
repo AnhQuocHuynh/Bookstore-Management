@@ -4,7 +4,9 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   ArrayNotEmpty,
   IsArray,
+  IsNumber,
   IsOptional,
+  IsPositive,
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -29,7 +31,7 @@ export class CreateTransactionDto {
     message: 'Thông tin tạo đơn mua hàng chi tiết phải là mảng không rỗng',
   })
   @ValidateNested({ each: true })
-  @Type(() => CreateTransactionDetailDto) // 🔥 BẮT BUỘC
+  @Type(() => CreateTransactionDetailDto)
   readonly createTransactionDetailDtos: CreateTransactionDetailDto[];
 
   @ApiPropertyOptional({
@@ -41,4 +43,34 @@ export class CreateTransactionDto {
     message: 'Nội dung ghi chú không hợp lệ.',
   })
   readonly note?: string;
+
+  @ApiPropertyOptional({
+    description: 'Số tiền khách trả',
+    example: 100000,
+  })
+  @IsNumber(
+    {},
+    {
+      message: 'Số tiền khách trả phải là dạng số',
+    },
+  )
+  @IsPositive({
+    message: 'Số tiền khách trả phải là số dương',
+  })
+  readonly paidAmount?: number;
+
+  @ApiPropertyOptional({
+    description: 'Số tiền trả cho khách',
+    example: 50000,
+  })
+  @IsNumber(
+    {},
+    {
+      message: 'Số tiền trả cho khách phải là dạng số',
+    },
+  )
+  @IsPositive({
+    message: 'Số tiền trả cho khách phải là số dương',
+  })
+  readonly changeAmount?: number;
 }

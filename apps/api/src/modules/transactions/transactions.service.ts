@@ -27,7 +27,7 @@ import { Repository } from 'typeorm';
 
 @Injectable()
 export class TransactionsService {
-  constructor(private readonly tenantService: TenantService) { }
+  constructor(private readonly tenantService: TenantService) {}
 
   async createTransaction(
     createTransactionDto: CreateTransactionDto,
@@ -43,7 +43,8 @@ export class TransactionsService {
       const transactionDetailRepo = manager.getRepository(TransactionDetail);
       const productRepo = manager.getRepository(Product);
       const employeeRepo = manager.getRepository(Employee);
-      const { createTransactionDetailDtos, note } = createTransactionDto;
+      const { createTransactionDetailDtos, note, paidAmount, changeAmount } =
+        createTransactionDto;
 
       const employee = await employeeRepo.findOne({
         where: {
@@ -63,6 +64,8 @@ export class TransactionsService {
         taxAmount: 0,
         finalAmount: 0,
         details: [],
+        paidAmount: paidAmount ?? 0,
+        changeAmount: changeAmount ?? 0,
       });
 
       await transactionRepo.save(newTransaction);
@@ -542,7 +545,6 @@ export class TransactionsService {
         productName: detail.product?.name, // <--- Lấy tên sản phẩm ra ngoài
         // product: detail.product // Bỏ comment dòng này nếu bạn muốn giữ cả cục object product
       })),
-
     }));
   }
 
