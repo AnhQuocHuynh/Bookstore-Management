@@ -15,9 +15,10 @@ export const SorterButton: React.FC<SorterButtonProps> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const sortOptions = [
-    { value: "supplierId", label: "Mã NCC" },
-    { value: "name", label: "Tên Nhà Cung Cấp" },
-    { value: "contactPerson", label: "Người Liên Lạc" },
+    { value: "sku", label: "Mã hàng" },
+    { value: "name", label: "Tên hàng" },
+    { value: "stock", label: "Tồn kho" },
+    { value: "sellingPrice", label: "Giá Bán" },
   ];
 
   const handleToggle = () => {
@@ -40,7 +41,6 @@ export const SorterButton: React.FC<SorterButtonProps> = ({
     onSortChange(currentSort, currentSortOrder === 'asc' ? 'desc' : 'asc');
   };
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -62,7 +62,7 @@ export const SorterButton: React.FC<SorterButtonProps> = ({
 
   const currentLabel =
     sortOptions.find((opt) => opt.value === currentSort)?.label ||
-    "Tên Nhà Cung Cấp";
+    "Tên hàng";
 
   return (
     <div ref={dropdownRef} className="h-[58px] w-[360px] relative flex items-center gap-2">
@@ -116,7 +116,6 @@ export const SorterButton: React.FC<SorterButtonProps> = ({
         )}
       </button>
 
-      {/* Dropdown Menu */}
       {isOpen && (
         <div
           className="absolute top-[calc(37px_+_2px)] left-0 w-[280px] bg-white rounded-[10px] border-2 border-solid border-[#1a998f] shadow-lg z-50"

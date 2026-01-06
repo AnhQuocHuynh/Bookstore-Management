@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Modal, Form, Input, Select, Button, message } from "antd";
 
 export interface SupplierFormData {
@@ -41,22 +41,54 @@ export const SupplierAddPanel: React.FC<SupplierAddPanelProps> = ({
   onSubmit,
 }) => {
   const [form] = Form.useForm();
+  const [isDirty, setIsDirty] = useState(false);
+
+  // Reset form when panel opens
+  useEffect(() => {
+    if (isOpen) {
+      form.resetFields();
+      setIsDirty(false);
+    }
+  }, [isOpen, form]);
 
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
       onSubmit(values);
       form.resetFields();
+      setIsDirty(false);
       message.success("Nhà cung cấp đã được thêm thành công");
     } catch {
       message.error("Vui lòng kiểm tra lại thông tin");
     }
   };
 
+  const handleClose = () => {
+    if (isDirty) {
+      Modal.confirm({
+        title: "Bạn có chắc muốn hủy những thay đổi?",
+        okText: "Có",
+        cancelText: "Không",
+        onOk: () => {
+          form.resetFields();
+          setIsDirty(false);
+          onClose();
+        },
+      });
+    } else {
+      form.resetFields();
+      onClose();
+    }
+  };
+
+  const handleFormChange = () => {
+    setIsDirty(true);
+  };
+
   return (
     <Modal
       open={isOpen}
-      onCancel={onClose}
+      onCancel={handleClose}
       width={1100}
       centered
       footer={null}
@@ -113,6 +145,7 @@ export const SupplierAddPanel: React.FC<SupplierAddPanelProps> = ({
         labelCol={{ flex: "0 0 220px" }}
         wrapperCol={{ flex: "1" }}
         requiredMark={false}
+        onValuesChange={handleFormChange}
       >
         <Form.Item
           name="name"
