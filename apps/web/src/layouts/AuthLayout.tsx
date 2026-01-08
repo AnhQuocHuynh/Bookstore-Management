@@ -1,3 +1,4 @@
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { ReactNode } from "react";
 import { Autoplay, EffectFade, Pagination } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
@@ -31,15 +32,17 @@ const slides = [
 
 export const AuthLayout = ({ children }: AuthLayoutProps) => {
   return (
-    <div className="h-screen overflow-hidden bg-[#E8F5F5]">
+    <div className="h-screen overflow-hidden">
       <div className="flex flex-col md:flex-row h-full">
         {/* Left Side - Form */}
-        <div className="w-full md:w-2/5 flex items-center justify-center bg-white p-6 md:p-12">
-          <div className="w-full max-w-md">{children}</div>
-        </div>
+        <ScrollArea className="h-dvh w-full md:w-2/5">
+          <div className="flex items-center justify-center">
+            <div className="w-full max-w-md">{children}</div>
+          </div>
+        </ScrollArea>
 
         {/* Right Side - Carousel */}
-        <div className="w-full md:w-3/5 relative h-64 md:h-full overflow-hidden">
+        <div className="w-full md:w-3/5 relative h-64 md:h-full overflow-hidden md:block hidden">
           <Swiper
             modules={[Autoplay, EffectFade, Pagination]}
             autoplay={{

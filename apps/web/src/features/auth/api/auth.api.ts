@@ -141,17 +141,31 @@
 // };
 
 // src/features/auth/api/auth.api.ts
+import { BookStore } from "@/features/auth/types/bookstore.types";
 import { apiClient } from "@/lib/axios";
-import { SignInDto, SignInResponse, BookStore } from "../types";
+import { OtpTypeEnum, SignInResponse } from "../types";
+import { RegisterDto } from "@/features/auth/types/register";
+import { omit } from "lodash";
 
 export const authApi = {
-  systemLoginOwner: async (body: { email: string; password: string }): Promise<SignInResponse> => {
-    const response = await apiClient.post<SignInResponse>("/auth/sign-in", body);
+  systemLoginOwner: async (body: {
+    email: string;
+    password: string;
+  }): Promise<SignInResponse> => {
+    const response = await apiClient.post<SignInResponse>(
+      "/auth/sign-in",
+      body,
+    );
     return response.data;
   },
 
-  systemLoginEmployee: async (body: { username: string }): Promise<SignInResponse> => {
-    const response = await apiClient.post<SignInResponse>("/auth/sign-in/employee", body);
+  systemLoginEmployee: async (body: {
+    username: string;
+  }): Promise<SignInResponse> => {
+    const response = await apiClient.post<SignInResponse>(
+      "/auth/sign-in/employee",
+      body,
+    );
     return response.data;
   },
   // Get Bookstores (with token as query)
@@ -165,11 +179,76 @@ export const authApi = {
   // Bookstore Login (with token as query)
   bookstoreLogin: async (
     token: string,
-    body: { email?: string; username?: string; password: string; bookStoreId: string }
+    body: {
+      email?: string;
+      username?: string;
+      password: string;
+      bookStoreId: string;
+    },
   ): Promise<SignInResponse & { storeCode: string; bookStoreId: string }> => {
     const response = await apiClient.post("/auth/sign-in/bookstore", body, {
       params: { token },
     });
+    return response.data;
+  },
+
+  verifyOtp: async (body: {
+    email: string;
+    otp: string;
+    type: OtpTypeEnum;
+  }) => {
+    const response = await apiClient.post("/auth/verify-otp", body);
+    return response.data;
+  },
+
+  register: async (body: RegisterDto) => {
+    const response = await apiClient.post("/auth/sign-up", body);
+    return response.data;
+  },
+
+  resendOtp: async (body: { email: string; type: OtpTypeEnum }) => {
+    const response = await apiClient.post("/auth/resend-otp", body);
+    return response.data;
+  },
+
+  forgetPassword: async (body: { email: string }) => {
+    const response = await apiClient.post("/auth/forget-password", body);
+    return response.data;
+  },
+
+  resetPassword: async (body: {
+    authCode: string;
+    email: string;
+    newPassword: string;
+  }) => {
+    const response = await apiClient.post("/auth/reset-password", body);
+    return response.data;
+  },
+
+  changeFirstLoginPassword: async (body: {
+    token: string;
+    currentPassword: string;
+    newPassword: string;
+  }) => {
+    const response = await apiClient.patch("/users/me/password", body);
+    return response.data;
+  },
+
+  loginBookStoreEmployee: async (body: {
+    username: string;
+    password: string;
+    bookStoreId: string;
+    token: string;
+  }) => {
+    const response = await apiClient.post(
+      "/auth/sign-in/bookstore",
+      omit(body, ["token"]),
+      {
+        params: {
+          token: body.token,
+        },
+      },
+    );
     return response.data;
   },
 };

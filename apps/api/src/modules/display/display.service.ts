@@ -826,7 +826,8 @@ export class DisplayService {
       },
     });
 
-    if (!employee) throw new NotFoundException(`Your profile not found.`);
+    if (!employee)
+      throw new NotFoundException(`Không tìm thấy thông tin của bạn.`);
 
     const displayProduct = await displayProductRepo.findOne({
       where: {

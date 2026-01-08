@@ -2,14 +2,19 @@ import LoginPage from "@/features/auth/pages/LoginPage";
 import RegisterPage from "@/features/auth/pages/RegisterPage";
 import { Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { ForgotPasswordPage } from "../features/auth/pages/ForgotPasswordPage";
-import { DashboardPage } from "../features/dashboard/components/DashboardPage";
+import { DashboardPage } from "../features/dashboard/pages/DashboardPage";
 import { EmployeesPage } from "../features/employees/components/EmployeesPage";
 import { ProductsPage } from "../features/products/components/ProductsPage";
 import { SuppliersPage } from "../features/suppliers/components/SuppliersPage";
+import { UsersPage } from "../features/users/components/UsersPage";
+import { UserEditPage } from "../features/users/components/UserEditPage";
+import { CreateSalesPage } from "../features/sales/components/pages/CreateSalesPage";
+import { SalesListPage } from "../features/sales/components/pages/SalesListPage";
 
 import SelectStorePage from "@/features/auth/pages/SelectStorePage";
 import VerifyEmailPage from "@/features/auth/pages/VerifyEmailPage";
 import VerifyEmailSuccessPage from "@/features/auth/pages/VerifyEmailSuccessPage";
+import CustomerPage from "@/features/customers/pages/CustomerPage";
 import { AuthLayout } from "../layouts/AuthLayout";
 import { MainLayout } from "../layouts/MainLayout";
 import { ProtectedRoute } from "./ProtectedRoute";
@@ -36,13 +41,6 @@ const InventoryPage = () => (
   <div>
     <h1 className="text-2xl font-bold mb-6">Kho hàng</h1>
     <p>Trang kho hàng đang được phát triển...</p>
-  </div>
-);
-
-const PartnersPage = () => (
-  <div>
-    <h1 className="text-2xl font-bold mb-6">Đối tác</h1>
-    <p>Trang đối tác đang được phát triển...</p>
   </div>
 );
 
@@ -96,7 +94,7 @@ export const AppRoutes = () => {
           }
         />
         <Route
-          path="/products"
+          path="/dashboard/products"
           element={
             <MainLayout>
               <ProductsPage />
@@ -104,10 +102,18 @@ export const AppRoutes = () => {
           }
         />
         <Route
-          path="/sales"
+          path="/sales/create" // Đổi path nếu cần hoặc giữ /sales/create
           element={
             <MainLayout>
-              <SalesPage />
+              <CreateSalesPage />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/sales/list"
+          element={
+            <MainLayout>
+              <SalesListPage />
             </MainLayout>
           }
         />
@@ -120,10 +126,10 @@ export const AppRoutes = () => {
           }
         />
         <Route
-          path="/partners"
+          path="/dashboard/customers"
           element={
             <MainLayout>
-              <PartnersPage />
+              <CustomerPage />
             </MainLayout>
           }
         />
@@ -136,10 +142,26 @@ export const AppRoutes = () => {
           }
         />
         <Route
-          path="/suppliers"
+          path="/dashboard/suppliers"
           element={
             <MainLayout>
               <SuppliersPage />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/users"
+          element={
+            <MainLayout>
+              <UsersPage />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/users/edit"
+          element={
+            <MainLayout>
+              <UserEditPage />
             </MainLayout>
           }
         />

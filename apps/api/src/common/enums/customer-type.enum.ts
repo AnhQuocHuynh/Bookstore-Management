@@ -1,4 +1,5 @@
 export enum CustomerType {
-  INDIVIDUAL = 'individual',
-  COMPANY = 'company',
+  REGULAR = 'regular',
+  VIP = 'vip',
+  PREMIUM = 'premium',
 }

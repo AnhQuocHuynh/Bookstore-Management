@@ -1,14 +1,6 @@
-// src/stores/useAuthStore.ts
+import { UserProfile } from "@/features/auth";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-
-export interface User {
-  id: string;
-  email: string;
-  name: string;
-  role: string;
-  avatar?: string;
-}
 
 export interface Store {
   id: string;
@@ -22,21 +14,45 @@ interface TempCredentials {
   email?: string;
   username?: string;
   password: string;
-  role: "OWNER" | "EMPLOYEE";
+  role: "OWNER" | "EMPLOYEE" | "ADMIN";
+}
+
+interface RegisterTemp {
+  storeName: string;
+  storePhoneNumber: string;
+  storeAddress: string;
+  fullName: string;
+  email: string;
+  phoneNumber: string;
+  birthDate: string;
+  address: string;
+  password: string;
+  confirmPassword: string;
+  agreeTerms: boolean;
 }
 
 interface AuthState {
-  user: User | null;
+  user: UserProfile | null;
   accessToken: string | null; // Dùng chung cho cả System Token và Store Token
   currentStore: Store | null;
   isAuthenticated: boolean;
   tempCredentials: TempCredentials | null;
+  registerTemp: RegisterTemp | null;
+  tokenFirstLogin: string | null;
+
+  setTokenFirstLogin: (tokenFirstLogin: string) => void;
+
+  setRegisterTemp: (registerTemp: RegisterTemp | null) => void;
 
   // Action Login bước 1
-  setSystemToken: (token: string, tempCreds: TempCredentials, user?: User) => void;
+  setSystemToken: (
+    token: string,
+    tempCreds: TempCredentials,
+    user?: UserProfile,
+  ) => void;
 
   // Action Login bước 2 (Update token mới)
-  setStoreToken: (newToken: string, store: Store, user: User) => void;
+  setStoreToken: (newToken: string, store: Store, user: UserProfile) => void;
 
   logout: () => void;
 }
@@ -49,31 +65,46 @@ export const useAuthStore = create<AuthState>()(
       currentStore: null,
       isAuthenticated: false,
       tempCredentials: null,
+      registerTemp: null,
+      tokenFirstLogin: null,
+
+      setTokenFirstLogin: (token) =>
+        set({
+          tokenFirstLogin: token,
+        }),
+
+      setRegisterTemp: (registerTemp) =>
+        set({
+          registerTemp,
+        }),
 
       // Bước 1: Lưu token hệ thống
-      setSystemToken: (token, tempCredentials, user = null) => set({
-        accessToken: token, // Lưu vào accessToken
-        tempCredentials,
-        user, // Owner có user ngay, Employee thì null
-        isAuthenticated: false, // Chưa coi là auth hoàn toàn cho đến khi chọn store
-      }),
+      setSystemToken: (token, tempCredentials, user) =>
+        set({
+          accessToken: token, // Lưu vào accessToken
+          tempCredentials,
+          user, // Owner có user ngay, Employee thì null
+          isAuthenticated: false, // Chưa coi là auth hoàn toàn cho đến khi chọn store
+        }),
 
       // Bước 2: Cập nhật token cửa hàng (Ghi đè token cũ)
-      setStoreToken: (newToken, store, user) => set({
-        accessToken: newToken, // Ghi đè bằng token mới xịn hơn
-        currentStore: store,
-        user,
-        isAuthenticated: true,
-        tempCredentials: null, // Xóa pass tạm
-      }),
+      setStoreToken: (newToken, store, user) =>
+        set({
+          accessToken: newToken, // Ghi đè bằng token mới xịn hơn
+          currentStore: store,
+          user,
+          isAuthenticated: true,
+          tempCredentials: null, // Xóa pass tạm
+        }),
 
-      logout: () => set({
-        user: null,
-        accessToken: null,
-        currentStore: null,
-        isAuthenticated: false,
-        tempCredentials: null,
-      }),
+      logout: () =>
+        set({
+          user: null,
+          accessToken: null,
+          currentStore: null,
+          isAuthenticated: false,
+          tempCredentials: null,
+        }),
     }),
     {
       name: "auth-storage",

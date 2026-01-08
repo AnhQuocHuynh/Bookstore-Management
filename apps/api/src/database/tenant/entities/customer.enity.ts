@@ -1,11 +1,10 @@
 import { CustomerType } from '@/common/enums';
-import { CustomerCompany, ReturnOrder } from '@/database/tenant/entities';
+import { ReturnOrder } from '@/database/tenant/entities';
 import {
   Column,
   CreateDateColumn,
   Entity,
   OneToMany,
-  OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -31,6 +30,9 @@ export class Customer {
   @Column()
   address: string;
 
+  @Column()
+  customerCode: string;
+
   @Column({
     type: 'text',
     nullable: true,
@@ -52,11 +54,6 @@ export class Customer {
     type: 'timestamp',
   })
   readonly updatedAt: Date;
-
-  @OneToOne(() => CustomerCompany, (cc) => cc.customer, {
-    cascade: true,
-  })
-  company: CustomerCompany;
 
   @OneToMany(() => ReturnOrder, (ro) => ro.customer, {
     cascade: true,

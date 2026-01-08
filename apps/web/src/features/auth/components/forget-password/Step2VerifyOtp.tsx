@@ -12,20 +12,31 @@ import {
   InputOTPGroup,
   InputOTPSlot,
 } from "@/components/ui/input-otp";
+import { useResendOtp } from "@/features/auth/hooks/use-resend-otp";
 import { ForgetPasswordFormValues } from "@/features/auth/schema/forget-password.schema";
+import { OtpTypeEnum } from "@/features/auth/types";
 import { REGEXP_ONLY_DIGITS } from "input-otp";
 import { useEffect, useState } from "react";
 import { useFormContext } from "react-hook-form";
+import { toast } from "sonner";
 
 interface Step2VerifyOtpProps {
   onNext: () => void;
   onBack: () => void;
+  email: string;
+  isPending: boolean;
 }
 
 const RESEND_INTERVAL = 60; // 60 giây
 
-const Step2VerifyOtp = ({ onNext, onBack }: Step2VerifyOtpProps) => {
+const Step2VerifyOtp = ({
+  onNext,
+  onBack,
+  email,
+  isPending: isPendingHandler,
+}: Step2VerifyOtpProps) => {
   const { control } = useFormContext<ForgetPasswordFormValues>();
+  const { mutate, isPending } = useResendOtp();
 
   // khởi tạo resendTimer dựa trên localStorage
   const getInitialTimer = () => {
@@ -34,7 +45,7 @@ const Step2VerifyOtp = ({ onNext, onBack }: Step2VerifyOtpProps) => {
 
     const diff = Math.max(
       RESEND_INTERVAL - Math.floor((Date.now() - Number(lastSent)) / 1000),
-      0
+      0,
     );
     return diff;
   };
@@ -53,9 +64,23 @@ const Step2VerifyOtp = ({ onNext, onBack }: Step2VerifyOtpProps) => {
   }, [resendTimer]);
 
   const handleResendOTP = () => {
-    console.log("Resend OTP request sent!");
-    localStorage.setItem("otpLastSent", Date.now().toString());
-    setResendTimer(RESEND_INTERVAL);
+    if (isPending) return;
+
+    mutate(
+      {
+        email,
+        type: OtpTypeEnum.RESET_PASSWORD,
+      },
+      {
+        onSuccess: (data) => {
+          if (data) {
+            toast.success("Mã OTP đã được gửi vào email của bạn.");
+            localStorage.setItem("otpLastSent", Date.now().toString());
+            setResendTimer(RESEND_INTERVAL);
+          }
+        },
+      },
+    );
   };
 
   return (
@@ -92,17 +117,19 @@ const Step2VerifyOtp = ({ onNext, onBack }: Step2VerifyOtpProps) => {
       {/* Resend OTP */}
       <div className="text-center">
         {resendTimer > 0 ? (
-          <p className="text-sm text-gray-500">
-            Bạn có thể gửi lại OTP sau{" "}
+          <p className={`text-sm text-gray-500`}>
+            Bạn có thể gửi lại yêu cầu mã OTP mới sau{" "}
             <span className="font-bold">{resendTimer}</span> giây.
           </p>
         ) : (
           <button
             type="button"
             onClick={handleResendOTP}
-            className="text-sm font-semibold text-emerald-600 hover:underline cursor-pointer"
+            disabled={isPending}
+            className={`text-sm font-semibold text-emerald-600 hover:underline cursor-pointer
+              ${isPending && "pointer-events-none select-none opacity-70"}`}
           >
-            Gửi lại OTP
+            Gửi lại mã OTP
           </button>
         )}
       </div>
@@ -116,8 +143,12 @@ const Step2VerifyOtp = ({ onNext, onBack }: Step2VerifyOtpProps) => {
         >
           Quay lại
         </Button>
-        <Button onClick={onNext} className="w-full cursor-pointer">
-          Xác thực
+        <Button
+          onClick={onNext}
+          disabled={isPendingHandler}
+          className="w-full cursor-pointer"
+        >
+          {isPendingHandler ? "Đang xử lý" : "Xác thực"}
         </Button>
       </div>
     </div>

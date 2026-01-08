@@ -12,7 +12,7 @@ export const BookStoreId = createParamDecorator(
       .user as TUserSession;
 
     if (!user?.bookStoreId?.trim())
-      throw new BadRequestException('Bookstore ID is missing...');
+      throw new BadRequestException('Không thể lấy được mã nhà sách.');
 
     return user.bookStoreId;
   },

@@ -1,7 +1,9 @@
 import { InjectRedisClient } from '@/common/decorators';
+import { NotificationType } from '@/common/enums';
 import { RawTenantConfig, RedisClient } from '@/common/utils';
 import { decryptPayload } from '@/common/utils/helpers';
 import { MainBookStoreService } from '@/database/main/services/main-bookstore.service';
+import { Notification } from '@/database/tenant/entities';
 import {
   BadRequestException,
   Injectable,
@@ -11,7 +13,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { join } from 'path';
-import { DataSource, DataSourceOptions } from 'typeorm';
+import { DataSource, DataSourceOptions, In } from 'typeorm';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 
 @Injectable()
@@ -39,7 +41,7 @@ export class TenantService implements OnModuleDestroy {
 
     if (!bookStoreId?.trim() && !storeCode?.trim()) {
       throw new BadRequestException(
-        'Either bookStoreId or storeCode must be provided.',
+        'Phải cung cấp một trong hai: bookStoreId hoặc storeCode.',
       );
     }
 
@@ -165,6 +167,8 @@ export class TenantService implements OnModuleDestroy {
     try {
       await ds.initialize();
       this.logger.log(`Connected to tenant DB: ${tenantKey}`);
+
+      await this.seedNotificationTemplates(ds);
     } catch (err) {
       this.logger.error(
         `Failed to initialize DataSource for ${tenantKey}: ${err}`,
@@ -231,5 +235,72 @@ export class TenantService implements OnModuleDestroy {
     }
     await Promise.all(destroys);
     this.logger.log('All tenant DataSources destroyed.');
+  }
+
+  private async seedNotificationTemplates(
+    dataSource: DataSource,
+  ): Promise<void> {
+    await dataSource.transaction(async (manager) => {
+      const notificationRepo = manager.getRepository(Notification);
+
+      const templates: { type: NotificationType; title: string }[] = [
+        // Account & Role
+        { type: NotificationType.ACCOUNT_CREATED, title: 'Tạo tài khoản' },
+        {
+          type: NotificationType.ROLE_CHANGED,
+          title: 'Thay đổi quyền nhân viên',
+        },
+        { type: NotificationType.EMPLOYEE_ADDED, title: 'Thêm nhân viên mới' },
+
+        // System
+        { type: NotificationType.SYSTEM_ALERT, title: 'Cảnh báo hệ thống' },
+        {
+          type: NotificationType.GENERAL_ANNOUNCEMENT,
+          title: 'Thông báo chung',
+        },
+
+        // Workforce
+        { type: NotificationType.SHIFT_ASSIGNED, title: 'Phân ca làm việc' },
+
+        // Inventory & Supplier
+        {
+          type: NotificationType.PURCHASE_ORDER_CREATED,
+          title: 'Tạo đơn mua nhà cung cấp',
+        },
+        { type: NotificationType.ITEM_RECEIVED, title: 'Nhập kho sản phẩm' },
+        { type: NotificationType.ITEM_UPDATED, title: 'Điều chỉnh tồn kho' },
+        { type: NotificationType.STOCK_LOW, title: 'Cảnh báo tồn kho thấp' },
+        { type: NotificationType.ITEM_OUT_OF_STOCK, title: 'Hết hàng' },
+
+        // Customer
+        { type: NotificationType.RETURN_REQUEST, title: 'Yêu cầu trả / đổi' },
+      ];
+
+      const existing = await notificationRepo.find({
+        select: ['type'],
+        where: {
+          type: In(templates.map((t) => t.type)),
+        },
+      });
+
+      const existingTypes = new Set(existing.map((n) => n.type));
+
+      const missing = templates.filter((t) => !existingTypes.has(t.type));
+
+      if (!missing.length) {
+        this.logger.log(
+          `[NotificationSeed] All notification templates already exist`,
+        );
+        return;
+      }
+
+      const entities = notificationRepo.create(missing);
+
+      await notificationRepo.save(entities);
+
+      this.logger.log(
+        `[NotificationSeed] Inserted ${entities.length} notification templates`,
+      );
+    });
   }
 }

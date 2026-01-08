@@ -1,8 +1,14 @@
 import { EMPLOYEE_ROLE_PREFIX } from '@/common/constants';
-import { EmailTemplateNameEnum, EmployeeRole } from '@/common/enums';
+import {
+  EmailTemplateNameEnum,
+  EmployeeRole,
+  NotificationType,
+  ReceiverType,
+} from '@/common/enums';
 import {
   generateSecurePassword,
   generateUsername,
+  handleGenerateUserNotificationContent,
   hashPassword,
   verifyPassword,
 } from '@/common/utils';
@@ -12,6 +18,7 @@ import { MainEmployeeMappingService } from '@/database/main/services/main-employ
 import { MainUserService } from '@/database/main/services/main-user.service';
 import { Employee } from '@/database/tenant/entities';
 import { EmailService } from '@/modules/email/email.service';
+import { NotificationsService } from '@/modules/notifications/notifications.service';
 import {
   CreateEmployeeByOwnerDto,
   UpdateOwnPasswordDto,
@@ -42,6 +49,7 @@ export class UserService {
     private readonly mainEmployeeMappingService: MainEmployeeMappingService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async getMe(userSession: TUserSession) {
@@ -140,6 +148,7 @@ export class UserService {
       email: employeeEmail,
       birthDate,
       employeeCode,
+      avatarUrl: 'https://github.com/shadcn.png',
     });
 
     await employeeRepo.save(newEmployee);
@@ -188,6 +197,18 @@ export class UserService {
     if (!payload?.username?.trim() || !payload?.bookStoreId?.trim())
       throw new GoneException('Token không hợp lệ hoặc đã hết hạn.');
 
+    const bookStoreData = await this.mainBookStoreService.findBookStoreByField(
+      'id',
+      payload.bookStoreId,
+      {
+        user: true,
+      },
+    );
+
+    if (!bookStoreData) {
+      throw new NotFoundException('Không tìm thấy thông tin nhà sách');
+    }
+
     const { username, bookStoreId } = payload;
 
     const dataSource = await this.tenantService.getTenantConnection({
@@ -218,6 +239,38 @@ export class UserService {
     employee.password = await hashPassword(newPassword);
     employee.isFirstLogin = false;
     await employeeRepo.save(employee);
+
+    await this.notificationsService.createNotification(
+      {
+        receiverId: employee.id,
+        receiverType: ReceiverType.EMPLOYEE,
+        content: handleGenerateUserNotificationContent(
+          NotificationType.ACCOUNT_CREATED,
+          {
+            time: new Date(),
+            fullName: employee.fullName,
+          },
+        ),
+        notificationType: NotificationType.ACCOUNT_CREATED,
+      },
+      bookStoreId,
+    );
+
+    await this.notificationsService.createNotification(
+      {
+        receiverId: bookStoreData.user.id,
+        receiverType: ReceiverType.OWNER,
+        content: handleGenerateUserNotificationContent(
+          NotificationType.EMPLOYEE_ADDED,
+          {
+            time: new Date(),
+            employeeName: employee.fullName,
+          },
+        ),
+        notificationType: NotificationType.EMPLOYEE_ADDED,
+      },
+      bookStoreId,
+    );
 
     return {
       message: 'Mật khẩu đã được cập nhật thành công.',

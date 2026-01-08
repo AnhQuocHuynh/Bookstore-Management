@@ -1,12 +1,15 @@
 import {
   AuthorizationCodeTypeEnum,
   EmailTemplateNameEnum,
+  NotificationType,
   OtpTypeEnum,
+  ReceiverType,
 } from '@/common/enums';
 import {
   decryptPayload,
   encryptPayload,
   generateOtp,
+  handleGenerateUserNotificationContent,
   setCookie,
   verifyPassword,
 } from '@/common/utils/helpers';
@@ -31,6 +34,7 @@ import {
   VerifyOtpDto,
 } from '@/modules/auth/dto';
 import { EmailService } from '@/modules/email/email.service';
+import { NotificationsService } from '@/modules/notifications/notifications.service';
 import { UserRole } from '@/modules/users/enums';
 import { TenantService } from '@/tenants/tenant.service';
 import {
@@ -44,10 +48,11 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import { InjectDataSource } from '@nestjs/typeorm';
 import { addDays, addMinutes } from 'date-fns';
 import { Response } from 'express';
 import { omit } from 'lodash';
-import { MoreThan, Repository } from 'typeorm';
+import { DataSource, EntityManager, MoreThan, Repository } from 'typeorm';
 @Injectable()
 export class AuthService {
   constructor(
@@ -61,6 +66,8 @@ export class AuthService {
     private readonly mainAuthCodeService: MainAuthorizationCodeService,
     private readonly mainRefreshTokenService: MainRefreshTokenService,
     private readonly mainEmployeeMappingService: MainEmployeeMappingService,
+    @InjectDataSource() private readonly dataSource: DataSource,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async signIn(signInDto: SignInDto, response: Response) {
@@ -68,7 +75,7 @@ export class AuthService {
     const user = await this.mainUserService.findUserByField('email', email);
 
     if (!user || (user && !(await verifyPassword(password, user.password))))
-      throw new UnauthorizedException('Invalid credentials.');
+      throw new UnauthorizedException('Thông tin đăng nhập không chính xác.');
 
     if (user.role === UserRole.ADMIN) {
       const { accessToken, refreshToken } = await this.generateTokens(
@@ -91,8 +98,22 @@ export class AuthService {
 
     const token = this.jwtService.sign(payload, {
       secret: this.configService.get('jwt_secret'),
-      expiresIn: this.configService.get('jwt_expiration_time', '120s'),
+      expiresIn: '10m',
     });
+
+    if (!user.isEmailVerified) {
+      const bookstores = await this.mainBookStoreService.findBookStores({
+        user,
+        isActive: false,
+      });
+
+      await this.processVerifyEmail(
+        user,
+        bookstores?.length > 0
+          ? (bookstores[0] as unknown as BookStore)
+          : undefined,
+      );
+    }
 
     return {
       token,
@@ -122,18 +143,20 @@ export class AuthService {
         payload.role,
       );
 
-      if (!isValidRole) throw new Error('Invalid token.');
+      if (!isValidRole) throw new Error('Token không hợp lệ hoặc đã hết hạn.');
 
       isOwner = payload.role === UserRole.OWNER;
     } catch (error) {
-      throw new UnauthorizedException('Invalid or expired token.');
+      throw new GoneException('Token không hợp lệ hoặc đã hết hạn.');
     }
 
     if (payload?.role === UserRole.OWNER && username?.trim())
-      throw new BadRequestException('Owner should not provide a username.');
+      throw new BadRequestException(
+        'Chủ nhà sách không nên cung cấp tên đăng nhập.',
+      );
 
     if (payload?.role === UserRole.EMPLOYEE && email?.trim())
-      throw new BadRequestException('Employee should not provide an email.');
+      throw new BadRequestException('Nhân viên không nên cung cấp email.');
 
     let userId: string = '';
     let profile: any = null;
@@ -141,12 +164,12 @@ export class AuthService {
 
     if (isOwner) {
       if (!email)
-        throw new BadRequestException('Owner must be provide an email.');
+        throw new BadRequestException('Chủ nhà sách phải cung cấp email.');
 
       const user = await this.mainUserService.findUserByField('email', email);
 
       if (!user || (user && !(await verifyPassword(password, user.password))))
-        throw new UnauthorizedException('Invalid credentials.');
+        throw new UnauthorizedException('Thông tin đăng nhập không chính xác.');
 
       const bookStore = await this.mainBookStoreService.findBookStoreByField(
         'id',
@@ -157,14 +180,14 @@ export class AuthService {
       );
 
       if (bookStore?.user?.id !== user.id)
-        throw new ForbiddenException('You are not an owner of this bookstore.');
+        throw new ForbiddenException('Bạn không phải là chủ của nhà sách này.');
 
       userId = user.id;
       profile = omit(user, ['password']);
       storeCode = bookStore.code;
     } else {
       if (!username?.trim())
-        throw new BadRequestException('Employee must be provide a username.');
+        throw new BadRequestException('Nhân viên phải cung cấp tên đăng nhập.');
 
       const employeeMappings =
         await this.mainEmployeeMappingService.findBookStoresOfEmployee(
@@ -181,9 +204,7 @@ export class AuthService {
       }
 
       if (!seletecBookStore)
-        throw new ForbiddenException(
-          'You are not an employee of this bookstore.',
-        );
+        throw new ForbiddenException('Không tìm thấy thông tin nhà sách.');
 
       const dataSource = await this.tenantService.getTenantConnection({
         bookStoreId,
@@ -201,7 +222,13 @@ export class AuthService {
         !employee ||
         (employee && !(await verifyPassword(password, employee.password)))
       ) {
-        throw new UnauthorizedException('Invalid credentails.');
+        throw new UnauthorizedException('Thông tin đăng nhập không chính xác.');
+      }
+
+      if (!employee.isActive) {
+        throw new ForbiddenException(
+          'Tài khoản của bạn đã bị khoá bởi chủ nhà sách này.',
+        );
       }
 
       if (employee.isFirstLogin) {
@@ -213,8 +240,9 @@ export class AuthService {
         return {
           token,
           message:
-            'Welcome! Since this is your first login, please change your password.',
+            'Chào mừng! Vì đây là lần đăng nhập đầu tiên của bạn, vui lòng thay đổi mật khẩu.',
           isFirstLogin: true,
+          profile: omit(employee, ['password']),
         };
       }
 
@@ -245,6 +273,10 @@ export class AuthService {
     const employeeMappings =
       await this.mainEmployeeMappingService.findBookStoresOfEmployee(username);
 
+    if (!employeeMappings.find((em) => em.username === username)) {
+      throw new NotFoundException('Thông tin đăng nhập không chính xác.');
+    }
+
     const payload = {
       role: UserRole.EMPLOYEE,
       username,
@@ -252,7 +284,7 @@ export class AuthService {
 
     const token = this.jwtService.sign(payload, {
       secret: this.configService.get('jwt_secret'),
-      expiresIn: this.configService.get('jwt_expiration_time', '120s'),
+      expiresIn: '10m',
     });
 
     return {
@@ -271,51 +303,64 @@ export class AuthService {
       address,
     } = signUpDto;
 
-    const existingEmail = await this.mainUserService.findUserByField(
-      'email',
-      email,
-    );
+    return this.dataSource.transaction(async (manager) => {
+      const userRepo = manager.getRepository(User);
+      const bookStoreRepo = manager.getRepository(BookStore);
 
-    if (existingEmail)
-      throw new ConflictException(`This email has been registered.`);
+      const existingEmail = await this.mainUserService.findUserByField(
+        'email',
+        email,
+        userRepo,
+      );
 
-    await this.mainBookStoreService.checkDuplicateField(
-      'name',
-      createBookStoreDto.name,
-      email,
-      'tên',
-    );
+      if (existingEmail)
+        throw new ConflictException(`Email này đã được đăng ký.`);
 
-    await this.mainBookStoreService.checkDuplicateField(
-      'phoneNumber',
-      createBookStoreDto.phoneNumber,
-      email,
-      'số điện thoại',
-    );
+      await this.mainBookStoreService.checkDuplicateField(
+        'name',
+        createBookStoreDto.name,
+        email,
+        'tên',
+        bookStoreRepo,
+      );
 
-    const newUser = await this.mainUserService.createNewUser({
-      email,
-      password,
-      fullName,
-      phoneNumber,
-      address,
-      birthDate,
+      await this.mainBookStoreService.checkDuplicateField(
+        'phoneNumber',
+        createBookStoreDto.phoneNumber,
+        email,
+        'số điện thoại',
+        bookStoreRepo,
+      );
+
+      const newUser = await this.mainUserService.createNewUser(
+        {
+          email,
+          password,
+          fullName,
+          phoneNumber,
+          address,
+          birthDate,
+        },
+        userRepo,
+      );
+
+      const bookStoreData = await this.mainBookStoreService.createNewBookStore(
+        createBookStoreDto,
+        newUser.id,
+        manager,
+      );
+
+      await this.processVerifyEmail(
+        newUser,
+        bookStoreData ? bookStoreData : undefined,
+        manager,
+      );
+
+      return {
+        message:
+          'Mã OTP xác thực tài khoản đã được gửi đến email của bạn. Vui lòng kiểm tra để hoàn tất đăng ký.',
+      };
     });
-
-    const bookStoreData = await this.mainBookStoreService.createNewBookStore(
-      createBookStoreDto,
-      newUser.id,
-    );
-
-    await this.processVerifyEmail(
-      newUser,
-      bookStoreData ? bookStoreData : undefined,
-    );
-
-    return {
-      message:
-        'Mã OTP xác thực tài khoản đã được gửi đến email của bạn. Vui lòng kiểm tra để hoàn tất đăng ký.',
-    };
   }
 
   async verifyOtp(verifyOtpDto: VerifyOtpDto) {
@@ -323,15 +368,19 @@ export class AuthService {
     const user = await this.mainUserService.findUserByField('email', email);
 
     if (!user)
-      throw new NotFoundException(`This email has not been registered.`);
+      throw new NotFoundException(
+        `Email này chưa được đăng ký trong hệ thống.`,
+      );
 
     if (user.role === UserRole.ADMIN)
       throw new BadRequestException(
-        'The account you are using is an admin account, so OTP verification cannot be performed.',
+        'Tài khoản bạn đang sử dụng là tài khoản quản trị, nên không thể thực hiện xác thực OTP.',
       );
 
     if (user.isEmailVerified && type === OtpTypeEnum.SIGN_UP)
-      throw new BadRequestException('Your account has been email-verified.');
+      throw new BadRequestException(
+        'Email tài khoản của bạn đã được xác thực.',
+      );
 
     const existingRecords = await this.mainOtpService.findOtpsByUserIdAndType(
       user.id,
@@ -351,7 +400,8 @@ export class AuthService {
       }
     }
 
-    if (!validRecord) throw new GoneException('OTP has expired or invalid.');
+    if (!validRecord)
+      throw new GoneException('Mã OTP đã hết hạn hoặc không hợp lệ.');
 
     let storeCode = '';
     if (
@@ -372,6 +422,22 @@ export class AuthService {
       }
 
       if (type === OtpTypeEnum.SIGN_UP && bookStore) {
+        await this.notificationsService.createNotification(
+          {
+            receiverId: user.id,
+            receiverType: ReceiverType.OWNER,
+            content: handleGenerateUserNotificationContent(
+              NotificationType.ACCOUNT_CREATED,
+              {
+                time: new Date(),
+                fullName: user.fullName,
+              },
+            ),
+            notificationType: NotificationType.ACCOUNT_CREATED,
+          },
+          bookStoreId,
+        );
+
         await this.emailService.handleSendEmail(
           user.email,
           EmailTemplateNameEnum.EMAIL_STORE_REGISTRATION,
@@ -433,18 +499,14 @@ export class AuthService {
     const { userId, bookStoreId, role } = userSession;
 
     const user = await this.mainUserService.findUserByField('id', userId);
-    if (!user) throw new NotFoundException('User not found.');
 
-    if (user.role !== UserRole.ADMIN && !bookStoreId?.trim())
-      throw new BadRequestException('Please provide bookstoreId to log out.');
-
-    if (user.role === UserRole.ADMIN && bookStoreId?.trim()) {
+    if (user?.role === UserRole.ADMIN && bookStoreId?.trim()) {
       throw new BadRequestException(
-        'Admin accounts should not include bookstoreId when logging out.',
+        'Tài khoản quản trị không nên bao gồm bookstoreId khi đăng xuất.',
       );
     }
 
-    await this.revokeRefreshToken(user.id, role, refreshToken, bookStoreId);
+    await this.revokeRefreshToken(userId, role, refreshToken, bookStoreId);
     return {
       message: 'Đăng xuất tài khoản thành công.',
     };
@@ -619,7 +681,11 @@ export class AuthService {
     await repo.save(newRT);
   }
 
-  private async processVerifyEmail(user: User, bookStoreData?: BookStore) {
+  private async processVerifyEmail(
+    user: User,
+    bookStoreData?: BookStore,
+    manager?: EntityManager,
+  ) {
     const now = new Date();
     const expiresAt = new Date(now.getTime() + 10 * 60 * 1000);
     const metadata = bookStoreData
@@ -631,6 +697,7 @@ export class AuthService {
       expiresAt,
       OtpTypeEnum.SIGN_UP,
       metadata,
+      manager,
     );
     await this.emailService.handleSendEmail(
       user.email,
@@ -646,7 +713,9 @@ export class AuthService {
     const user = await this.mainUserService.findUserByField('email', email);
 
     if (!user)
-      throw new NotFoundException(`This email has not been registered.`);
+      throw new NotFoundException(
+        `Email của bạn chưa được đăng ký trong hệ thống.`,
+      );
 
     if (user.role !== UserRole.OWNER) {
       throw new ForbiddenException(
@@ -659,23 +728,28 @@ export class AuthService {
       OtpTypeEnum.RESET_PASSWORD,
     );
 
-    if (validOtps.length > 0)
-      throw new UnauthorizedException('You still have an active OTP code.');
+    let otpCode: string = '';
 
-    const expiresAt = addMinutes(new Date(), 5);
+    if (validOtps.length > 0) {
+      otpCode = decryptPayload(validOtps[0].otp, this.configService);
+    } else {
+      const expiresAt = addMinutes(new Date(), 5);
 
-    const { otp } = await this.mainOtpService.createNewOtp(
-      6,
-      user.id,
-      expiresAt,
-      OtpTypeEnum.RESET_PASSWORD,
-    );
+      const { otp } = await this.mainOtpService.createNewOtp(
+        6,
+        user.id,
+        expiresAt,
+        OtpTypeEnum.RESET_PASSWORD,
+      );
+
+      otpCode = otp;
+    }
 
     await this.emailService.handleSendEmail(
       user.email,
       EmailTemplateNameEnum.EMAIL_RESET_PASSWORD,
       {
-        otp,
+        otp: otpCode,
       },
     );
 
@@ -690,7 +764,9 @@ export class AuthService {
     const user = await this.mainUserService.findUserByField('email', email);
 
     if (!user)
-      throw new NotFoundException(`This email has not been registered.`);
+      throw new NotFoundException(
+        `Email của bạn chưa được đăng ký trong hệ thống.`,
+      );
 
     if (user.role !== UserRole.OWNER) {
       throw new ForbiddenException(
@@ -724,7 +800,9 @@ export class AuthService {
     const user = await this.mainUserService.findUserByField('email', email);
 
     if (!user)
-      throw new NotFoundException(`This email has not been registered.`);
+      throw new NotFoundException(
+        `Email của bạn chưa được đăng ký trong hệ thống.`,
+      );
 
     if (user.role !== UserRole.OWNER) {
       throw new ForbiddenException(
@@ -809,7 +887,9 @@ export class AuthService {
     const user = await this.mainUserService.findUserByField('id', userId);
 
     if (!user)
-      throw new NotFoundException(`This email has not been registered.`);
+      throw new NotFoundException(
+        `Email của bạn chưa được đăng ký trong hệ thống.`,
+      );
 
     const isValidPassword = await verifyPassword(
       currentPassword,

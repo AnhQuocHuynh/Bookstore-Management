@@ -4,12 +4,12 @@
   body {
     @apply antialiased;
     margin: 0;
-    font-family: system-ui, -apple-system, sans-serif;
+    font-family:
+      system-ui,
+      -apple-system,
+      sans-serif;
   }
 }
-<<<<<<< Updated upstream
-=======
-
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -84,14 +84,14 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
-  
+
   /* Auth Gradient Colors */
   --auth-gradient-from: #6366f1; /* Indigo */
   --auth-gradient-to: #a855f7; /* Purple */
-  --auth-teal: #3EB795;
-  --auth-teal-dark: #347C76;
-  --auth-teal-light: #D0E0DB;
-  --auth-input-bg: #F3F4F6; /* gray-50 */
+  --auth-teal: #3eb795;
+  --auth-teal-dark: #347c76;
+  --auth-teal-light: #d0e0db;
+  --auth-input-bg: #f3f4f6; /* gray-50 */
 }
 
 .dark {
@@ -158,11 +158,3 @@ input[type="password"]:focus,
 input[type="email"]:focus {
   box-shadow: none !important;
 }
-
-/* Smooth Transitions */
-* {
-  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 150ms;
-}
->>>>>>> Stashed changes

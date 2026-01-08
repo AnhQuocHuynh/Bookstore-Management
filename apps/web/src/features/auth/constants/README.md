@@ -45,4 +45,3 @@ Tất cả các tài khoản mẫu đều sử dụng password: `Password123@`
 - Đây là dữ liệu mẫu cho môi trường development/testing
 - Bạn cần đăng ký các tài khoản này trước khi có thể sử dụng để đăng nhập
 - Button "Dữ liệu mẫu" sẽ chọn ngẫu nhiên một trong các bộ dữ liệu mẫu
-

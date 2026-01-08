@@ -9,10 +9,16 @@ import {
 import { Input } from "@/components/ui/input";
 import { ForgetPasswordFormValues } from "@/features/auth/schema/forget-password.schema";
 import { Eye, EyeOff } from "lucide-react";
-import { useState } from "react";
+import React, { useState } from "react";
 import { useFormContext } from "react-hook-form";
 
-const Step3ChangePassword = () => {
+interface Step3ChangePasswordProps {
+  isPending: boolean;
+}
+
+const Step3ChangePassword: React.FC<Step3ChangePasswordProps> = ({
+  isPending,
+}) => {
   const { control } = useFormContext<ForgetPasswordFormValues>();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -38,8 +44,8 @@ const Step3ChangePassword = () => {
                   <Button
                     type="button"
                     variant="ghost"
-                    className="absolute top-1/2 right-3 -translate-y-1/2 p-0 
-                               bg-transparent hover:bg-transparent focus:bg-transparent active:bg-transparent"
+                    className="absolute inset-y-0 right-3 flex items-center p-0
+             bg-transparent hover:bg-transparent focus:bg-transparent active:bg-transparent"
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? (
@@ -76,8 +82,8 @@ const Step3ChangePassword = () => {
                   <Button
                     type="button"
                     variant="ghost"
-                    className="absolute top-1/2 right-3 -translate-y-1/2 p-0 
-                               bg-transparent hover:bg-transparent focus:bg-transparent active:bg-transparent"
+                    className="absolute inset-y-0 right-3 flex items-center p-0
+             bg-transparent hover:bg-transparent focus:bg-transparent active:bg-transparent"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   >
                     {showConfirmPassword ? (
@@ -94,7 +100,13 @@ const Step3ChangePassword = () => {
         }}
       />
 
-      <Button className="w-full cursor-pointer mt-2">Đặt lại mật khẩu</Button>
+      <Button
+        className="w-full cursor-pointer mt-2"
+        type="submit"
+        disabled={isPending}
+      >
+        {isPending ? "Đang xử lý..." : "Đặt lại mật khẩu"}
+      </Button>
     </div>
   );
 };
