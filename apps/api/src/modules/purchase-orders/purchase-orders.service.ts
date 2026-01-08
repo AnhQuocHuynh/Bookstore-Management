@@ -314,7 +314,7 @@ export class PurchaseOrdersService {
 
       if (updatePurchaseOrderDetailDtos?.length) {
         for (const updatePurchaseOrderDetailDto of updatePurchaseOrderDetailDtos) {
-          const { productId, quantity, unitPrice } =
+          const { productId, quantity, unitPrice, taxRate } =
             updatePurchaseOrderDetailDto;
 
           const findProduct = await productRepo.findOne({
@@ -327,6 +327,11 @@ export class PurchaseOrdersService {
             throw new NotFoundException(
               'Không tìm thấy thông tin của sản phẩm.',
             );
+          }
+
+          if (taxRate && taxRate > 0) {
+            findProduct.taxRate = taxRate;
+            await productRepo.save(findProduct);
           }
 
           // Check if the purchase order already has a detail with this productId

@@ -99,6 +99,7 @@ export class ProductsService {
           type,
           supplier,
           categories: [],
+          ...(res?.taxRate && { taxRate: res.taxRate }),
         },
       );
     } else {

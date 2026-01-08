@@ -81,21 +81,13 @@ export class CategoriesService {
     userSession: TUserSession,
   ) {
     const { bookStoreId } = userSession;
-    const { slug, name, parentId } = createCategoryDto;
+    const { slug, name } = createCategoryDto;
 
     const dataSource = await this.tenantsService.getTenantConnection({
       bookStoreId,
     });
 
     const categoryRepo = dataSource.getRepository(Category);
-
-    let parent: Category | null = null;
-
-    if (parentId?.trim()) {
-      parent = await this.findCategoryByField('id', parentId, categoryRepo);
-      if (!parent)
-        throw new NotFoundException('Không tìm thấy thông tin danh mục cha.');
-    }
 
     const existedSlug = await this.findCategoryByField(
       'slug',
@@ -157,7 +149,7 @@ export class CategoriesService {
     updateCategoryDto: UpdateCategoryDto,
   ) {
     const { bookStoreId } = userSession;
-    const { slug, name, parentId } = updateCategoryDto;
+    const { slug, name } = updateCategoryDto;
 
     const dataSource = await this.tenantsService.getTenantConnection({
       bookStoreId,
@@ -173,19 +165,6 @@ export class CategoriesService {
 
     if (!category) {
       throw new NotFoundException('Không tìm thấy thông tin danh mục.');
-    }
-
-    let parent: Category | null = null;
-    if (parentId?.trim()) {
-      parent = await this.findCategoryByField('id', parentId, categoryRepo);
-      if (!parent) {
-        throw new NotFoundException('Không tìm thấy thông tin danh mục cha.');
-      }
-      if (parent.id === id) {
-        throw new ConflictException(
-          'Một danh mục không thể được đặt làm danh mục cha của chính nó.',
-        );
-      }
     }
 
     if (slug && slug !== category.slug) {
@@ -211,10 +190,6 @@ export class CategoriesService {
     }
 
     assignDefined(category, omit(updateCategoryDto, ['parentId']));
-
-    if (parentId !== undefined) {
-      category.parent = parent || undefined;
-    }
 
     await categoryRepo.save(category);
 

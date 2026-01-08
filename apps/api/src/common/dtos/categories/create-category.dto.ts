@@ -21,10 +21,6 @@ export class CreateCategoryDto {
   @IsNotEmpty()
   readonly description?: string;
 
-  @IsOptional()
-  @IsUUID()
-  readonly parentId?: string;
-
   @IsNumber()
   @IsPositive()
   readonly taxRate: number;
