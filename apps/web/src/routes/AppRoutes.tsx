@@ -20,6 +20,8 @@ import { MainLayout } from "../layouts/MainLayout";
 import { ProtectedRoute } from "./ProtectedRoute";
 import { PublicRoute } from "./PublicRoute";
 import { TokenProtectedRoute } from "./TokenProtectedRoute";
+import RevenuePage from "@/features/reports/pages/RevenuePage";
+import EmployeePerformancePage from "@/features/reports/pages/EmployeePerformancePage";
 
 // Select Store Page (Semi-protected: requires token but no store)
 // const SelectStorePage = () => (
@@ -165,7 +167,21 @@ export const AppRoutes = () => {
             </MainLayout>
           }
         />
+        <Route
+          path="/reports/revenue" element={
+            <MainLayout>
+              <RevenuePage />
+            </MainLayout>} />
       </Route>
+
+      <Route
+        path="/reports/employees"
+        element={
+          <MainLayout>
+            <EmployeePerformancePage />
+          </MainLayout>
+        }
+      />
 
       {/* 404 - Redirect to login */}
       <Route path="*" element={<Navigate to="/auth/login" replace />} />
