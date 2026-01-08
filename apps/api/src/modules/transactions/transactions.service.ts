@@ -6,13 +6,16 @@ import {
   UpdateTransactionDetailDto,
   UpdateTransactionDto,
 } from '@/common/dtos';
+import { ReturnDetailsDto } from '@/common/dtos/transactions/return-details.dto';
 import { TUserSession } from '@/common/utils';
 import {
   Employee,
+  Inventory,
   Product,
   Transaction,
   TransactionDetail,
 } from '@/database/tenant/entities';
+import { InventoriesService } from '@/modules/inventories/inventories.service';
 import { TenantService } from '@/tenants/tenant.service';
 import {
   BadRequestException,
@@ -27,7 +30,10 @@ import { Repository } from 'typeorm';
 
 @Injectable()
 export class TransactionsService {
-  constructor(private readonly tenantService: TenantService) {}
+  constructor(
+    private readonly tenantService: TenantService,
+    private readonly inventoriesService: InventoriesService,
+  ) {}
 
   async createTransaction(
     createTransactionDto: CreateTransactionDto,
@@ -43,8 +49,17 @@ export class TransactionsService {
       const transactionDetailRepo = manager.getRepository(TransactionDetail);
       const productRepo = manager.getRepository(Product);
       const employeeRepo = manager.getRepository(Employee);
-      const { createTransactionDetailDtos, note, paidAmount, changeAmount } =
-        createTransactionDto;
+      const inventoryRepo = manager.getRepository(Inventory);
+      const {
+        createTransactionDetailDtos,
+        note,
+        paidAmount,
+        changeAmount,
+        finalAmount,
+        taxAmount,
+        totalAmount,
+        paymentMethod,
+      } = createTransactionDto;
 
       const employee = await employeeRepo.findOne({
         where: {
@@ -59,13 +74,15 @@ export class TransactionsService {
       const newTransaction = transactionRepo.create({
         cashier: employee,
         ...(note?.trim() && { note }),
-        totalAmount: 0,
-        discountAmount: 0,
-        taxAmount: 0,
-        finalAmount: 0,
+        totalAmount,
+        taxAmount,
+        finalAmount,
         details: [],
-        paidAmount: paidAmount ?? 0,
+        paidAmount,
         changeAmount: changeAmount ?? 0,
+        paymentMethod,
+        completedAt: new Date(),
+        isCompleted: true,
       });
 
       await transactionRepo.save(newTransaction);
@@ -76,6 +93,7 @@ export class TransactionsService {
           productRepo,
           newTransaction,
           transactionDetailRepo,
+          inventoryRepo,
         );
       }
 
@@ -94,8 +112,6 @@ export class TransactionsService {
         );
       }
 
-      this.recalcTransaction(savedTransaction);
-
       return transactionRepo.save(savedTransaction);
     });
   }
@@ -112,7 +128,7 @@ export class TransactionsService {
 
     return dataSource.transaction(async (manager) => {
       const transactionRepo = manager.getRepository(Transaction);
-      const { discountAmount, paymentMethod } = updateTransactionDto;
+      const { paymentMethod } = updateTransactionDto;
 
       const transaction = await transactionRepo.findOne({
         where: {
@@ -133,16 +149,10 @@ export class TransactionsService {
       }
 
       transaction.paymentMethod = paymentMethod || transaction.paymentMethod;
-      transaction.discountAmount = discountAmount || transaction.discountAmount;
 
       if (paymentMethod) {
         transaction.isCompleted = true;
         transaction.completedAt = new Date();
-      }
-
-      if (discountAmount) {
-        transaction.finalAmount =
-          transaction.totalAmount + transaction.taxAmount - discountAmount;
       }
 
       return transactionRepo.save(transaction);
@@ -226,7 +236,6 @@ export class TransactionsService {
 
       const updatableFields: (keyof typeof updateTransactionDetailDto)[] = [
         'unitPrice',
-        'discount',
         'quantity',
       ];
 
@@ -281,17 +290,11 @@ export class TransactionsService {
       new Decimal(0),
     );
 
-    const discountAmount = transaction.details.reduce(
-      (sum, detail) => sum.plus(new Decimal(detail.discount)),
-      new Decimal(0),
-    );
+    const taxAmount = totalAmount.times(0.1);
 
-    const taxAmount = totalAmount.minus(discountAmount).times(0.1);
-
-    const finalAmount = totalAmount.minus(discountAmount).plus(taxAmount);
+    const finalAmount = totalAmount.plus(taxAmount);
 
     transaction.totalAmount = Number(totalAmount.toFixed(2));
-    transaction.discountAmount = Number(discountAmount.toFixed(2));
     transaction.taxAmount = Number(taxAmount.toFixed(2));
     transaction.finalAmount = Number(finalAmount.toFixed(2));
 
@@ -299,9 +302,7 @@ export class TransactionsService {
   }
 
   private recalcTransactionDetail(detail: TransactionDetail) {
-    const totalPrice = new Decimal(detail.unitPrice)
-      .times(detail.quantity)
-      .minus(detail.discount);
+    const totalPrice = new Decimal(detail.unitPrice).times(detail.quantity);
 
     detail.totalPrice = Number(totalPrice.toFixed(2));
     return detail;
@@ -321,6 +322,7 @@ export class TransactionsService {
       const transactionRepo = manager.getRepository(Transaction);
       const productRepo = manager.getRepository(Product);
       const transactionDetailRepo = manager.getRepository(TransactionDetail);
+      const inventoryRepo = manager.getRepository(Inventory);
 
       const transaction = await transactionRepo.findOne({
         where: {
@@ -350,6 +352,7 @@ export class TransactionsService {
           productRepo,
           transaction,
           transactionDetailRepo,
+          inventoryRepo,
         );
       }
 
@@ -387,6 +390,7 @@ export class TransactionsService {
     productRepo: Repository<Product>,
     transaction: Transaction,
     transactionDetailRepo: Repository<TransactionDetail>,
+    inventoryRepo: Repository<Inventory>,
   ) {
     const { productId, quantity, unitPrice } = dto;
 
@@ -421,8 +425,13 @@ export class TransactionsService {
 
       existingDetail.quantity = newQty.toNumber();
       existingDetail.unitPrice = price.toNumber();
-      existingDetail.totalPrice = Number(
-        price.times(newQty).minus(existingDetail.discount).toFixed(2),
+      existingDetail.totalPrice = Number(price.times(newQty).toFixed(2));
+
+      await this.inventoriesService.updateStockOfProductInventory(
+        productId,
+        quantity,
+        inventoryRepo,
+        'decrease',
       );
 
       return transactionDetailRepo.save(existingDetail);
@@ -443,7 +452,6 @@ export class TransactionsService {
       quantity,
       unitPrice: price.toNumber(),
       totalPrice: Number(price.times(qty).toFixed(2)),
-      discount: 0,
     });
 
     return transactionDetailRepo.save(newTransactionDetail);
@@ -576,5 +584,44 @@ export class TransactionsService {
     }
 
     return omit(transaction, ['cashier.password']);
+  }
+
+  async returnDetails(returnDetailsDto: ReturnDetailsDto, bookStoreId: string) {
+    const dataSource = await this.tenantService.getTenantConnection({
+      bookStoreId,
+    });
+
+    const productRepo = dataSource.getRepository(Product);
+
+    const { createTransactionDetailDtos } = returnDetailsDto;
+
+    let totalAmount = new Decimal(0);
+
+    for (const dto of createTransactionDetailDtos) {
+      const { productId, unitPrice, quantity } = dto;
+
+      const product = await productRepo.findOne({
+        where: { id: productId },
+      });
+
+      if (!product) {
+        throw new NotFoundException('Không tìm thấy thông tin sản phẩm');
+      }
+
+      const price = new Decimal(unitPrice ?? product.price);
+      const qty = new Decimal(quantity);
+
+      totalAmount = totalAmount.plus(price.times(qty));
+    }
+
+    const taxRate = new Decimal(0.1);
+    const taxAmount = totalAmount.times(taxRate);
+    const finalAmount = totalAmount.plus(taxAmount);
+
+    return {
+      finalAmount: finalAmount.toNumber(),
+      taxAmount: taxAmount.toNumber(),
+      totalAmount: totalAmount.toNumber(),
+    };
   }
 }

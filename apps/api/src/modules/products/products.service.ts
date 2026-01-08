@@ -24,7 +24,12 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { EntityManager, FindOptionsRelations, Repository, Brackets } from 'typeorm';
+import {
+  EntityManager,
+  FindOptionsRelations,
+  Repository,
+  Brackets,
+} from 'typeorm';
 
 @Injectable()
 export class ProductsService {
@@ -34,7 +39,7 @@ export class ProductsService {
     private readonly supplierService: SupplierService,
     private readonly categoriesService: CategoriesService,
     private readonly inventoriesService: InventoriesService,
-  ) { }
+  ) {}
 
   async findProductByField(
     field: keyof Product,

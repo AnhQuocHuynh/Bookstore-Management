@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsInt, IsNumber, IsOptional, IsPositive, Min } from 'class-validator';
 import { Type } from 'class-transformer';
+import { IsInt, IsNumber, IsOptional, IsPositive, Min } from 'class-validator';
 
 export class UpdateTransactionDetailDto {
   @ApiPropertyOptional({
@@ -35,22 +35,4 @@ export class UpdateTransactionDetailDto {
     message: 'Giá bán ra phải là số dương',
   })
   readonly unitPrice?: number;
-
-  @ApiPropertyOptional({
-    description: 'Giá trị khuyến mãi áp dụng cho sản phẩm',
-    example: 10000,
-    minimum: 1,
-  })
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber(
-    {},
-    {
-      message: 'Giá trị khuyến mãi phải là số',
-    },
-  )
-  @IsPositive({
-    message: 'Giá trị khuyến mãi phải là số dương',
-  })
-  readonly discount?: number;
 }

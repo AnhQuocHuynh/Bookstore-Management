@@ -33,15 +33,6 @@ export class TransactionDetail {
     type: 'decimal',
     precision: 12,
     scale: 2,
-    default: 0,
-    transformer: DecimalTransformer,
-  })
-  discount: number;
-
-  @Column({
-    type: 'decimal',
-    precision: 12,
-    scale: 2,
     transformer: DecimalTransformer,
   })
   totalPrice: number;

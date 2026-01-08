@@ -48,15 +48,23 @@ export class UpdatePurchaseOrderDto {
   @ApiPropertyOptional({
     description: 'Danh sách chi tiết đơn mua cần cập nhật',
     type: [UpdatePurchaseOrderDetailDto],
-    example: {},
+    example: [
+      {
+        productId: '550e8400-e29b-41d4-a716-446655440000',
+        quantity: 5,
+        unitPrice: 150000,
+      },
+      {
+        productId: '550e8400-e29b-41d4-a716-446655440001',
+        quantity: 2,
+        unitPrice: 120000,
+      },
+    ],
   })
   @IsOptional()
-  @IsNotEmpty()
-  @IsArray()
-  @ArrayNotEmpty()
+  @IsArray({ message: 'Danh sách chi tiết đơn mua phải là mảng' })
+  @ArrayNotEmpty({ message: 'Danh sách chi tiết đơn mua không được rỗng' })
+  @ValidateNested({ each: true })
   @Type(() => UpdatePurchaseOrderDetailDto)
-  @ValidateNested({
-    each: true,
-  })
   readonly updatePurchaseOrderDetailDtos?: UpdatePurchaseOrderDetailDto[];
 }

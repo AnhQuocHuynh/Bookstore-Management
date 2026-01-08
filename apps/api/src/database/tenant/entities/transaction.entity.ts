@@ -50,15 +50,6 @@ export class Transaction {
     default: 0,
     transformer: DecimalTransformer,
   })
-  discountAmount: number;
-
-  @Column({
-    type: 'decimal',
-    precision: 12,
-    scale: 2,
-    default: 0,
-    transformer: DecimalTransformer,
-  })
   taxAmount: number;
 
   @Column({

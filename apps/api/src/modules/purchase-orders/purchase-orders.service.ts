@@ -7,11 +7,13 @@ import { PurchaseStatus } from '@/common/enums';
 import { TUserSession } from '@/common/utils';
 import {
   Employee,
+  Inventory,
   Product,
   PurchaseOrder,
   PurchaseOrderDetail,
   Supplier,
 } from '@/database/tenant/entities';
+import { InventoriesService } from '@/modules/inventories/inventories.service';
 import { ProductsService } from '@/modules/products/products.service';
 import { UserRole } from '@/modules/users/enums';
 import { TenantService } from '@/tenants/tenant.service';
@@ -30,6 +32,7 @@ export class PurchaseOrdersService {
   constructor(
     private readonly tenantService: TenantService,
     private readonly productsService: ProductsService,
+    private readonly inventoriesService: InventoriesService,
   ) {}
 
   async findPurchaseOrderByField(
@@ -251,6 +254,7 @@ export class PurchaseOrdersService {
       const productRepo = manager.getRepository(Product);
       const purchaseOrderDetailRepo =
         manager.getRepository(PurchaseOrderDetail);
+      const inventoryRepo = manager.getRepository(Inventory);
       const findPurchase = await this.findPurchaseOrderByField(
         purchaseOrderRepo,
         'id',
@@ -294,11 +298,17 @@ export class PurchaseOrdersService {
       if (status === PurchaseStatus.SENT_TO_SUPPLIER) {
         findPurchase.purchaseDate = new Date();
       } else if (status === PurchaseStatus.COMPLETED) {
-        for (const { product } of findPurchase.details) {
+        for (const { product, quantity } of findPurchase.details) {
           if (!product.isActive) {
             product.isActive = true;
             await productRepo.save(product);
           }
+          await this.inventoriesService.updateStockOfProductInventory(
+            product.id,
+            quantity,
+            inventoryRepo,
+            'increase',
+          );
         }
       }
 
