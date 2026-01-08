@@ -83,6 +83,7 @@ export class ProductsController {
       ],
       book: null,
       deletedAt: null,
+      taxRate: null,
     },
   })
   @Get('detail')
@@ -150,6 +151,7 @@ export class ProductsController {
         ],
         book: null,
         deletedAt: null,
+        taxRate: 0.03,
       },
     ],
   })
@@ -246,6 +248,7 @@ export class ProductsController {
       ],
       book: null,
       deletedAt: null,
+      taxRate: 0.03,
     },
   })
   @Patch(':id')

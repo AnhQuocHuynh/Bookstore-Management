@@ -596,12 +596,16 @@ export class TransactionsService {
     const { createTransactionDetailDtos } = returnDetailsDto;
 
     let totalAmount = new Decimal(0);
+    let totalTaxAmount = new Decimal(0);
 
     for (const dto of createTransactionDetailDtos) {
       const { productId, unitPrice, quantity } = dto;
 
       const product = await productRepo.findOne({
         where: { id: productId },
+        relations: {
+          categories: true,
+        },
       });
 
       if (!product) {
@@ -610,18 +614,36 @@ export class TransactionsService {
 
       const price = new Decimal(unitPrice ?? product.price);
       const qty = new Decimal(quantity);
+      const lineTotal = price.times(qty);
+      totalAmount = totalAmount.plus(lineTotal);
 
-      totalAmount = totalAmount.plus(price.times(qty));
+      let lineTax: Decimal;
+
+      if (product.taxRate != null) {
+        lineTax = lineTotal.times(new Decimal(product.taxRate));
+      } else if (product.categories.length > 0) {
+        const categoryRates = product.categories.map(
+          (c) => new Decimal(c.taxRate ?? 0),
+        );
+        const sumRate = categoryRates.reduce(
+          (a, b) => a.plus(b),
+          new Decimal(0),
+        );
+        const avgRate = sumRate.dividedBy(categoryRates.length);
+        lineTax = lineTotal.times(avgRate);
+      } else {
+        lineTax = new Decimal(0);
+      }
+
+      totalTaxAmount = totalTaxAmount.plus(lineTax);
     }
 
-    const taxRate = new Decimal(0.1);
-    const taxAmount = totalAmount.times(taxRate);
-    const finalAmount = totalAmount.plus(taxAmount);
+    const finalAmount = totalAmount.plus(totalTaxAmount);
 
     return {
-      finalAmount: finalAmount.toNumber(),
-      taxAmount: taxAmount.toNumber(),
       totalAmount: totalAmount.toNumber(),
+      taxAmount: totalTaxAmount.toNumber(),
+      finalAmount: finalAmount.toNumber(),
     };
   }
 }
