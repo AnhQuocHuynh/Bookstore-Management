@@ -30,7 +30,9 @@ export class Customer {
   @Column()
   address: string;
 
-  @Column()
+  @Column({
+    unique: true,
+  })
   customerCode: string;
 
   @Column({
@@ -42,6 +44,7 @@ export class Customer {
   @Column({
     type: 'enum',
     enum: CustomerType,
+    default: CustomerType.REGULAR,
   })
   customerType: CustomerType;
 
