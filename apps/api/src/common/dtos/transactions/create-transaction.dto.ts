@@ -8,6 +8,7 @@ import {
   IsNumber,
   IsOptional,
   IsPositive,
+  IsUUID,
   ValidateNested,
 } from 'class-validator';
 import { PaymentMethod } from '@/common/enums';
@@ -136,4 +137,14 @@ export class CreateTransactionDto {
     message: 'Tổng số tiền ban đầu phải là số dương',
   })
   readonly totalAmount: number;
+
+  @ApiPropertyOptional({
+    description: 'Mã định danh khách hàng (nếu có)',
+    example: 'id-1',
+  })
+  @IsOptional()
+  @IsUUID('4', {
+    message: 'Mã khách hàng không hợp lệ',
+  })
+  readonly customerId?: string;
 }
