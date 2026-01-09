@@ -1,6 +1,7 @@
 import { PaymentMethod } from '@/common/enums';
 import { DecimalTransformer } from '@/common/transformers';
 import {
+  Customer,
   Employee,
   ReturnOrder,
   TransactionDetail,
@@ -116,4 +117,13 @@ export class Transaction {
 
   @OneToMany(() => ReturnOrder, (ro) => ro.transaction)
   returnOrders: ReturnOrder[];
+
+  @ManyToOne(() => Customer, (customer) => customer.transactions, {
+    onDelete: 'CASCADE',
+    nullable: true,
+  })
+  @JoinColumn({
+    name: 'customer_id',
+  })
+  readonly customer: Customer;
 }

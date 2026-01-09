@@ -9,6 +9,7 @@ import {
 import { ReturnDetailsDto } from '@/common/dtos/transactions/return-details.dto';
 import { TUserSession } from '@/common/utils';
 import {
+  Customer,
   Employee,
   Inventory,
   Product,
@@ -50,6 +51,7 @@ export class TransactionsService {
       const productRepo = manager.getRepository(Product);
       const employeeRepo = manager.getRepository(Employee);
       const inventoryRepo = manager.getRepository(Inventory);
+      const customerRepo = manager.getRepository(Customer);
       const {
         createTransactionDetailDtos,
         note,
@@ -59,6 +61,7 @@ export class TransactionsService {
         taxAmount,
         totalAmount,
         paymentMethod,
+        customerId,
       } = createTransactionDto;
 
       const employee = await employeeRepo.findOne({
@@ -69,6 +72,18 @@ export class TransactionsService {
 
       if (!employee) {
         throw new NotFoundException('Không tìm thấy thông tin của bạn.');
+      }
+
+      if (customerId?.trim()) {
+        const customer = await customerRepo.findOne({
+          where: {
+            id: customerId,
+          },
+        });
+
+        if (!customer) {
+          throw new NotFoundException('Không tìm thấy thông tin khách hàng');
+        }
       }
 
       const newTransaction = transactionRepo.create({
@@ -83,6 +98,11 @@ export class TransactionsService {
         paymentMethod,
         completedAt: new Date(),
         isCompleted: true,
+        ...(customerId?.trim() && {
+          customer: {
+            id: customerId,
+          },
+        }),
       });
 
       await transactionRepo.save(newTransaction);
