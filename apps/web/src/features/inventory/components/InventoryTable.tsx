@@ -1,36 +1,27 @@
 import React from "react";
 import { Spin } from "antd";
-import { InventoryItem } from "../types";
+import { InventoryTableRow } from "../types"; // Đổi từ InventoryItem sang InventoryTableRow
+import { formatCurrency } from "@/utils";
 
 interface InventoryTableProps {
-  data: InventoryItem[];
+  data: InventoryTableRow[]; // Dùng type phẳng cho Table
   loading: boolean;
-  selectedItem: InventoryItem | null;
-  onRowClick: (item: InventoryItem) => void;
+  selectedItem: InventoryTableRow | null;
+  onRowClick: (item: InventoryTableRow) => void;
+  isPanelOpen: boolean;
 }
 
-const tableHeaders = [
-  { label: "STT", width: "flex-[0.5]" },
-  { label: "Mã Sản Phẩm", width: "flex-[1]" },
-  { label: "Hình Ảnh", width: "flex-[0.8]" },
-  { label: "Tên Sản Phẩm", width: "flex-[1.5]" },
-  { label: "Giá nhập", width: "flex-[1]" },
-  { label: "Giá Bán", width: "flex-[1]" },
-  { label: "Lợi nhuận", width: "flex-[1]" },
-  { label: "Tồn Kho", width: "flex-[0.8]" },
-];
-
-export const TableHeader: React.FC = () => {
+export const TableHeader: React.FC<{ isPanelOpen: boolean }> = ({ isPanelOpen }) => {
   return (
-    <div className="h-12 bg-[#1a998f] rounded-t-[20px] flex items-center px-3 py-0 w-full">
-      {tableHeaders.map((header, index) => (
-        <div
-          key={index}
-          className={`${header.width} flex items-center justify-center h-[34px] font-bold text-white text-[14.3px] text-center tracking-[0] leading-[normal]`}
-        >
-          {header.label}
-        </div>
-      ))}
+    <div className="h-12 bg-[#1a998f] rounded-t-[20px] flex items-center px-3 w-full text-white font-bold text-sm">
+      <div className="w-12 text-center">STT</div>
+      <div className="w-24 text-center">Mã SP</div>
+      {!isPanelOpen && <div className="w-20 text-center">Hình ảnh</div>}
+      <div className="flex-1 pl-4">Tên Sản Phẩm</div>
+      {!isPanelOpen && <div className="w-28 text-right">Giá nhập</div>}
+      <div className="w-28 text-right">Giá Bán</div>
+      {!isPanelOpen && <div className="w-28 text-right">Lợi nhuận</div>}
+      <div className="w-20 text-center">Tồn Kho</div>
     </div>
   );
 };
@@ -40,71 +31,47 @@ export const InventoryTable: React.FC<InventoryTableProps> = ({
   loading,
   selectedItem,
   onRowClick,
+  isPanelOpen,
 }) => {
   if (loading) {
-    return (
-      <div className="flex justify-center items-center w-full h-full">
-        <Spin size="large" />
-      </div>
-    );
+    return <div className="flex justify-center items-center h-full w-full"><Spin size="large" /></div>;
   }
 
   return (
-    <table className="w-full">
-      <tbody>
-        {data.map((item, index) => (
-          <tr
-            key={item.key}
-            onClick={() => onRowClick(item)}
-            className={`h-12 cursor-pointer hover:bg-[#1a998fb3] transition-colors ${
-              selectedItem?.key === item.key
-                ? "bg-[#1a998f80]"
-                : index % 2 === 1
-                  ? "bg-[#d4e5e480]"
-                  : "bg-white"
-            }`}
-          >
-            <td colSpan={8}>
-              <div className="flex items-center px-3 py-0 w-full">
-                <div className="flex-[0.5] flex items-center justify-center h-[34px] font-normal text-black text-[14.3px] text-center tracking-[0] leading-[normal]">
-                  {index + 1}
-                </div>
-                <div className="flex-[1] flex items-center justify-center h-[34px] font-normal text-black text-[14.3px] text-center tracking-[0] leading-[normal]">
-                  {item.sku}
-                </div>
-                <div className="flex-[0.8] flex items-center justify-center h-[34px]">
-                  {item.image ? (
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      className="w-[40px] h-[40px] object-cover rounded"
-                    />
-                  ) : (
-                    <div className="w-[40px] h-[40px] bg-gray-200 rounded flex items-center justify-center text-[10px] text-gray-400">
-                      No Image
-                    </div>
-                  )}
-                </div>
-                <div className="flex-[1.5] flex items-center justify-start h-[34px] font-normal text-black text-[14.3px] tracking-[0] leading-[normal]">
-                  {item.name}
-                </div>
-                <div className="flex-[1] h-[34px] text-[14.3px] text-center flex items-center justify-center font-normal text-black tracking-[0] leading-[normal]">
-                  {item.purchasePrice.toLocaleString('vi-VN')}₫
-                </div>
-                <div className="flex-[1] h-[34px] text-[14.3px] text-center flex items-center justify-center font-normal text-black tracking-[0] leading-[normal]">
-                  {item.sellingPrice.toLocaleString('vi-VN')}₫
-                </div>
-                <div className="flex-[1] h-[34px] text-[14.3px] text-center flex items-center justify-center font-normal text-green-600 tracking-[0] leading-[normal]">
-                  {item.profit.toLocaleString('vi-VN')}₫
-                </div>
-                <div className="flex-[0.8] h-[34px] text-[14.3px] text-center flex items-center justify-center font-normal text-black tracking-[0] leading-[normal]">
-                  {item.stock}
-                </div>
-              </div>
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+    <div className="w-full">
+      {data.map((item, index) => (
+        <div
+          key={item.key}
+          onClick={() => onRowClick(item)}
+          className={`
+            flex items-center px-3 h-14 border-b border-gray-100 cursor-pointer transition-colors text-sm text-[#102e3c]
+            ${selectedItem?.key === item.key ? "bg-[#1a998f]/20 border-l-4 border-l-[#1a998f] pl-[8px]" : "hover:bg-gray-50"}
+          `}
+        >
+          <div className="w-12 text-center font-medium text-gray-500">{index + 1}</div>
+          <div className="w-24 text-center font-semibold text-teal-700 truncate" title={item.sku}>{item.sku}</div>
+          {!isPanelOpen && (
+            <div className="w-20 flex justify-center">
+              {item.image ? (
+                <img src={item.image} alt="" className="w-8 h-8 object-cover rounded border" />
+              ) : (
+                <div className="w-8 h-8 bg-gray-200 rounded"></div>
+              )}
+            </div>
+          )}
+          <div className="flex-1 pl-4 font-medium truncate" title={item.name}>{item.name}</div>
+          {!isPanelOpen && <div className="w-28 text-right text-gray-500">{formatCurrency(item.purchasePrice)}</div>}
+          <div className="w-28 text-right font-semibold">{formatCurrency(item.sellingPrice)}</div>
+          {!isPanelOpen && <div className="w-28 text-right text-green-600">{formatCurrency(item.profit)}</div>}
+          <div className={`w-20 text-center font-bold ${item.stock <= 10 ? 'text-red-500' : 'text-gray-700'}`}>
+            {item.stock}
+          </div>
+        </div>
+      ))}
+
+      {data.length === 0 && (
+        <div className="p-10 text-center text-gray-400">Không tìm thấy sản phẩm nào</div>
+      )}
+    </div>
   );
 };

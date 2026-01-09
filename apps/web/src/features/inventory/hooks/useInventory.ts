@@ -1,27 +1,29 @@
-// src/features/inventory/hooks/useInventory.ts
 import { useQuery } from "@tanstack/react-query";
 import { inventoryApi } from "../api/inventory";
 import { InventoryParams } from "../types";
 
-// Hook lấy danh sách sản phẩm (có filter)
 export const useInventory = (params: InventoryParams) => {
+  // Loại bỏ các key có giá trị undefined, null hoặc chuỗi rỗng để tránh lỗi Backend
+  const cleanParams = Object.fromEntries(
+    Object.entries(params).filter(([_, v]) => v != null && v !== "")
+  );
+
   return useQuery({
-    queryKey: ["inventory", params], // Key thay đổi theo params để trigger fetch lại
-    queryFn: () => inventoryApi.getAll(params),
-    staleTime: 1000 * 60, // 1 phút
+    queryKey: ["inventory", cleanParams],
+    queryFn: () => inventoryApi.getAll(cleanParams),
+    staleTime: 1000 * 60, // Cache 1 phút
+    retry: false, // Không tự động gọi lại nếu lỗi (để dễ debug)
   });
 };
 
-// Hook lấy danh mục
 export const useCategories = () => {
   return useQuery({
     queryKey: ["categories-list"],
     queryFn: () => inventoryApi.getCategories(),
-    staleTime: 1000 * 60 * 5, // 5 phút
+    staleTime: 1000 * 60 * 5,
   });
 };
 
-// Hook lấy nhà cung cấp
 export const useSuppliersList = () => {
   return useQuery({
     queryKey: ["suppliers-list"],
