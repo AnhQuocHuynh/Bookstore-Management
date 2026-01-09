@@ -39,7 +39,7 @@ export class ProductsService {
     private readonly supplierService: SupplierService,
     private readonly categoriesService: CategoriesService,
     private readonly inventoriesService: InventoriesService,
-  ) {}
+  ) { }
 
   async findProductByField(
     field: keyof Product,
@@ -245,14 +245,16 @@ export class ProductsService {
     });
 
     if (categoryName?.trim() || categorySlug?.trim()) {
+      // Code MỚI (Đã sửa)
       if (categoryName?.trim()) {
-        qb.andWhere('category.name ILIKE :categoryName', {
+        // Đổi category -> categories
+        qb.andWhere('categories.name ILIKE :categoryName', {
           categoryName: `%${categoryName?.trim()}%`,
         });
       }
-
       if (categorySlug?.trim()) {
-        qb.andWhere('category.slug = :categorySlug', {
+        // Đổi category -> categories
+        qb.andWhere('categories.slug = :categorySlug', {
           categorySlug: categorySlug?.trim(),
         });
       }
