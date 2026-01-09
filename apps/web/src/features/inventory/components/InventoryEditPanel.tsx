@@ -19,14 +19,20 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
   const [imageUrl, setImageUrl] = useState<string>("");
   const [isDirty, setIsDirty] = useState(false);
 
-  // --- SỬA LỖI 1: Chỉ chạy khi initialData thay đổi, không phụ thuộc vào isOpen để tránh loop ---
+  // SỬA LỖI: Chỉ reset và set dữ liệu khi Modal chuyển sang trạng thái MỞ (isOpen = true)
   useEffect(() => {
-    if (initialData) {
+    if (isOpen && initialData) {
       form.setFieldsValue(initialData);
       setImageUrl(initialData.image || "");
       setIsDirty(false);
+    } else if (!isOpen) {
+      // Khi đóng thì reset nhẹ nhàng để lần mở sau sạch sẽ
+      form.resetFields();
+      setImageUrl("");
+      setIsDirty(false);
     }
-  }, [initialData, form]);
+  }, [isOpen, initialData, form]);
+  // Lưu ý: Dependency có 'isOpen' để đảm bảo logic chạy đúng thời điểm mở popup
 
   const handleSubmit = async () => {
     try {
@@ -47,9 +53,6 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
         okText: "Có",
         cancelText: "Không",
         onOk: () => {
-          form.resetFields(); // Reset về initialValues
-          if (initialData) form.setFieldsValue(initialData); // Set lại giá trị cũ
-          setIsDirty(false);
           onClose();
         },
       });
@@ -77,7 +80,7 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
       width={1200}
       centered
       footer={null}
-      destroyOnClose={true} // Tự động dọn dẹp form khi đóng
+      destroyOnClose={true}
       closeIcon={<span className="text-3xl text-[#102e3c] cursor-pointer hover:opacity-70">×</span>}
       styles={{
         body: { backgroundColor: "#D4E5E4", padding: 0 },
@@ -85,13 +88,13 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
       }}
       title={null}
     >
-      {/* ... Phần UI bên trong giữ nguyên ... */}
       <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "#D4E5E4", borderRadius: 12, zIndex: 0 }} />
 
       <div className="bg-[#D4E5E4] rounded-xl p-8 relative" style={{ zIndex: 1 }}>
         <h2 className="text-center text-3xl font-bold text-[#102e3c] mb-8">Sửa Hàng hóa</h2>
 
         <div className="flex gap-8 justify-center">
+          {/* Image */}
           <div className="flex-shrink-0 w-[320px] flex flex-col items-center">
             <div className="relative w-80 h-80 bg-black rounded-2xl border-2 border-[#102e3c] flex items-center justify-center overflow-hidden group cursor-pointer hover:border-[#1a998f] transition-colors">
               {imageUrl ? (
@@ -104,6 +107,7 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
             <p className="text-center text-sm text-[#102e3c] mt-4">Chọn ảnh cho Hàng hóa (320 × 320)</p>
           </div>
 
+          {/* Form */}
           <div className="flex-1">
             <Form form={form} layout="vertical" requiredMark={false} className="space-y-4" onValuesChange={() => setIsDirty(true)}>
               <Form.Item name="name" label={<span className="text-lg font-semibold text-[#102e3c]">Tên Sản Phẩm:</span>} rules={[{ required: true }]}>
