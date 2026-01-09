@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { message, Select, Input } from "antd";
+import { message, Select, Input, Modal } from "antd"; // Thêm Modal
 import { Search, X } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
 
@@ -7,11 +7,11 @@ import { ActionButton } from "./ActionButton";
 import { InventoryTable, TableHeader } from "./InventoryTable";
 import { InventoryDetailPanel } from "./InventoryDetailPanel";
 import { SorterButton } from "./SorterButton";
-// Import đúng Named Export
 import { InventoryAddPanel } from "./InventoryAddPanel";
 import { InventoryEditPanel } from "./InventoryEditPanel";
 
-import { useInventory, useCategories, useSuppliersList } from "../hooks/useInventory";
+// Import thêm useDeleteProduct
+import { useInventory, useCategories, useSuppliersList, useDeleteProduct } from "../hooks/useInventory";
 import { InventoryItem, InventoryTableRow, InventoryFormData } from "../types";
 
 const { Option } = Select;
@@ -47,6 +47,9 @@ export const InventoryPage = () => {
     isActive: true,
   });
 
+  // --- Hook Xóa ---
+  const deleteMutation = useDeleteProduct();
+
   // --- Transform Data ---
   const tableData: InventoryTableRow[] = useMemo(() => {
     const rawData = Array.isArray(productsData?.data) ? productsData?.data : [];
@@ -78,7 +81,7 @@ export const InventoryPage = () => {
     }));
   }, [productsData]);
 
-  // --- Mapping Data for Edit Form (Fix Type Error) ---
+  // --- Mapping Data for Edit Form ---
   const selectedFormData: InventoryFormData | undefined = selectedItem ? {
     sku: selectedItem.sku,
     name: selectedItem.name,
@@ -86,7 +89,7 @@ export const InventoryPage = () => {
     purchasePrice: selectedItem.purchasePrice,
     sellingPrice: selectedItem.sellingPrice,
     stock: selectedItem.stock,
-    category: selectedItem.category, // Cần đảm bảo string này khớp với Select Option
+    category: selectedItem.category,
     supplier: selectedItem.supplier,
     description: selectedItem.description,
     author: selectedItem.author,
@@ -110,6 +113,30 @@ export const InventoryPage = () => {
     }
   };
 
+  // --- Hàm xử lý xóa ---
+  const handleDelete = () => {
+    if (!selectedItem) {
+      message.warning("Vui lòng chọn sản phẩm cần xóa");
+      return;
+    }
+
+    Modal.confirm({
+      title: 'Xác nhận xóa',
+      content: `Bạn có chắc chắn muốn xóa sản phẩm "${selectedItem.name}"?`,
+      okText: 'Xóa',
+      okType: 'danger',
+      cancelText: 'Hủy',
+      onOk: () => {
+        deleteMutation.mutate(selectedItem.id, {
+          onSuccess: () => {
+            // Xóa xong thì đóng panel chi tiết
+            setSelectedItem(null);
+          }
+        });
+      },
+    });
+  };
+
   return (
     <div className="relative w-full h-full overflow-hidden flex flex-col font-['Inter']">
 
@@ -120,7 +147,16 @@ export const InventoryPage = () => {
             <h1 className="font-bold text-[#102e3c] text-2xl sm:text-3xl lg:text-4xl">Tồn Kho</h1>
             <div className="flex items-center gap-2.5 flex-wrap">
               <SorterButton onSortChange={handleSortChange} currentSort={sortBy} currentSortOrder={sortOrder} />
-              <ActionButton label="Xóa" variant="outlined" onClick={() => message.info("Chức năng đang cập nhật")} />
+
+              {/* CẬP NHẬT: Gọi hàm handleDelete */}
+              <ActionButton
+                label="Xóa"
+                variant="outlined"
+                onClick={handleDelete}
+              // Có thể thêm loading state nếu muốn
+              // disabled={deleteMutation.isPending}
+              />
+
               <ActionButton label="Sửa" variant="outlined" onClick={() => selectedItem ? setIsEditPanelOpen(true) : message.warning("Vui lòng chọn sản phẩm")} />
               <ActionButton label="Tạo Mới" variant="filled" onClick={() => setIsAddPanelOpen(true)} />
             </div>
@@ -201,7 +237,6 @@ export const InventoryPage = () => {
         isOpen={isEditPanelOpen}
         onClose={() => setIsEditPanelOpen(false)}
         onSubmit={(data) => console.log("Update:", data)}
-        // Fix lỗi: truyền đúng type InventoryFormData
         initialData={selectedFormData}
       />
     </div>
