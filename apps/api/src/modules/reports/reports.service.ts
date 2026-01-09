@@ -2,6 +2,7 @@ import {
   GetChartFinancialMetricsQueryDto,
   GetOverviewQueryDto,
   GetRevenueDashboardQueryDto,
+  GetEmployeesDashboardQueryDto,
   PeriodType,
 } from '@/common/dtos';
 import { ProductType, PurchaseStatus } from '@/common/enums';
@@ -755,6 +756,126 @@ export class ReportsService {
         datasets: lineDatasets,
       },
       top: topProducts,
+    };
+  }
+
+  async getEmployeesDashboard(
+    bookStoreId: string,
+    dto: GetEmployeesDashboardQueryDto,
+  ) {
+    const dataSource = await this.tenantService.getTenantConnection({
+      bookStoreId,
+    });
+
+    const { from, to, page = 1, limit = 20 } = dto;
+
+    const startDate = from
+      ? new Date(from)
+      : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const endDate = to ? new Date(to) : new Date();
+
+    const transactionRepo = dataSource.getRepository(Transaction);
+
+    const employeeStatsQuery = transactionRepo
+      .createQueryBuilder('t')
+      .leftJoin('t.cashier', 'e')
+      .where('t.isCompleted = :completed', { completed: true })
+      .andWhere('t.createdAt BETWEEN :start AND :end', {
+        start: startDate,
+        end: endDate,
+      })
+      .andWhere('e.id IS NOT NULL')
+      .select('e.id', 'employeeId')
+      .addSelect('e.fullName', 'employeeName')
+      .addSelect('e.avatarUrl', 'avatarUrl')
+      .addSelect('COUNT(t.id)', 'transactionCount')
+      .groupBy('e.id')
+      .addGroupBy('e.fullName')
+      .addGroupBy('e.avatarUrl')
+      .orderBy('COUNT(t.id)', 'DESC');
+
+    const employeeStats = await employeeStatsQuery.getRawMany();
+
+    const totalTransactions = employeeStats.reduce(
+      (sum, stat) => sum + parseInt(stat.transactionCount || '0'),
+      0,
+    );
+
+    const pieItems = employeeStats.map((stat) => {
+      const count = parseInt(stat.transactionCount || '0');
+      return {
+        employeeId: stat.employeeId,
+        employeeName: stat.employeeName,
+        avatarUrl: stat.avatarUrl || undefined,
+        value: count,
+        percent: totalTransactions > 0 ? (count / totalTransactions) * 100 : 0,
+      };
+    });
+
+    const barLabels = pieItems.map((item) => item.employeeName);
+    const barValues = pieItems.map((item) => item.value);
+
+    const skip = (page - 1) * limit;
+
+    const tableQuery = transactionRepo
+      .createQueryBuilder('t')
+      .leftJoinAndSelect('t.cashier', 'e')
+      .where('t.isCompleted = :completed', { completed: true })
+      .andWhere('t.createdAt BETWEEN :start AND :end', {
+        start: startDate,
+        end: endDate,
+      })
+      .andWhere('e.id IS NOT NULL')
+      .select([
+        't.id',
+        't.createdAt',
+        't.finalAmount',
+        'e.id',
+        'e.fullName',
+      ])
+      .orderBy('t.createdAt', 'DESC')
+      .skip(skip)
+      .take(limit);
+
+    const [tableItems, totalCount] = await tableQuery.getManyAndCount();
+
+    const tableTransactions = tableItems.map((t) => ({
+      transactionId: t.id,
+      occurredAt: t.createdAt,
+      employeeId: t.cashier?.id || '',
+      employeeName: t.cashier?.fullName || '',
+      totalAmount: t.finalAmount,
+      currency: 'VND' as const,
+    }));
+
+    const lastDataResult = await transactionRepo
+      .createQueryBuilder('t')
+      .select('MAX(t.updatedAt)', 'lastDataAt')
+      .getRawOne();
+
+    const lastDataAt = new Date(
+      lastDataResult?.lastDataAt || new Date().toISOString(),
+    );
+
+    return {
+      meta: {
+        generatedAt: new Date(),
+        lastDataAt,
+      },
+      pie: {
+        total: totalTransactions,
+        items: pieItems,
+      },
+      bar: {
+        labels: barLabels,
+        values: barValues,
+      },
+      table: {
+        total: totalCount,
+        page,
+        limit,
+        items: tableTransactions,
+      },
     };
   }
 }

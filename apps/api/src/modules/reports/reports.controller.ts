@@ -3,6 +3,7 @@ import {
   GetChartFinancialMetricsQueryDto,
   GetOverviewQueryDto,
   GetRevenueDashboardQueryDto,
+  GetEmployeesDashboardQueryDto,
 } from '@/common/dtos';
 import { UserRole } from '@/modules/users/enums';
 import { Controller, Get, HttpStatus, Query } from '@nestjs/common';
@@ -191,6 +192,57 @@ export class ReportsController {
     return this.reportsService.getRevenueDashboard(
       bookStoreId,
       getRevenueDashboardQueryDto,
+    );
+  }
+
+  @Get('employees/dashboard')
+  @ApiOperation({
+    summary: 'Lấy dữ liệu dashboard hiệu suất nhân viên',
+    description: `
+      Trả về tất cả dữ liệu cần thiết cho trang dashboard hiệu suất nhân viên:
+      - pie: biểu đồ tròn phần trăm giao dịch theo nhân viên
+      - bar: biểu đồ cột số lượng giao dịch theo nhân viên
+      - table: bảng danh sách giao dịch (có phân trang)
+    `,
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Dữ liệu dashboard nhân viên trả về thành công',
+    schema: {
+      example: {
+        meta: {
+          generatedAt: '2025-12-18T07:30:00.000Z',
+          lastDataAt: '2025-12-18T07:25:00.000Z',
+        },
+        pie: {
+          total: 729,
+          items: [
+            { employeeId: 'uuid1', employeeName: 'Nhân viên A', avatarUrl: 'https://...', value: 138, percent: 18.9 },
+          ],
+        },
+        bar: {
+          labels: ['Nhân viên A', 'Nhân viên B'],
+          values: [138, 121],
+        },
+        table: {
+          total: 729,
+          page: 1,
+          limit: 20,
+          items: [
+            { transactionId: 'uuid1', occurredAt: '2025-12-18T09:03:35.000Z', employeeId: 'uuid1', employeeName: 'Nhân viên A', totalAmount: 217500, currency: 'VND' },
+          ],
+        },
+      },
+    },
+  })
+  @Roles(UserRole.EMPLOYEE, UserRole.OWNER)
+  async getEmployeesDashboard(
+    @BookStoreId() bookStoreId: string,
+    @Query() getEmployeesDashboardQueryDto: GetEmployeesDashboardQueryDto,
+  ) {
+    return this.reportsService.getEmployeesDashboard(
+      bookStoreId,
+      getEmployeesDashboardQueryDto,
     );
   }
 }
