@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Modal, Form, Input, Select, Button, message } from "antd";
 
 export interface SupplierFormData {
@@ -43,10 +43,16 @@ export const SupplierEditPanel: React.FC<SupplierEditPanelProps> = ({
   initialData,
 }) => {
   const [form] = Form.useForm();
+  const [isDirty, setIsDirty] = useState(false);
 
   useEffect(() => {
     if (isOpen && initialData) {
       form.setFieldsValue(initialData);
+      setIsDirty(false);
+    } else if (!isOpen) {
+      // Reset when closing
+      form.resetFields();
+      setIsDirty(false);
     }
   }, [isOpen, initialData, form]);
 
@@ -54,6 +60,7 @@ export const SupplierEditPanel: React.FC<SupplierEditPanelProps> = ({
     try {
       const values = await form.validateFields();
       onSubmit(values);
+      setIsDirty(false);
       message.success("Nhà cung cấp đã được cập nhật thành công");
     } catch {
       message.error("Vui lòng kiểm tra lại thông tin");
@@ -61,8 +68,25 @@ export const SupplierEditPanel: React.FC<SupplierEditPanelProps> = ({
   };
 
   const handleClose = () => {
-    form.resetFields();
-    onClose();
+    if (isDirty) {
+      Modal.confirm({
+        title: "Bạn có chắc muốn hủy những thay đổi?",
+        okText: "Có",
+        cancelText: "Không",
+        onOk: () => {
+          form.resetFields();
+          setIsDirty(false);
+          onClose();
+        },
+      });
+    } else {
+      form.resetFields();
+      onClose();
+    }
+  };
+
+  const handleFormChange = () => {
+    setIsDirty(true);
   };
 
   return (
@@ -125,6 +149,7 @@ export const SupplierEditPanel: React.FC<SupplierEditPanelProps> = ({
         labelCol={{ flex: "0 0 220px" }}
         wrapperCol={{ flex: "1" }}
         requiredMark={false}
+        onValuesChange={handleFormChange}
       >
         <Form.Item
           name="name"

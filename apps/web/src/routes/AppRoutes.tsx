@@ -6,6 +6,7 @@ import { DashboardPage } from "../features/dashboard/pages/DashboardPage";
 import { EmployeesPage } from "../features/employees/components/EmployeesPage";
 import { ProductsPage } from "../features/products/components/ProductsPage";
 import { SuppliersPage } from "../features/suppliers/components/SuppliersPage";
+import { InventoryPage } from "../features/inventory/components/InventoryPage";
 import { UsersPage } from "../features/users/components/UsersPage";
 import { UserEditPage } from "../features/users/components/UserEditPage";
 import { CreateSalesPage } from "../features/sales/components/pages/CreateSalesPage";
@@ -36,13 +37,6 @@ const SalesPage = () => (
   <div>
     <h1 className="text-2xl font-bold mb-6">Bán hàng</h1>
     <p>Trang bán hàng đang được phát triển...</p>
-  </div>
-);
-
-const InventoryPage = () => (
-  <div>
-    <h1 className="text-2xl font-bold mb-6">Kho hàng</h1>
-    <p>Trang kho hàng đang được phát triển...</p>
   </div>
 );
 
@@ -102,6 +96,14 @@ export const AppRoutes = () => {
               <ProductsPage />
             </MainLayout>
           }
+        />
+        <Route 
+            path="/dashboard/products/inventories"
+            element={
+              <MainLayout> 
+                <InventoryPage />
+              </MainLayout>
+            }
         />
         <Route
           path="/sales/create" // Đổi path nếu cần hoặc giữ /sales/create
