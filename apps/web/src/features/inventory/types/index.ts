@@ -1,42 +1,58 @@
+// src/features/inventory/types/index.ts
+
 export interface InventoryItem {
-  key: number;
-  id?: string;
-  sku: string; // Mã Sản Phẩm
-  image?: string; // Hình Ảnh
-  name: string; // Tên Sản Phẩm
-  purchasePrice: number; // Giá nhập
-  sellingPrice: number; // Giá Bán
-  profit: number; // Lợi nhuận
-  stock: number; // Tồn Kho
-  category: string; // Danh mục (văn phòng phẩm/sách)
-  supplier?: string; // Nhà Cung Cấp
-  description?: string; // Mô Tả
-  // Book-specific fields
-  author?: string; // Tác Giả
-  publisher?: string; // Nhà Xuất Bản
-  releaseYear?: string; // Năm Xuất
-  releaseVersion?: string; // Phiên Bản Phát Hành
-  language?: string; // Ngôn Ngữ
-  createdDate?: string;
-  updateDate?: string;
-}
-
-export type InventoryCategory = "Văn phòng phẩm" | "Sách";
-
-export interface InventoryFormData {
+  id: string;
   sku: string;
   name: string;
-  image?: string;
-  purchasePrice: number;
-  sellingPrice: number;
-  stock: number;
-  category: InventoryCategory;
-  supplier: string;
-  description: string;
-  // Book-specific fields
-  author?: string;
-  publisher?: string;
-  releaseYear?: string;
-  releaseVersion?: string;
-  language?: string;
+  image?: string; // Backend trả về imageUrl? Cần check lại mapping
+  description?: string;
+  price: number; // Giá bán
+  type: 'book' | 'stationery' | 'other';
+  isActive: boolean;
+
+  // Quan hệ
+  supplier?: {
+    id: string;
+    name: string;
+  };
+  inventory?: {
+    stockQuantity: number;
+    availableQuantity: number;
+    costPrice: number; // Giá nhập
+  };
+  categories?: Array<{
+    id: string;
+    name: string;
+  }>;
+
+  // Các trường bổ sung cho sách (nếu có)
+  book?: {
+    author?: string;
+    publisher?: string;
+    publicationYear?: number;
+  } | null;
+
+  createdAt: string;
+  updatedAt: string;
+
+  // Trường dùng cho UI Table (sẽ map dữ liệu vào đây)
+  key?: string | number;
+}
+
+// CẬP NHẬT INTERFACE NÀY
+export interface InventoryParams {
+  page?: number;
+  limit?: number;
+  keyword?: string;
+  sku?: string;
+  type?: string;
+
+  // Thêm các dòng này vào:
+  categoryName?: string; // <-- Quan trọng: Sửa lỗi "categoryName does not exist"
+  supplierName?: string; // <-- Thêm luôn để lọc nhà cung cấp
+
+  categoryId?: string;   // Có thể giữ hoặc bỏ nếu API không dùng
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  isActive?: boolean;
 }
