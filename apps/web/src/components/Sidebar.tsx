@@ -57,6 +57,11 @@ const menuItems = [
     icon: "category",
   },
   {
+    path: "/dashboard/publishers",
+    label: "Nhà xuất bản",
+    icon: "public",
+  },
+  {
     path: "/reports",
     label: "Thống kê",
     icon: "pie_chart",
