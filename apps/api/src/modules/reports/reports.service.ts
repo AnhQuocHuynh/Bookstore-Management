@@ -3,6 +3,7 @@ import {
   GetOverviewQueryDto,
   GetRevenueDashboardQueryDto,
   GetEmployeesDashboardQueryDto,
+  GetStockDashboardQueryDto,
   PeriodType,
 } from '@/common/dtos';
 import { ProductType, PurchaseStatus } from '@/common/enums';
@@ -11,9 +12,12 @@ import {
   Transaction,
   TransactionDetail,
   PurchaseOrder,
+  PurchaseOrderDetail,
   Product,
   Category,
   Employee,
+  Inventory,
+  InventoryLog,
 } from '@/database/tenant/entities';
 import { TenantService } from '@/tenants/tenant.service';
 import { Injectable } from '@nestjs/common';
@@ -877,5 +881,321 @@ export class ReportsService {
         items: tableTransactions,
       },
     };
+  }
+
+  async getStockDashboard(
+    bookStoreId: string,
+    dto: GetStockDashboardQueryDto,
+  ) {
+    const dataSource = await this.tenantService.getTenantConnection({
+      bookStoreId,
+    });
+
+    const {
+      categoryIds,
+      productType,
+      search,
+      sortBy = 'name',
+      sortOrder = 'ASC',
+      page = 1,
+      limit = 20,
+      productId,
+      salesPeriod = PeriodType.DAY,
+      importPeriod = PeriodType.MONTH,
+      salesFrom,
+      salesTo,
+      importFrom,
+      importTo,
+    } = dto;
+
+    const productRepo = dataSource.getRepository(Product);
+    const inventoryRepo = dataSource.getRepository(Inventory);
+    const inventoryLogRepo = dataSource.getRepository(InventoryLog);
+    const transactionDetailRepo = dataSource.getRepository(TransactionDetail);
+    const purchaseOrderDetailRepo = dataSource.getRepository(PurchaseOrderDetail);
+
+    const queryBuilder = productRepo
+      .createQueryBuilder('p')
+      .leftJoinAndSelect('p.inventory', 'i')
+      .where('p.deletedAt IS NULL');
+
+    if (categoryIds && categoryIds.length > 0) {
+      queryBuilder
+        .leftJoin('p.categories', 'c')
+        .andWhere('c.id IN (:...categoryIds)', { categoryIds });
+    }
+
+    if (productType) {
+      queryBuilder.andWhere('p.type = :productType', { productType });
+    }
+
+    if (search) {
+      queryBuilder.andWhere(
+        '(p.name ILIKE :search OR p.sku ILIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    const sortFieldMap: Record<string, string> = {
+      name: 'p.name',
+      sku: 'p.sku',
+      stockQuantity: 'i.stockQuantity',
+    };
+
+    const sortField = sortFieldMap[sortBy] || 'p.name';
+    queryBuilder.orderBy(sortField, sortOrder === 'DESC' ? 'DESC' : 'ASC');
+
+    const skip = (page - 1) * limit;
+    queryBuilder.skip(skip).take(limit);
+
+    const [products, totalCount] = await queryBuilder.getManyAndCount();
+
+    const inventoryIds = products
+      .map((p) => p.inventory?.id)
+      .filter((id): id is string => !!id);
+
+    const maxStockMap = new Map<string, number>();
+
+    if (inventoryIds.length > 0) {
+      const allLogs = await inventoryLogRepo
+        .createQueryBuilder('il')
+        .leftJoin('il.inventory', 'i')
+        .select('il.inventory_id', 'inventoryId')
+        .addSelect('il.quantityChange', 'quantityChange')
+        .addSelect('il.createdAt', 'createdAt')
+        .where('il.inventory_id IN (:...inventoryIds)', { inventoryIds })
+        .orderBy('il.inventory_id', 'ASC')
+        .addOrderBy('il.createdAt', 'ASC')
+        .getRawMany();
+
+      const logsByInventory = new Map<string, any[]>();
+      for (const log of allLogs) {
+        const invId = log.inventoryId;
+        if (!logsByInventory.has(invId)) {
+          logsByInventory.set(invId, []);
+        }
+        logsByInventory.get(invId)!.push(log);
+      }
+
+      for (const product of products) {
+        const inventory = product.inventory;
+        if (!inventory?.id) {
+          maxStockMap.set(product.id, 100);
+          continue;
+        }
+
+        const currentStock = inventory.stockQuantity || 0;
+        const logs = logsByInventory.get(inventory.id) || [];
+
+        let maxStock = currentStock;
+
+        if (logs.length > 0) {
+          let estimatedStock = currentStock;
+          
+          for (let i = logs.length - 1; i >= 0; i--) {
+            const log = logs[i];
+            estimatedStock -= parseFloat(log.quantityChange || '0');
+            if (estimatedStock > maxStock) {
+              maxStock = estimatedStock;
+            }
+          }
+
+          maxStock = Math.max(maxStock, currentStock);
+        }
+
+        if (maxStock <= 0 || (logs.length === 0 && currentStock > 0)) {
+          const defaultReference = Math.max(currentStock, 100);
+          maxStock = Math.max(maxStock, defaultReference);
+        }
+
+        maxStockMap.set(product.id, maxStock > 0 ? maxStock : 100);
+      }
+    } else {
+      for (const product of products) {
+        maxStockMap.set(product.id, 100);
+      }
+    }
+
+    const tableItems = products.map((product) => {
+      const inventory = product.inventory;
+      const stockQuantity = inventory?.stockQuantity || 0;
+
+      let referenceStock = maxStockMap.get(product.id) || 100;
+
+      if (referenceStock === stockQuantity && stockQuantity > 0) {
+        referenceStock = Math.max(stockQuantity * 1.25, 100);
+      }
+
+      if (referenceStock <= 0) {
+        referenceStock = stockQuantity > 0 ? Math.max(stockQuantity, 100) : 100;
+      }
+
+      const statusPercent =
+        referenceStock > 0 ? (stockQuantity / referenceStock) * 100 : 0;
+
+      let status: string;
+      if (stockQuantity < 0) {
+        status = 'Lỗi tồn kho';
+      } else if (statusPercent < 20) {
+        status = 'Sắp hết hàng';
+      } else if (statusPercent <= 80) {
+        status = 'Bình thường';
+      } else {
+        status = 'Dư hàng';
+      }
+
+      return {
+        productId: product.id,
+        sku: product.sku,
+        name: product.name,
+        imageUrl: product.imageUrl || undefined,
+        stockQuantity,
+        status,
+        statusPercent: Math.round(statusPercent * 100) / 100,
+      };
+    });
+
+    const lastInventoryResult = await inventoryRepo
+      .createQueryBuilder('i')
+      .select('MAX(i.updatedAt)', 'lastInventoryAt')
+      .getRawOne();
+
+    const lastProductResult = await productRepo
+      .createQueryBuilder('p')
+      .select('MAX(p.updatedAt)', 'lastProductAt')
+      .getRawOne();
+
+    const lastDataAt = new Date(
+      Math.max(
+        new Date(lastInventoryResult?.lastInventoryAt || 0).getTime(),
+        new Date(lastProductResult?.lastProductAt || 0).getTime(),
+      ),
+    );
+
+    const response: any = {
+      meta: {
+        generatedAt: new Date(),
+        lastDataAt,
+      },
+      table: {
+        total: totalCount,
+        page,
+        limit,
+        items: tableItems,
+      },
+    };
+
+    if (productId) {
+      const product = await productRepo.findOne({
+        where: { id: productId },
+        relations: ['inventory'],
+      });
+
+      if (product) {
+        const defaultSalesFrom = salesFrom || (() => {
+          const date = new Date();
+          date.setDate(date.getDate() - 7);
+          return date;
+        })();
+        const defaultSalesTo = salesTo || new Date();
+
+        let salesDateGroupBy = '';
+        switch (salesPeriod) {
+          case PeriodType.WEEK:
+            salesDateGroupBy = `TO_CHAR(t.created_at, 'IYYY-"W"IW')`;
+            break;
+          case PeriodType.MONTH:
+            salesDateGroupBy = `TO_CHAR(t.created_at, 'YYYY-MM')`;
+            break;
+          case PeriodType.DAY:
+          default:
+            salesDateGroupBy = `TO_CHAR(t.created_at, 'YYYY-MM-DD')`;
+            break;
+        }
+
+        const salesQuery = transactionDetailRepo
+          .createQueryBuilder('td')
+          .leftJoin('td.transaction', 't')
+          .leftJoin('td.product', 'p')
+          .where('p.id = :productId', { productId })
+          .andWhere('t.isCompleted = :completed', { completed: true })
+          .andWhere('t.createdAt BETWEEN :start AND :end', {
+            start: defaultSalesFrom,
+            end: defaultSalesTo,
+          })
+          .select(salesDateGroupBy, 'label')
+          .addSelect('SUM(td.quantity)', 'quantity')
+          .groupBy('label')
+          .orderBy('label', 'ASC');
+
+        const salesResults = await salesQuery.getRawMany();
+
+        const salesLabels = salesResults.map((r) => r.label || '').sort();
+        const salesValues = salesLabels.map((label) => {
+          const result = salesResults.find((r) => r.label === label);
+          return parseInt(result?.quantity || '0');
+        });
+
+        response.salesChart = {
+          labels: salesLabels,
+          values: salesValues,
+          productName: product.name,
+        };
+
+        const defaultImportFrom = importFrom || (() => {
+          const date = new Date();
+          date.setMonth(date.getMonth() - 6);
+          return date;
+        })();
+        const defaultImportTo = importTo || new Date();
+
+        let importDateGroupBy = '';
+        switch (importPeriod) {
+          case PeriodType.WEEK:
+            importDateGroupBy = `TO_CHAR(po.created_at, 'IYYY-"W"IW')`;
+            break;
+          case PeriodType.DAY:
+            importDateGroupBy = `TO_CHAR(po.created_at, 'YYYY-MM-DD')`;
+            break;
+          case PeriodType.MONTH:
+          default:
+            importDateGroupBy = `TO_CHAR(po.created_at, 'YYYY-MM')`;
+            break;
+        }
+
+        const importQuery = purchaseOrderDetailRepo
+          .createQueryBuilder('pod')
+          .leftJoin('pod.purchaseOrder', 'po')
+          .leftJoin('pod.product', 'p')
+          .where('p.id = :productId', { productId })
+          .andWhere('po.status IN (:...statuses)', {
+            statuses: [PurchaseStatus.RECEIVED, PurchaseStatus.COMPLETED],
+          })
+          .andWhere('po.createdAt BETWEEN :start AND :end', {
+            start: defaultImportFrom,
+            end: defaultImportTo,
+          })
+          .select(importDateGroupBy, 'label')
+          .addSelect('SUM(pod.quantity)', 'quantity')
+          .groupBy('label')
+          .orderBy('label', 'ASC');
+
+        const importResults = await importQuery.getRawMany();
+
+        const importLabels = importResults.map((r) => r.label || '').sort();
+        const importValues = importLabels.map((label) => {
+          const result = importResults.find((r) => r.label === label);
+          return parseInt(result?.quantity || '0');
+        });
+
+        response.importChart = {
+          labels: importLabels,
+          values: importValues,
+          productName: product.name,
+        };
+      }
+    }
+
+    return response;
   }
 }

@@ -4,6 +4,7 @@ import {
   GetOverviewQueryDto,
   GetRevenueDashboardQueryDto,
   GetEmployeesDashboardQueryDto,
+  GetStockDashboardQueryDto,
 } from '@/common/dtos';
 import { UserRole } from '@/modules/users/enums';
 import { Controller, Get, HttpStatus, Query } from '@nestjs/common';
@@ -243,6 +244,92 @@ export class ReportsController {
     return this.reportsService.getEmployeesDashboard(
       bookStoreId,
       getEmployeesDashboardQueryDto,
+    );
+  }
+
+  @Get('stock/dashboard')
+  @ApiOperation({
+    summary: 'Lấy dữ liệu dashboard tồn kho',
+    description: `
+      Trả về tất cả dữ liệu cần thiết cho trang dashboard tồn kho:
+      - table: bảng danh sách sản phẩm với số lượng tồn kho và trạng thái (có phân trang, lọc, sắp xếp)
+      - salesChart: biểu đồ số lượng bán được theo thời gian (chỉ khi có productId)
+      - importChart: biểu đồ số lượng nhập về theo thời gian (chỉ khi có productId)
+    `,
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Dữ liệu dashboard tồn kho trả về thành công',
+    schema: {
+      example: {
+        meta: {
+          generatedAt: '2025-12-18T07:30:00.000Z',
+          lastDataAt: '2025-12-18T07:25:00.000Z',
+        },
+        table: {
+          total: 150,
+          page: 1,
+          limit: 20,
+          items: [
+            {
+              productId: 'uuid1',
+              sku: '7K9P-2WXM',
+              name: 'Tập 100 trang',
+              imageUrl: 'https://...',
+              stockQuantity: 100,
+              status: 'Dư hàng',
+              statusPercent: 100,
+            },
+            {
+              productId: 'uuid2',
+              sku: 'B5ND-L8QY',
+              name: 'Tập 200 trang',
+              imageUrl: 'https://...',
+              stockQuantity: 30,
+              status: 'Bình thường',
+              statusPercent: 60,
+            },
+            {
+              productId: 'uuid3',
+              sku: 'M1RH-X9FZ',
+              name: 'Bút bi (Xanh)',
+              imageUrl: 'https://...',
+              stockQuantity: 5,
+              status: 'Sắp hết hàng',
+              statusPercent: 10,
+            },
+            {
+              productId: 'uuid4',
+              sku: 'B5ND-L8QY',
+              name: 'Bộ Thước Kẻ',
+              imageUrl: 'https://...',
+              stockQuantity: -2,
+              status: 'Lỗi tồn kho',
+              statusPercent: -2,
+            },
+          ],
+        },
+        salesChart: {
+          labels: ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'CN'],
+          values: [15, 20, 18, 35, 25, 30, 28],
+          productName: 'Tập 100 trang',
+        },
+        importChart: {
+          labels: ['T.7', 'T.8', 'T.9', 'T.10', 'T.11', 'T.12'],
+          values: [200, 150, 180, 120, 160, 250],
+          productName: 'Tập 100 trang',
+        },
+      },
+    },
+  })
+  @Roles(UserRole.EMPLOYEE, UserRole.OWNER)
+  async getStockDashboard(
+    @BookStoreId() bookStoreId: string,
+    @Query() getStockDashboardQueryDto: GetStockDashboardQueryDto,
+  ) {
+    return this.reportsService.getStockDashboard(
+      bookStoreId,
+      getStockDashboardQueryDto,
     );
   }
 }

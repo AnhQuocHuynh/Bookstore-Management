@@ -153,7 +153,7 @@ export class TenantService implements OnModuleDestroy {
       password: rawConfig!.password,
       database: rawConfig!.database,
       entities: [join(__dirname, '../database/tenant/entities/**/*{.ts,.js}')],
-      synchronize: true,
+      synchronize: false,
       namingStrategy: new SnakeNamingStrategy(),
     };
 
