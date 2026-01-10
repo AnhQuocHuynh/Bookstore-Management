@@ -1,39 +1,12 @@
-import React, { useState, useEffect } from "react";
-import { Modal, Form, Input, Select, Button, message } from "antd";
-
-export interface SupplierFormData {
-  name: string;
-  email: string;
-  phone: string;
-  address: string;
-  status: "Hoạt động" | "Ngưng hoạt động";
-  taxCode: string;
-  contactPerson: string;
-  note: string;
-}
+import React, { useState } from "react";
+import { Modal, Form, Input, Button, message } from "antd";
+import { SupplierFormData } from "../types";
 
 interface SupplierAddPanelProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: SupplierFormData) => void;
 }
-
-const labelStyle: React.CSSProperties = {
-  fontSize: "22px",
-  fontWeight: 600,
-  color: "#102e3c",
-  textAlign: "left",
-};
-
-const inputStyle: React.CSSProperties = {
-  fontSize: "22px",
-  color: "#102e3c",
-  background: "transparent",
-  border: "none",
-  borderBottom: "2px solid #102e3c",
-  borderRadius: 20,
-  padding: "4px 0",
-};
 
 export const SupplierAddPanel: React.FC<SupplierAddPanelProps> = ({
   isOpen,
@@ -43,196 +16,93 @@ export const SupplierAddPanel: React.FC<SupplierAddPanelProps> = ({
   const [form] = Form.useForm();
   const [isDirty, setIsDirty] = useState(false);
 
-  // Reset form when panel opens
-  useEffect(() => {
-    if (isOpen) {
-      form.resetFields();
-      setIsDirty(false);
-    }
-  }, [isOpen, form]);
+  // --- ĐÃ XÓA useEffect GÂY LỖI ---
 
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
       onSubmit(values);
-      form.resetFields();
+      // Logic reset sẽ được xử lý tự động bởi afterClose hoặc destroyOnClose
       setIsDirty(false);
-      message.success("Nhà cung cấp đã được thêm thành công");
     } catch {
-      message.error("Vui lòng kiểm tra lại thông tin");
+      // Validate fail
     }
   };
 
   const handleClose = () => {
     if (isDirty) {
       Modal.confirm({
-        title: "Bạn có chắc muốn hủy những thay đổi?",
-        okText: "Có",
-        cancelText: "Không",
-        onOk: () => {
-          form.resetFields();
-          setIsDirty(false);
-          onClose();
-        },
+        title: "Bạn có chắc muốn hủy?",
+        content: "Dữ liệu chưa lưu sẽ bị mất.",
+        okText: "Đóng",
+        cancelText: "Tiếp tục nhập",
+        onOk: onClose, // onClose sẽ kích hoạt đóng modal -> sau đó afterClose chạy
       });
     } else {
-      form.resetFields();
       onClose();
     }
-  };
-
-  const handleFormChange = () => {
-    setIsDirty(true);
   };
 
   return (
     <Modal
       open={isOpen}
       onCancel={handleClose}
-      width={1100}
+      // SỬA LỖI: Reset form và state sau khi modal đã đóng hoàn toàn
+      afterClose={() => {
+        form.resetFields();
+        setIsDirty(false);
+      }}
+      width={800}
       centered
       footer={null}
-      closeIcon={<span style={{ fontSize: 28, color: "#102e3c" }}>✕</span>}
-      styles={{
-        header: {
-          backgroundColor: "#D4E5E4",
-          marginBottom: 30,
-          borderBottom: "none",
-        },
-        body: {
-          backgroundColor: "#D4E5E4",
-        },
-      }}
-      title={
-        <div
-          style={{
-            textAlign: "center",
-            fontSize: 32,
-            fontWeight: "bold",
-            color: "#102e3c",
-            marginTop: 10,
-            position: "relative",
-            zIndex: 10,
-          }}
-        >
-          Thêm Nhà cung cấp mới
-        </div>
-      }
+      destroyOnClose={true} // Tự động hủy DOM khi đóng
+      title={null}
+      styles={{ body: { padding: 0 }, mask: { backgroundColor: "rgba(16, 46, 60, 0.5)" } }}
+      closeIcon={<span className="text-2xl text-[#102e3c] hover:opacity-70">×</span>}
     >
-      <div
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: "#D4E5E4",
-          borderRadius: 12,
-          zIndex: 0,
-        }}
-      />
-      <Form
-        style={{
-          paddingLeft: 50,
-          paddingRight: 50,
-          position: "relative",
-          zIndex: 1,
-        }}
-        form={form}
-        layout="horizontal"
-        labelAlign="left"
-        colon={false}
-        labelCol={{ flex: "0 0 220px" }}
-        wrapperCol={{ flex: "1" }}
-        requiredMark={false}
-        onValuesChange={handleFormChange}
-      >
-        <Form.Item
-          name="name"
-          label={<span style={labelStyle}>Tên Nhà cung cấp:</span>}
-        >
-          <Input style={inputStyle} />
-        </Form.Item>
+      <div className="bg-[#D4E5E4] rounded-lg p-6">
+        <h2 className="text-center text-2xl font-bold text-[#102e3c] mb-6">Thêm Nhà Cung Cấp</h2>
 
-        <Form.Item name="email" label={<span style={labelStyle}>Email:</span>}>
-          <Input style={inputStyle} />
-        </Form.Item>
+        {/* Thêm prop form={form} */}
+        <Form form={form} layout="vertical" onValuesChange={() => setIsDirty(true)}>
+          <div className="grid grid-cols-2 gap-4">
+            <Form.Item name="name" label={<span className="font-semibold">Tên Nhà Cung Cấp</span>} rules={[{ required: true, message: "Bắt buộc nhập" }]}>
+              <Input className="border-[#102e3c]" />
+            </Form.Item>
+            <Form.Item name="contactPerson" label={<span className="font-semibold">Người Liên Hệ</span>}>
+              <Input className="border-[#102e3c]" />
+            </Form.Item>
+          </div>
 
-        <Form.Item name="phone" label={<span style={labelStyle}>SĐT:</span>}>
-          <Input style={inputStyle} />
-        </Form.Item>
+          <div className="grid grid-cols-2 gap-4">
+            <Form.Item name="email" label={<span className="font-semibold">Email</span>} rules={[{ required: true, message: "Bắt buộc nhập" }, { type: 'email', message: "Email không hợp lệ" }]}>
+              <Input className="border-[#102e3c]" />
+            </Form.Item>
+            <Form.Item name="phoneNumber" label={<span className="font-semibold">Số Điện Thoại</span>} rules={[{ required: true, message: "Bắt buộc nhập" }]}>
+              <Input className="border-[#102e3c]" />
+            </Form.Item>
+          </div>
 
-        <Form.Item
-          name="address"
-          label={<span style={labelStyle}>Địa chỉ:</span>}
-        >
-          <Input.TextArea autoSize style={{ ...inputStyle, resize: "none" }} />
-        </Form.Item>
+          <div className="grid grid-cols-2 gap-4">
+            <Form.Item name="address" label={<span className="font-semibold">Địa Chỉ</span>} rules={[{ required: true, message: "Bắt buộc nhập" }]}>
+              <Input className="border-[#102e3c]" />
+            </Form.Item>
+            <Form.Item name="taxCode" label={<span className="font-semibold">Mã Số Thuế</span>}>
+              <Input className="border-[#102e3c]" />
+            </Form.Item>
+          </div>
 
-        <Form.Item
-          name="status"
-          label={<span style={labelStyle}>Trạng thái</span>}
-        >
-          <Select
-            variant="borderless"
-            style={{
-              width: "100%",
-              fontSize: 22,
-              borderBottom: "2px solid #102e3c",
-            }}
-            suffixIcon={<span style={{ fontSize: 16 }}>▼</span>}
-            options={[
-              { value: "Hoạt động", label: "Hoạt động" },
-              { value: "Ngưng hoạt động", label: "Ngưng hoạt động" },
-            ]}
-          />
-        </Form.Item>
+          <Form.Item name="note" label={<span className="font-semibold">Ghi Chú</span>}>
+            <Input.TextArea rows={3} className="border-[#102e3c]" />
+          </Form.Item>
 
-        <Form.Item
-          name="taxCode"
-          label={<span style={labelStyle}>Người liên lạc</span>}
-        >
-          <Select
-            variant="borderless"
-            style={{
-              width: "100%",
-              fontSize: 22,
-              borderBottom: "2px solid #102e3c",
-            }}
-            suffixIcon={<span style={{ fontSize: 16 }}>▼</span>}
-            options={[
-              {
-                value: "nguyenvana@email.com.vn",
-                label: "nguyenvana@email.com.vn",
-              },
-            ]}
-          />
-        </Form.Item>
-
-        <Form.Item name="note" label={<span style={labelStyle}>Ghi chú</span>}>
-          <Input style={inputStyle} />
-        </Form.Item>
-
-        <div
-          style={{ marginTop: 60, display: "flex", justifyContent: "center" }}
-        >
-          <Button
-            type="primary"
-            onClick={handleSubmit}
-            style={{
-              height: 50,
-              width: 480,
-              borderRadius: 20,
-              backgroundColor: "#1a998f",
-              fontSize: 28,
-              fontWeight: "bold",
-              border: "none",
-            }}
-          >
-            Thêm Nhà Cung cấp
-          </Button>
-        </div>
-      </Form>
+          <div className="flex justify-center mt-6">
+            <Button type="primary" onClick={handleSubmit} className="bg-[#1a998f] hover:bg-[#158f85] h-10 px-10 font-bold rounded-xl border-none">
+              Lưu Thông Tin
+            </Button>
+          </div>
+        </Form>
+      </div>
     </Modal>
   );
 };
