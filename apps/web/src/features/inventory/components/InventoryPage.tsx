@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { message, Select, Input, Modal } from "antd"; // Thêm Modal
+import { message, Select, Input, Modal } from "antd";
 import { Search, X } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
 
@@ -10,8 +10,14 @@ import { SorterButton } from "./SorterButton";
 import { InventoryAddPanel } from "./InventoryAddPanel";
 import { InventoryEditPanel } from "./InventoryEditPanel";
 
-// Import thêm useDeleteProduct
-import { useInventory, useCategories, useSuppliersList, useDeleteProduct } from "../hooks/useInventory";
+import {
+  useInventory,
+  useCategories,
+  useSuppliersList,
+  useDeleteProduct,
+  useUpdateProduct
+} from "../hooks/useInventory";
+
 import { InventoryItem, InventoryTableRow, InventoryFormData } from "../types";
 
 const { Option } = Select;
@@ -44,13 +50,14 @@ export const InventoryPage = () => {
     type: selectedType,
     sortBy,
     sortOrder,
-    isActive: true,
+    isActive: undefined, // Lấy tất cả (cả true và false) để hiển thị
   });
 
-  // --- Hook Xóa ---
+  // --- Mutations ---
   const deleteMutation = useDeleteProduct();
+  const updateMutation = useUpdateProduct();
 
-  // --- Transform Data ---
+  // --- Transform Data (API -> Table UI) ---
   const tableData: InventoryTableRow[] = useMemo(() => {
     const rawData = Array.isArray(productsData?.data) ? productsData?.data : [];
 
@@ -70,6 +77,9 @@ export const InventoryPage = () => {
       category: item.categories?.[0]?.name || "--",
 
       description: item.description || "",
+      // Fix lỗi: Giờ InventoryTableRow đã có isActive
+      isActive: item.isActive,
+
       author: item.book?.author,
       publisher: item.book?.publisher,
       releaseYear: item.book?.publicationYear,
@@ -81,22 +91,19 @@ export const InventoryPage = () => {
     }));
   }, [productsData]);
 
-  // --- Mapping Data for Edit Form ---
+  // --- Transform Data (Table UI -> Edit Form) ---
   const selectedFormData: InventoryFormData | undefined = selectedItem ? {
     sku: selectedItem.sku,
     name: selectedItem.name,
     image: selectedItem.image,
-    purchasePrice: selectedItem.purchasePrice,
     sellingPrice: selectedItem.sellingPrice,
+    isActive: selectedItem.isActive, // Binding dữ liệu vào Form
+    description: selectedItem.description,
+
+    // Các trường optional
     stock: selectedItem.stock,
     category: selectedItem.category,
     supplier: selectedItem.supplier,
-    description: selectedItem.description,
-    author: selectedItem.author,
-    publisher: selectedItem.publisher,
-    releaseYear: selectedItem.releaseYear?.toString(),
-    releaseVersion: selectedItem.releaseVersion,
-    language: selectedItem.language,
   } : undefined;
 
   // --- Handlers ---
@@ -113,7 +120,6 @@ export const InventoryPage = () => {
     }
   };
 
-  // --- Hàm xử lý xóa ---
   const handleDelete = () => {
     if (!selectedItem) {
       message.warning("Vui lòng chọn sản phẩm cần xóa");
@@ -129,7 +135,6 @@ export const InventoryPage = () => {
       onOk: () => {
         deleteMutation.mutate(selectedItem.id, {
           onSuccess: () => {
-            // Xóa xong thì đóng panel chi tiết
             setSelectedItem(null);
           }
         });
@@ -137,10 +142,43 @@ export const InventoryPage = () => {
     });
   };
 
+  const handleUpdate = (formData: InventoryFormData) => {
+    if (!selectedItem) return;
+
+    // Map dữ liệu từ Form (sellingPrice) -> API (price)
+    const updatePayload = {
+      sku: formData.sku,
+      name: formData.name,
+      description: formData.description,
+      price: formData.sellingPrice, // Đổi tên cho đúng API
+      imageUrl: formData.image,
+      isActive: formData.isActive,
+    };
+
+    updateMutation.mutate({
+      id: selectedItem.id,
+      data: updatePayload
+    }, {
+      onSuccess: () => {
+        setIsEditPanelOpen(false);
+        // Cập nhật lại UI tạm thời
+        setSelectedItem((prev) => prev ? ({
+          ...prev,
+          name: formData.name,
+          sku: formData.sku,
+          image: formData.image || "",
+          sellingPrice: formData.sellingPrice,
+          description: formData.description,
+          isActive: formData.isActive,
+        }) : null);
+      }
+    });
+  };
+
   return (
     <div className="relative w-full h-full overflow-hidden flex flex-col font-['Inter']">
 
-      {/* Header */}
+      {/* --- Header --- */}
       <div className="flex-shrink-0 px-6 pt-3 pb-2">
         <div className="flex flex-col gap-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
@@ -148,20 +186,27 @@ export const InventoryPage = () => {
             <div className="flex items-center gap-2.5 flex-wrap">
               <SorterButton onSortChange={handleSortChange} currentSort={sortBy} currentSortOrder={sortOrder} />
 
-              {/* CẬP NHẬT: Gọi hàm handleDelete */}
               <ActionButton
                 label="Xóa"
                 variant="outlined"
                 onClick={handleDelete}
-              // Có thể thêm loading state nếu muốn
-              // disabled={deleteMutation.isPending}
               />
 
-              <ActionButton label="Sửa" variant="outlined" onClick={() => selectedItem ? setIsEditPanelOpen(true) : message.warning("Vui lòng chọn sản phẩm")} />
-              <ActionButton label="Tạo Mới" variant="filled" onClick={() => setIsAddPanelOpen(true)} />
+              <ActionButton
+                label="Sửa"
+                variant="outlined"
+                onClick={() => selectedItem ? setIsEditPanelOpen(true) : message.warning("Vui lòng chọn sản phẩm")}
+              />
+
+              <ActionButton
+                label="Tạo Mới"
+                variant="filled"
+                onClick={() => setIsAddPanelOpen(true)}
+              />
             </div>
           </div>
 
+          {/* --- Filter Bar --- */}
           <div className="flex flex-wrap items-center gap-3 mt-2 bg-white p-3 rounded-xl border border-[#102e3c]/10 shadow-sm">
             <div className="relative w-full sm:w-64">
               <Input
@@ -189,7 +234,7 @@ export const InventoryPage = () => {
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* --- Main Content --- */}
       <main className="flex-1 px-6 pb-6 overflow-hidden mt-4 relative">
         <section className="relative w-full h-full bg-white rounded-[20px] overflow-hidden border border-solid border-[#102e3c] shadow-sm flex flex-col">
 
@@ -225,7 +270,7 @@ export const InventoryPage = () => {
         </section>
       </main>
 
-      {/* Modals */}
+      {/* --- Modals --- */}
       <InventoryAddPanel
         isOpen={isAddPanelOpen}
         category={null}
@@ -236,7 +281,7 @@ export const InventoryPage = () => {
       <InventoryEditPanel
         isOpen={isEditPanelOpen}
         onClose={() => setIsEditPanelOpen(false)}
-        onSubmit={(data) => console.log("Update:", data)}
+        onSubmit={handleUpdate}
         initialData={selectedFormData}
       />
     </div>

@@ -60,3 +60,29 @@ export const useDeleteProduct = () => {
     },
   });
 };
+
+// --- THÊM MỚI: Hook Cập nhật sản phẩm ---
+export const useUpdateProduct = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => inventoryApi.update(id, data),
+    onSuccess: () => {
+      message.success("Cập nhật sản phẩm thành công");
+      // Làm mới danh sách để hiển thị dữ liệu mới nhất
+      queryClient.invalidateQueries({ queryKey: ["inventory"] });
+    },
+    onError: (error: any) => {
+      const status = error?.response?.status;
+      if (status === 409) {
+        message.error("Tên sản phẩm hoặc SKU đã tồn tại");
+      } else if (status === 404) {
+        message.error("Không tìm thấy sản phẩm");
+      } else if (status === 403) {
+        message.error("Bạn không có quyền sửa sản phẩm này");
+      } else {
+        message.error("Lỗi khi cập nhật sản phẩm");
+      }
+    },
+  });
+};

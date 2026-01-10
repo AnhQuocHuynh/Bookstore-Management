@@ -13,7 +13,7 @@ export const inventoryApi = {
 	// Tạo mới
 	create: (data: unknown) => apiClient.post("/products", data),
 
-	// Cập nhật
+	// --- CẬP NHẬT: Sửa sản phẩm (PATCH) ---
 	update: (id: string, data: unknown) => apiClient.patch(`/products/${id}`, data),
 
 	// --- THÊM MỚI: Xóa mềm sản phẩm ---

@@ -4,7 +4,7 @@ export interface InventoryItem {
   name: string;
   imageUrl?: string;
   description?: string;
-  price: number; // Giá bán
+  price: number;
   type: string;
   isActive: boolean;
   supplier?: {
@@ -14,7 +14,7 @@ export interface InventoryItem {
   inventory?: {
     stockQuantity: number;
     availableQuantity: number;
-    costPrice: number; // Giá vốn
+    costPrice: number;
   };
   categories?: Array<{
     id: string;
@@ -31,7 +31,6 @@ export interface InventoryItem {
   updatedAt: string;
 }
 
-// Interface dùng riêng cho Table để tránh lỗi truy cập property không tồn tại
 export interface InventoryTableRow {
   key: string;
   id: string;
@@ -39,7 +38,6 @@ export interface InventoryTableRow {
   name: string;
   image: string;
 
-  // Các trường đã được làm phẳng (flat)
   purchasePrice: number;
   sellingPrice: number;
   profit: number;
@@ -49,7 +47,9 @@ export interface InventoryTableRow {
   supplier: string;
   description: string;
 
-  // Thông tin sách
+  // FIX LỖI 2: Thêm trường isActive vào đây
+  isActive: boolean;
+
   author?: string;
   publisher?: string;
   releaseYear?: number;
@@ -66,24 +66,29 @@ export interface InventoryParams {
   keyword?: string;
   sku?: string;
   type?: string;
-  categoryName?: string; // Lọc theo tên danh mục
-  supplierName?: string; // Lọc theo tên NCC
+  categoryName?: string;
+  supplierName?: string;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
   isActive?: boolean;
 }
 
-// Dùng cho form thêm/sửa (nếu cần)
 export interface InventoryFormData {
   sku: string;
   name: string;
   image?: string;
-  purchasePrice: number;
+
+  // FIX LỖI 1: Bỏ 'price' (vì form dùng sellingPrice), hoặc để optional
   sellingPrice: number;
-  stock: number;
-  category: string;
-  supplier: string;
+
   description: string;
+  isActive: boolean;
+
+  // Các trường optional khác
+  purchasePrice?: number;
+  stock?: number;
+  category?: string;
+  supplier?: string;
   author?: string;
   publisher?: string;
   releaseYear?: string;

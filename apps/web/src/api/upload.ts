@@ -1,19 +1,26 @@
 import { apiClient } from "@/lib/axios";
 
-// Định nghĩa kiểu dữ liệu mà Server trả về
+// Định nghĩa kiểu dữ liệu trả về từ Server
 interface UploadResponse {
     url: string;
 }
 
 export const uploadApi = {
     uploadFile: async (file: File): Promise<string> => {
+        // 1. Khởi tạo FormData
         const formData = new FormData();
+
+        // 2. QUAN TRỌNG: Key bắt buộc phải là 'file' (khớp với @UseInterceptors(FileInterceptor('file')) ở Backend)
         formData.append("file", file);
 
-        // Thêm <UploadResponse> để TypeScript hiểu cấu trúc dữ liệu trả về
-        const response = await apiClient.post<UploadResponse>("/files/upload", formData);
+        // 3. Gọi API với header chính xác
+        const response = await apiClient.post<UploadResponse>("/files/upload", formData, {
+            headers: {
+                "Content-Type": "multipart/form-data",
+            },
+        });
 
-        // SỬA LỖI: Truy cập vào response.data.url thay vì response.url
+        // Trả về URL ảnh
         return response.data.url;
     },
 };

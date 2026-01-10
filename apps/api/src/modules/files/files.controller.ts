@@ -15,6 +15,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { BadRequestException } from '@nestjs/common';
 
 @Controller('files')
 @ApiTags('Upload File') // Đặt tên nhóm API cho dễ tìm
@@ -50,6 +51,9 @@ export class FilesController {
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
   async uploadFile(@UploadedFile() file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('Không tìm thấy file. Vui lòng kiểm tra key gửi lên phải là "file".');
+    }
     return this.filesService.uploadFile(file);
   }
 }
