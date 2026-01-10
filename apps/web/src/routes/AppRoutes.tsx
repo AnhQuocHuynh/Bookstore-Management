@@ -23,6 +23,7 @@ import { PublicRoute } from "./PublicRoute";
 import { TokenProtectedRoute } from "./TokenProtectedRoute";
 import RevenuePage from "@/features/reports/pages/RevenuePage";
 import EmployeePerformancePage from "@/features/reports/pages/EmployeePerformancePage";
+import { CategoriesPage } from "@/features/categories/components/CategoriesPage";
 
 // Select Store Page (Semi-protected: requires token but no store)
 // const SelectStorePage = () => (
@@ -134,6 +135,14 @@ export const AppRoutes = () => {
           element={
             <MainLayout>
               <CustomerPage />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/dashboard/categories"
+          element={
+            <MainLayout>
+              <CategoriesPage />
             </MainLayout>
           }
         />
