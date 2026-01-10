@@ -1,6 +1,7 @@
 import { IsNonEmptyString } from '@/common/decorators';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsNumber, IsOptional, IsPositive } from 'class-validator';
+
+import { IsBoolean, IsNumber, IsOptional, IsPositive, IsUrl } from 'class-validator';
 
 export class UpdateProductDto {
   @ApiPropertyOptional({
@@ -49,4 +50,13 @@ export class UpdateProductDto {
   @IsOptional()
   @IsBoolean({ message: 'Trạng thái sản phẩm phải là true hoặc false' })
   readonly isActive?: boolean;
+
+  // --- THÊM ĐOẠN NÀY ---
+  @ApiPropertyOptional({
+    description: 'Đường dẫn ảnh sản phẩm (URL từ API upload)',
+    example: 'https://res.cloudinary.com/demo/image/upload/sample.jpg',
+  })
+  @IsOptional()
+  @IsUrl({}, { message: 'Đường dẫn ảnh phải là URL hợp lệ' })
+  readonly imageUrl?: string;
 }
