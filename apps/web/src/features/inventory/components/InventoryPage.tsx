@@ -97,7 +97,7 @@ export const InventoryPage = () => {
     name: selectedItem.name,
     image: selectedItem.image,
     sellingPrice: selectedItem.sellingPrice,
-    isActive: selectedItem.isActive, // Binding dữ liệu vào Form
+    isActive: selectedItem.isActive ?? true,
     description: selectedItem.description,
 
     // Các trường optional

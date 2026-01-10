@@ -24,12 +24,14 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
 
   useEffect(() => {
     if (isOpen && initialData) {
+      console.log("Dữ liệu nhận được:", initialData.isActive); // Debug log
+
       form.setFieldsValue({
         sku: initialData.sku,
         name: initialData.name,
         sellingPrice: initialData.sellingPrice,
         description: initialData.description,
-        isActive: initialData.isActive,
+        isActive: initialData.isActive, // Binding dữ liệu
       });
       setImageUrl(initialData.image || "");
       setRawFile(null);
@@ -103,7 +105,7 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
       width={900}
       centered
       footer={null}
-      destroyOnClose={true}
+      destroyOnClose={true} // AntD mới có thể yêu cầu destroyOnHidden, nhưng destroyOnClose vẫn phổ biến. Nếu warning vẫn còn, hãy đổi thành destroyOnHidden={true}
       closeIcon={<span className="text-3xl text-[#102e3c] cursor-pointer hover:opacity-70">×</span>}
       styles={{
         body: { backgroundColor: "#D4E5E4", padding: 0 },
@@ -136,7 +138,14 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
 
           {/* Cột Phải: Form */}
           <div className="flex-1">
-            <Form form={form} layout="vertical" requiredMark={false} className="space-y-3" onValuesChange={() => setIsDirty(true)}>
+            {/* QUAN TRỌNG: Thêm prop form={form} vào đây để sửa lỗi Warning "not connected" */}
+            <Form
+              form={form}
+              layout="vertical"
+              requiredMark={false}
+              className="space-y-3"
+              onValuesChange={() => setIsDirty(true)}
+            >
 
               <div className="grid grid-cols-3 gap-4">
                 <Form.Item name="sku" label={<span className="font-semibold text-[#102e3c]">Mã SKU</span>} className="col-span-1">
@@ -149,7 +158,6 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
 
               <div className="grid grid-cols-2 gap-4 items-end">
                 <Form.Item name="sellingPrice" label={<span className="font-semibold text-[#102e3c]">Giá Bán (VNĐ)</span>} rules={[{ required: true }]}>
-                  {/* FIX LỖI Ở ĐÂY: Thêm <number> để ép kiểu generic */}
                   <InputNumber<number>
                     min={0}
                     className="w-full border-[#102e3c]"
@@ -161,16 +169,29 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
                   />
                 </Form.Item>
 
-                <Form.Item name="isActive" valuePropName="checked" label={<span className="font-semibold text-[#102e3c]">Trạng thái kinh doanh</span>}>
+                {/* --- FIX LỖI SWITCH KHÔNG BẬT --- */}
+                <div className="flex flex-col gap-2 mb-6">
+                  <span className="font-semibold text-[#102e3c]">Trạng thái kinh doanh:</span>
                   <div className="flex items-center gap-3">
-                    <Switch />
-                    {form.getFieldValue("isActive") ? (
-                      <Tag color="success">Đang bán</Tag>
-                    ) : (
-                      <Tag color="error">Ngừng kinh doanh</Tag>
-                    )}
+                    {/* Form.Item phải bao bọc trực tiếp Switch, không được qua thẻ div trung gian */}
+                    <Form.Item name="isActive" valuePropName="checked" noStyle>
+                      <Switch />
+                    </Form.Item>
+
+                    {/* Dùng Form.Item noStyle để lắng nghe thay đổi và hiển thị Tag */}
+                    <Form.Item noStyle shouldUpdate={(prev, curr) => prev.isActive !== curr.isActive}>
+                      {({ getFieldValue }) =>
+                        getFieldValue("isActive") ? (
+                          <Tag color="success">Đang bán</Tag>
+                        ) : (
+                          <Tag color="error">Ngừng kinh doanh</Tag>
+                        )
+                      }
+                    </Form.Item>
                   </div>
-                </Form.Item>
+                </div>
+                {/* --------------------------------- */}
+
               </div>
 
               <Form.Item name="description" label={<span className="font-semibold text-[#102e3c]">Mô Tả Chi Tiết</span>}>
