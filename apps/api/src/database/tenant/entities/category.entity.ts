@@ -55,4 +55,16 @@ export class Category {
 
   @ManyToMany(() => Product, (product) => product.categories)
   products: Product[];
+
+  // --- BỔ SUNG ĐOẠN NÀY ---
+  @ManyToOne(() => Category, (category) => category.children, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
+  @JoinColumn({ name: 'parent_id' })
+  parent?: Category;
+
+  @OneToMany(() => Category, (category) => category.parent)
+  children: Category[];
+  // -------------------------
 }

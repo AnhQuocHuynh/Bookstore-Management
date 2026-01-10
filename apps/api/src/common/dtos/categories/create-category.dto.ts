@@ -24,4 +24,10 @@ export class CreateCategoryDto {
   @IsNumber()
   @IsPositive()
   readonly taxRate: number;
+
+  // --- BỔ SUNG ĐOẠN NÀY ---
+  @IsOptional()
+  @IsUUID()
+  readonly parentId?: string;
+  // -------------------------
 }
