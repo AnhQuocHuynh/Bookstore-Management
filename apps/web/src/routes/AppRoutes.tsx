@@ -15,7 +15,7 @@ import { SalesListPage } from "../features/sales/components/pages/SalesListPage"
 import SelectStorePage from "@/features/auth/pages/SelectStorePage";
 import VerifyEmailPage from "@/features/auth/pages/VerifyEmailPage";
 import VerifyEmailSuccessPage from "@/features/auth/pages/VerifyEmailSuccessPage";
-import CustomerPage from "@/features/customers/pages/CustomerPage";
+import { CustomerPage } from "@/features/customers/components/CustomerPage";
 import { AuthLayout } from "../layouts/AuthLayout";
 import { MainLayout } from "../layouts/MainLayout";
 import { ProtectedRoute } from "./ProtectedRoute";
@@ -97,13 +97,13 @@ export const AppRoutes = () => {
             </MainLayout>
           }
         />
-        <Route 
-            path="/dashboard/products/inventories"
-            element={
-              <MainLayout> 
-                <InventoryPage />
-              </MainLayout>
-            }
+        <Route
+          path="/dashboard/products/inventories"
+          element={
+            <MainLayout>
+              <InventoryPage />
+            </MainLayout>
+          }
         />
         <Route
           path="/sales/create" // Đổi path nếu cần hoặc giữ /sales/create
