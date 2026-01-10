@@ -52,6 +52,11 @@ const menuItems = [
     icon: "local_shipping",
   },
   {
+    path: "/dashboard/categories",
+    label: "Danh mục",
+    icon: "category",
+  },
+  {
     path: "/reports",
     label: "Thống kê",
     icon: "pie_chart",
