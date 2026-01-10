@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { Modal, Form, Input, InputNumber, Button, message } from "antd";
+import { Modal, Form, Input, InputNumber, Button, message, Spin } from "antd";
 import { InventoryFormData } from "../types";
+import { uploadApi } from "@/api/upload"; // Import API upload
 
 interface InventoryEditPanelProps {
   isOpen: boolean;
@@ -17,37 +18,26 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
 }) => {
   const [form] = Form.useForm();
   const [imageUrl, setImageUrl] = useState<string>("");
+  const [rawFile, setRawFile] = useState<File | null>(null); // State lưu file mới
+  const [isUploading, setIsUploading] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
 
-  // SỬA LỖI: Chỉ reset và set dữ liệu khi Modal chuyển sang trạng thái MỞ (isOpen = true)
   useEffect(() => {
     if (isOpen && initialData) {
       form.setFieldsValue(initialData);
       setImageUrl(initialData.image || "");
+      setRawFile(null); // Reset file raw mỗi khi mở form mới
       setIsDirty(false);
     } else if (!isOpen) {
-      // Khi đóng thì reset nhẹ nhàng để lần mở sau sạch sẽ
       form.resetFields();
       setImageUrl("");
+      setRawFile(null);
       setIsDirty(false);
     }
   }, [isOpen, initialData, form]);
-  // Lưu ý: Dependency có 'isOpen' để đảm bảo logic chạy đúng thời điểm mở popup
-
-  const handleSubmit = async () => {
-    try {
-      const values = await form.validateFields();
-      const formData = { ...values, image: imageUrl };
-      onSubmit(formData as InventoryFormData);
-      setIsDirty(false);
-      message.success("Hàng hóa đã được cập nhật thành công");
-    } catch {
-      message.error("Vui lòng kiểm tra lại thông tin");
-    }
-  };
 
   const handleClose = () => {
-    if (isDirty) {
+    if (isDirty || rawFile) {
       Modal.confirm({
         title: "Bạn có chắc muốn hủy những thay đổi?",
         okText: "Có",
@@ -64,12 +54,41 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImageUrl(reader.result as string);
-        setIsDirty(true);
-      };
-      reader.readAsDataURL(file);
+      setRawFile(file); // Lưu file để upload
+      const previewUrl = URL.createObjectURL(file);
+      setImageUrl(previewUrl); // Preview
+      setIsDirty(true);
+    }
+  };
+
+  const handleSubmit = async () => {
+    try {
+      const values = await form.validateFields();
+      setIsUploading(true);
+
+      let finalImageUrl = imageUrl; // Mặc định lấy URL hiện tại (ảnh cũ)
+
+      // Nếu có chọn file mới -> Upload lên server lấy URL mới
+      if (rawFile) {
+        try {
+          finalImageUrl = await uploadApi.uploadFile(rawFile);
+        } catch (error) {
+          message.error("Upload ảnh thất bại. Vui lòng thử lại.");
+          setIsUploading(false);
+          return;
+        }
+      }
+
+      const formData = { ...values, image: finalImageUrl };
+      onSubmit(formData as InventoryFormData);
+
+      setIsDirty(false);
+      setRawFile(null); // Clear file sau khi submit
+      message.success("Hàng hóa đã được cập nhật thành công");
+    } catch {
+      message.error("Vui lòng kiểm tra lại thông tin");
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -94,7 +113,7 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
         <h2 className="text-center text-3xl font-bold text-[#102e3c] mb-8">Sửa Hàng hóa</h2>
 
         <div className="flex gap-8 justify-center">
-          {/* Image */}
+          {/* Image Upload Area */}
           <div className="flex-shrink-0 w-[320px] flex flex-col items-center">
             <div className="relative w-80 h-80 bg-black rounded-2xl border-2 border-[#102e3c] flex items-center justify-center overflow-hidden group cursor-pointer hover:border-[#1a998f] transition-colors">
               {imageUrl ? (
@@ -103,11 +122,16 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
                 <svg className="w-20 h-20 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" /></svg>
               )}
               <input type="file" accept="image/*" onChange={handleImageChange} className="absolute inset-0 opacity-0 cursor-pointer" />
+
+              {isUploading && (
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
+                  <Spin size="large" />
+                </div>
+              )}
             </div>
             <p className="text-center text-sm text-[#102e3c] mt-4">Chọn ảnh cho Hàng hóa (320 × 320)</p>
           </div>
 
-          {/* Form */}
           <div className="flex-1">
             <Form form={form} layout="vertical" requiredMark={false} className="space-y-4" onValuesChange={() => setIsDirty(true)}>
               <Form.Item name="name" label={<span className="text-lg font-semibold text-[#102e3c]">Tên Sản Phẩm:</span>} rules={[{ required: true }]}>
@@ -147,7 +171,15 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
         </div>
 
         <div className="flex justify-center mt-8">
-          <Button type="primary" onClick={handleSubmit} className="h-12 px-20 rounded-2xl bg-[#1a998f] text-2xl font-bold border-none hover:bg-[#158f85]">Cập nhật Hàng hóa</Button>
+          <Button
+            type="primary"
+            onClick={handleSubmit}
+            loading={isUploading}
+            disabled={isUploading}
+            className="h-12 px-20 rounded-2xl bg-[#1a998f] text-2xl font-bold border-none hover:bg-[#158f85]"
+          >
+            {isUploading ? "Đang xử lý..." : "Cập nhật Hàng hóa"}
+          </Button>
         </div>
       </div>
     </Modal>
