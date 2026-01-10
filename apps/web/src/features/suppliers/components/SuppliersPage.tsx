@@ -1,490 +1,142 @@
-import React, { useState, useEffect } from "react";
-import apiClient from "@/lib/axios";
-import { message, Modal } from "antd";
-import { ActionButton } from "./ActionButton";
-import { SupplierTable, TableHeader } from "./SupplierTable";
-import { SupplierDetailPanel } from "./SupplierDetailPanel";
-import { SorterButton } from "./SorterButton";
-import { SupplierAddPanel, SupplierFormData } from "./SupplierAddPanel";
-import { SupplierEditPanel } from "./SupplierEditPanel";
-import { MOCK_SUPPLIERS } from "./mockData";
+import React, { useState, useMemo } from "react";
+import { message, Input, Button } from "antd";
+import { Search, Plus, X } from "lucide-react"; // Import thêm icon X
+import { useDebounce } from "@/hooks/use-debounce";
 
-/** ================= TYPES ================= */
-interface Supplier {
-  key: number;
-  id?: string;
-  supplierId: string;
-  name: string;
-  email: string;
-  phoneNumber: string;
-  contactPerson: string;
-  status: string;
-  address?: string;
-  taxCode?: string;
-  note?: string;
-  createdDate?: string;
-  updateDate?: string;
-}
+import { TableHeader, SupplierTable } from "./SupplierTable";
+import { SupplierDetailPanel } from "./SupplierDetailPanel"; // Import Panel mới
+import { useSuppliers } from "../hooks/useSuppliers";
+import { Supplier, SupplierTableRow } from "../types";
 
-/** ================= PAGE ================= */
 export const SuppliersPage = () => {
-  const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(
-    null,
-  );
-  const [isAddPanelOpen, setIsAddPanelOpen] = useState(false);
-  const [isEditPanelOpen, setIsEditPanelOpen] = useState(false);
-  const [data, setData] = useState<Supplier[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [needsScroll, setNeedsScroll] = useState(false);
-  const [scrollTop, setScrollTop] = useState(0);
-  const [thumbHeight, setThumbHeight] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
-  const [sortBy, setSortBy] = useState<string>("name");
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-  const tableContainerRef = React.useRef<HTMLDivElement>(null);
-  const scrollbarTrackRef = React.useRef<HTMLDivElement>(null);
+  // --- States ---
+  const [keyword, setKeyword] = useState("");
+  const debouncedKeyword = useDebounce(keyword, 300);
+  const [selectedSupplier, setSelectedSupplier] = useState<SupplierTableRow | null>(null);
 
-  /** ================= FETCH LIST ================= */
-  useEffect(() => {
-    const fetchSuppliers = async () => {
-      try {
-        setLoading(true);
+  // --- Fetching ---
+  const { data: responseData, isLoading, isError } = useSuppliers();
+  const suppliersList = Array.isArray(responseData) ? responseData : (Array.isArray(responseData?.data) ? responseData?.data : []);
 
-        // ================= REAL API (COMMENTED) =================
-        const response = await apiClient.get("/suppliers", {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-          },
-        });
+  // --- Transform & Filter ---
+  const tableData: SupplierTableRow[] = useMemo(() => {
+    let data = suppliersList.map((item: Supplier) => ({
+      ...item,
+      key: item.id,
+    }));
 
-        
-
-        if (response.data?.data) {
-          const supplierList = Array.isArray(response.data.data)
-            ? response.data.data
-            : [response.data.data];
-
-          const formattedSuppliers = supplierList.map(
-            (supplier: any, index: number) => ({
-              key: supplier.id || index,
-              id: supplier.id,
-              supplierId: supplier.supplierCode || "N/A",
-              name: supplier.name || "N/A",
-              email: supplier.email || "N/A",
-              phoneNumber: supplier.phoneNumber || "N/A",
-              contactPerson: supplier.contactPerson || "N/A",
-              status: supplier.status || "N/A",
-              address: supplier.address || "N/A",
-              taxCode: supplier.taxCode || "N/A",
-              note: supplier.note || "",
-              createdDate: supplier.createdAt || "N/A",
-              updateDate: supplier.updatedAt || "N/A",
-            }),
-          );
-
-          setData(formattedSuppliers);
-        }
-        //========================================================== 
-
-        // ✅ MOCK DATA
-        setTimeout(() => {
-          const sortedData = sortSuppliers(MOCK_SUPPLIERS, sortBy, sortOrder);
-          setData(sortedData);
-          setLoading(false);
-        }, 500);
-      } catch (error) {
-        message.error("Không thể tải danh sách nhà cung cấp");
-        setLoading(false);
-      }
-    };
-
-    fetchSuppliers();
-  }, [sortBy]);
-
-  /** ================= HANDLE ROW CLICK ================= */
-  const handleRowClick = (record: Supplier) => {
-    setSelectedSupplier(record);
-  };
-
-  /** ================= HANDLE ADD SUPPLIER ================= */
-  const handleAddSupplier = (data: SupplierFormData) => {
-    const newSupplier: Supplier = {
-      key: Math.max(...MOCK_SUPPLIERS.map((s) => s.key), 0) + 1,
-      supplierId: `SUP${Date.now()}`,
-      name: data.name,
-      email: data.email,
-      phoneNumber: data.phone,
-      contactPerson: data.contactPerson,
-      status: data.status,
-      address: data.address,
-      taxCode: data.taxCode,
-      note: data.note,
-      createdDate: new Date().toLocaleDateString("vi-VN"),
-      updateDate: new Date().toLocaleDateString("vi-VN"),
-    };
-
-    setData((prev) => [newSupplier, ...prev]);
-    setIsAddPanelOpen(false);
-  };
-
-  /** ================= HANDLE EDIT SUPPLIER ================= */
-  const handleEditClick = () => {
-    if (!selectedSupplier) {
-      message.warning("Bạn chưa chọn nhà cung cấp");
-      return;
-    }
-    setIsEditPanelOpen(true);
-  };
-
-  const handleEditSupplier = (formData: SupplierFormData) => {
-    if (!selectedSupplier) return;
-
-    setData((prev) =>
-      prev.map((supplier) =>
-        supplier.key === selectedSupplier.key
-          ? {
-              ...supplier,
-              name: formData.name,
-              email: formData.email,
-              phoneNumber: formData.phone,
-              contactPerson: formData.contactPerson,
-              status: formData.status,
-              address: formData.address,
-              taxCode: formData.taxCode,
-              note: formData.note,
-              updateDate: new Date().toLocaleDateString("vi-VN"),
-            }
-          : supplier,
-      ),
-    );
-    setIsEditPanelOpen(false);
-  };
-
-  /** ================= HANDLE DELETE SUPPLIER ================= */
-  const handleDeleteClick = () => {
-    if (!selectedSupplier) {
-      message.warning("Bạn chưa chọn nhà cung cấp");
-      return;
-    }
-
-    Modal.confirm({
-      title: "Bạn có chắc chắn muốn xóa nhà cung cấp?",
-      okText: "Xóa",
-      cancelText: "Hủy",
-      okButtonProps: { danger: true },
-      onOk: () => {
-        setData((prev) => prev.filter((s) => s.key !== selectedSupplier.key));
-        setSelectedSupplier(null);
-        message.success("Đã xóa nhà cung cấp thành công");
-      },
-    });
-  };
-
-  /** ================= SORT SUPPLIERS ================= */
-  const sortSuppliers = (
-    suppliers: Supplier[],
-    sortKey: string,
-    order: 'asc' | 'desc' = 'asc',
-  ): Supplier[] => {
-    const sorted = [...suppliers].sort((a, b) => {
-      let aValue = "";
-      let bValue = "";
-
-      if (sortKey === "name") {
-        aValue = a.name.toLowerCase();
-        bValue = b.name.toLowerCase();
-      } else if (sortKey === "contactPerson") {
-        aValue = a.contactPerson.toLowerCase();
-        bValue = b.contactPerson.toLowerCase();
-      } else if (sortKey === "supplierId") {
-        aValue = a.supplierId.toLowerCase();
-        bValue = b.supplierId.toLowerCase();
-      }
-
-      const result = aValue.localeCompare(bValue, "vi");
-      return order === 'desc' ? -result : result;
-    });
-
-    return sorted;
-  };
-
-  /** ================= HANDLE SORT CHANGE ================= */
-  const handleSortChange = (sortKey: string, order: 'asc' | 'desc') => {
-    setSortBy(sortKey);
-    setSortOrder(order);
-    const sortedData = sortSuppliers(data, sortKey, order);
-    setData(sortedData);
-  };
-
-  /** ================= CHECK IF SCROLLING NEEDED ================= */
-  const checkScrollNeeded = () => {
-    // If more than 5 rows, scrolling will be needed (each row is 48px, header is 48px)
-    // Estimate: header 48px + 5 rows = 288px. If content exceeds container height
-    const rowHeight = 48; // h-12 = 48px
-    const headerHeight = 48;
-    const maxVisibleRows = Math.floor((window.innerHeight - 200) / rowHeight);
-    setNeedsScroll(data.length > maxVisibleRows);
-  };
-
-  useEffect(() => {
-    checkScrollNeeded();
-    window.addEventListener("resize", checkScrollNeeded);
-    return () => window.removeEventListener("resize", checkScrollNeeded);
-  }, [data]);
-
-  /** ================= HANDLE TABLE SCROLL ================= */
-  const handleTableScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const target = e.currentTarget;
-    const scrollTop = target.scrollTop;
-    const scrollHeight = target.scrollHeight;
-    const clientHeight = target.clientHeight;
-
-    setScrollTop(scrollTop);
-
-    // Calculate thumb height
-    const proportion = clientHeight / scrollHeight;
-    const trackHeight = target.clientHeight - 24; // Subtract top/bottom padding
-    const calculatedThumbHeight = Math.max(proportion * trackHeight, 40); // Min thumb height of 40px
-    setThumbHeight(calculatedThumbHeight);
-  };
-
-  /** ================= HANDLE SCROLLBAR THUMB DRAG ================= */
-  const handleThumbMouseDown = () => {
-    setIsDragging(true);
-  };
-
-  React.useEffect(() => {
-    if (!isDragging) return;
-
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!tableContainerRef.current || !scrollbarTrackRef.current) return;
-
-      const track = scrollbarTrackRef.current;
-      const table = tableContainerRef.current;
-
-      const trackRect = track.getBoundingClientRect();
-      const thumbHeight = Math.max(
-        (table.clientHeight / table.scrollHeight) * (table.clientHeight - 24),
-        40,
+    if (debouncedKeyword) {
+      const lowerKeyword = debouncedKeyword.toLowerCase();
+      data = data.filter((item: Supplier) =>
+        (item.name && item.name.toLowerCase().includes(lowerKeyword)) ||
+        (item.supplierCode && item.supplierCode.toLowerCase().includes(lowerKeyword)) ||
+        (item.phoneNumber && item.phoneNumber.includes(lowerKeyword)) ||
+        (item.email && item.email.toLowerCase().includes(lowerKeyword))
       );
-      const trackHeight = track.clientHeight;
+    }
+    return data;
+  }, [suppliersList, debouncedKeyword]);
 
-      let newTop = e.clientY - trackRect.top - thumbHeight / 2;
-      newTop = Math.max(0, Math.min(newTop, trackHeight - thumbHeight));
-
-      const proportion = newTop / (trackHeight - thumbHeight);
-      const scrollPosition =
-        proportion * (table.scrollHeight - table.clientHeight);
-
-      table.scrollTop = scrollPosition;
-    };
-
-    const handleMouseUp = () => {
-      setIsDragging(false);
-    };
-
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
-
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
-    };
-  }, [isDragging]);
-
-  /** ================= HANDLE SCROLLBAR TRACK CLICK ================= */
-  const handleScrollbarClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!tableContainerRef.current || !scrollbarTrackRef.current) return;
-
-    const track = scrollbarTrackRef.current;
-    const table = tableContainerRef.current;
-    const clickY = e.clientY - track.getBoundingClientRect().top;
-
-    const thumbHeight = Math.max(
-      (table.clientHeight / table.scrollHeight) * (table.clientHeight - 24),
-      40,
-    );
-    const trackHeight = track.clientHeight;
-
-    let newTop = clickY - thumbHeight / 2;
-    newTop = Math.max(0, Math.min(newTop, trackHeight - thumbHeight));
-
-    const proportion = newTop / (trackHeight - thumbHeight);
-    const scrollPosition =
-      proportion * (table.scrollHeight - table.clientHeight);
-
-    table.scrollTop = scrollPosition;
+  // --- Handlers ---
+  const handleRowClick = (record: SupplierTableRow) => {
+    if (selectedSupplier?.key === record.key) {
+      setSelectedSupplier(null);
+    } else {
+      setSelectedSupplier(record);
+    }
   };
 
   return (
-    <div className="relative w-full h-full overflow-hidden flex flex-col">
-      {/* Header with responsive layout */}
+    <div className="relative w-full h-full overflow-hidden flex flex-col font-['Inter']">
+
+      {/* --- Header --- */}
       <div className="flex-shrink-0 px-6 pt-3 pb-2">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <h1 className="font-bold text-[#102e3c] text-2xl sm:text-3xl lg:text-4xl tracking-[-0.75px] leading-tight">
-            Danh sách Nhà cung cấp
-          </h1>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex-shrink-0">
-              <SorterButton onSortChange={handleSortChange} currentSort={sortBy} currentSortOrder={sortOrder} />
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <h1 className="font-bold text-[#102e3c] text-2xl sm:text-3xl lg:text-4xl">
+              Nhà Cung Cấp
+            </h1>
+            <div className="flex items-center gap-2.5">
+              <Button
+                type="primary"
+                icon={<Plus size={18} />}
+                className="bg-[#1a998f] hover:bg-[#158f85] h-10 px-4 rounded-xl font-bold border-none"
+                onClick={() => message.info("Chức năng tạo mới đang phát triển")}
+              >
+                Tạo Mới
+              </Button>
             </div>
+          </div>
 
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <ActionButton
-                label="Xóa"
-                variant="outlined"
-                onClick={handleDeleteClick}
-              />
-              <ActionButton
-                label="Sửa"
-                variant="outlined"
-                onClick={handleEditClick}
-              />
-              <ActionButton
-                label="Tạo Mới"
-                variant="filled"
-                onClick={() => setIsAddPanelOpen(true)}
+          {/* Filter Bar */}
+          <div className="flex flex-wrap items-center gap-3 mt-2 bg-white p-3 rounded-xl border border-[#102e3c]/10 shadow-sm">
+            <div className="relative w-full sm:w-80">
+              <Input
+                placeholder="Tìm tên, mã, SĐT, email..."
+                prefix={<Search size={16} className="text-gray-400" />}
+                className="rounded-lg border-teal-600/30 hover:border-teal-600 focus:border-teal-600 h-[38px]"
+                onChange={(e) => setKeyword(e.target.value)}
               />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Main Section */}
-      <main className="flex-1 px-6 pb-6 overflow-hidden">
-        <section className="relative w-full h-full bg-white rounded-[20px] overflow-hidden border border-solid border-[#102e3c] shadow-[0px_1px_2px_#0000000d]">
-          {/* Custom Scrollbar Slider */}
-          {needsScroll && (
-            <div
-              ref={scrollbarTrackRef}
-              className={`absolute top-[72px] bottom-3 w-[15px] bg-[#d4e5e4] rounded-[999px] cursor-pointer transition-all duration-300 ${
-                selectedSupplier ? "right-[480px]" : "right-[20px]"
-              }`}
-              role="scrollbar"
-              aria-orientation="vertical"
-              aria-valuemin={0}
-              aria-valuemax={100}
-              onClick={handleScrollbarClick}
-            >
-              <div
-                className={`w-[15px] bg-[#102e3c] rounded-[999px] hover:bg-[#1a998f] transition-colors cursor-grab active:cursor-grabbing ${
-                  isDragging ? "bg-[#1a998f]" : ""
-                }`}
-                style={{
-                  height: `${thumbHeight || 40}px`,
-                  transform: `translateY(${
-                    tableContainerRef.current
-                      ? (scrollTop /
-                          (tableContainerRef.current.scrollHeight -
-                            tableContainerRef.current.clientHeight)) *
-                        (tableContainerRef.current.clientHeight -
-                          24 -
-                          (thumbHeight || 40))
-                      : 0
-                  }px)`,
-                  transition: isDragging ? "none" : "transform 0.1s ease-out",
-                }}
-                onMouseDown={handleThumbMouseDown}
-              />
-            </div>
-          )}
+      {/* --- Main Content (Layout Sliding) --- */}
+      <main className="flex-1 px-6 pb-6 overflow-hidden mt-4 relative">
+        <section className="relative w-full h-full bg-white rounded-[20px] overflow-hidden border border-solid border-[#102e3c] shadow-sm flex flex-col">
 
-          {/* Navigation Controls */}
-          <button
-            type="button"
-            aria-label="Toggle detail panel"
-            className={`absolute top-[15px] w-12 h-12
-    cursor-pointer
-    hover:opacity-70
-    transition-all duration-300
-    outline-none border-none
-    focus:outline-none focus:ring-0
-    active:outline-none
-    ${selectedSupplier ? "right-[462px] rotate-90" : "right-[2px] rotate-0"}`}
-            onClick={() => {
-              if (selectedSupplier) {
-                setSelectedSupplier(null);
-              } else if (data.length > 0) {
-                setSelectedSupplier(data[0]);
-              }
-            }}
-          >
-            <svg className="w-full h-full" viewBox="0 0 48 48" fill="none">
-              <path d="M31 10H22L32 24L22 38H31L41 24L31 10Z" fill="#102E3C" />
-              <path d="M17 10H8L18 24L8 38H17L27 24L17 10Z" fill="#102E3C" />
-            </svg>
-          </button>
-
-          {/* Table Wrapper - Contains both header and scrollable body */}
+          {/* 1. TABLE CONTAINER: Co giãn khi mở panel */}
           <div
-            className={`absolute top-3 bottom-3 left-[13px] rounded-[20px] transition-all duration-300 flex flex-col ${
-              selectedSupplier ? "right-[525px]" : "right-[65px]"
-            }`}
+            className={`
+              absolute top-3 bottom-3 left-[13px] rounded-[20px] transition-all duration-300 flex flex-col bg-white z-10
+              ${selectedSupplier ? "right-[450px]" : "right-[20px]"}
+            `}
           >
-            {/* Table Header (Sticky) */}
             <div className="flex-shrink-0">
-              <TableHeader />
+              {/* Truyền isPanelOpen vào Header */}
+              <TableHeader isPanelOpen={!!selectedSupplier} />
             </div>
 
-            {/* Table Container (Scrollable) */}
-            <div
-              ref={tableContainerRef}
-              className="flex flex-col items-start overflow-y-auto flex-1"
-              style={{
-                scrollbarWidth: "none",
-                msOverflowStyle: "none",
-              }}
-              onScroll={handleTableScroll}
-            >
-              <style>{`
-                div::-webkit-scrollbar {
-                  display: none;
-                }
-              `}</style>
-              <SupplierTable
-                data={data}
-                loading={loading}
-                selectedSupplier={selectedSupplier}
-                onRowClick={handleRowClick}
-              />
+            <div className="flex-1 overflow-y-auto relative custom-scrollbar">
+              {isError ? (
+                <div className="flex justify-center items-center h-full text-red-500">Có lỗi xảy ra khi tải dữ liệu.</div>
+              ) : (
+                <SupplierTable
+                  data={tableData}
+                  loading={isLoading}
+                  onRowClick={handleRowClick}
+                  selectedId={selectedSupplier?.id}
+                  isPanelOpen={!!selectedSupplier} // Truyền isPanelOpen vào Table
+                />
+              )}
             </div>
           </div>
 
-          {/* Detail Panel */}
-          <SupplierDetailPanel selectedSupplier={selectedSupplier} />
+          {/* 2. DETAIL PANEL: Trượt từ phải sang */}
+          <div
+            className={`
+              absolute top-3 bottom-3 w-[430px] bg-white rounded-[20px] border-[3px] border-[#1a998f]
+              transition-all duration-300 ease-in-out z-20 shadow-xl overflow-hidden flex flex-col
+              ${selectedSupplier ? "right-3 translate-x-0 opacity-100" : "right-3 translate-x-[110%] opacity-0 pointer-events-none"}
+            `}
+          >
+            {/* Nút đóng */}
+            <button
+              onClick={() => setSelectedSupplier(null)}
+              className="absolute top-3 right-3 p-1.5 rounded-full hover:bg-gray-100 text-gray-500 hover:text-red-500 transition-colors z-50 cursor-pointer"
+            >
+              <X size={24} />
+            </button>
+
+            {/* Nội dung Panel */}
+            <div className="flex-1 overflow-hidden h-full">
+              <SupplierDetailPanel selectedItem={selectedSupplier} />
+            </div>
+          </div>
+
         </section>
       </main>
-
-      {/* Add Supplier Modal */}
-      <SupplierAddPanel
-        isOpen={isAddPanelOpen}
-        onClose={() => setIsAddPanelOpen(false)}
-        onSubmit={handleAddSupplier}
-      />
-
-      {/* Edit Supplier Modal */}
-      <SupplierEditPanel
-        isOpen={isEditPanelOpen}
-        onClose={() => setIsEditPanelOpen(false)}
-        onSubmit={handleEditSupplier}
-        initialData={
-          selectedSupplier
-            ? {
-                name: selectedSupplier.name,
-                email: selectedSupplier.email,
-                phone: selectedSupplier.phoneNumber,
-                address: selectedSupplier.address || "",
-                status: selectedSupplier.status as
-                  | "Hoạt động"
-                  | "Ngưng hoạt động",
-                taxCode: selectedSupplier.taxCode || "",
-                contactPerson: selectedSupplier.contactPerson,
-                note: selectedSupplier.note || "",
-              }
-            : undefined
-        }
-      />
     </div>
   );
 };
