@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import apiClient from "@/lib/axios";
 import { message, Modal } from "antd";
 import { ActionButton } from "./ActionButton";
 import { SupplierTable, TableHeader } from "./SupplierTable";
@@ -39,6 +40,7 @@ export const SuppliersPage = () => {
   const [thumbHeight, setThumbHeight] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [sortBy, setSortBy] = useState<string>("name");
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const tableContainerRef = React.useRef<HTMLDivElement>(null);
   const scrollbarTrackRef = React.useRef<HTMLDivElement>(null);
 
@@ -48,12 +50,14 @@ export const SuppliersPage = () => {
       try {
         setLoading(true);
 
-        /* ================= REAL API (COMMENTED) =================
-        const response = await axios.get("/api/v1/suppliers", {
+        // ================= REAL API (COMMENTED) =================
+        const response = await apiClient.get("/suppliers", {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
           },
         });
+
+        
 
         if (response.data?.data) {
           const supplierList = Array.isArray(response.data.data)
@@ -80,11 +84,11 @@ export const SuppliersPage = () => {
 
           setData(formattedSuppliers);
         }
-        ========================================================== */
+        //========================================================== 
 
         // ✅ MOCK DATA
         setTimeout(() => {
-          const sortedData = sortSuppliers(MOCK_SUPPLIERS, sortBy);
+          const sortedData = sortSuppliers(MOCK_SUPPLIERS, sortBy, sortOrder);
           setData(sortedData);
           setLoading(false);
         }, 500);
@@ -180,6 +184,7 @@ export const SuppliersPage = () => {
   const sortSuppliers = (
     suppliers: Supplier[],
     sortKey: string,
+    order: 'asc' | 'desc' = 'asc',
   ): Supplier[] => {
     const sorted = [...suppliers].sort((a, b) => {
       let aValue = "";
@@ -196,16 +201,18 @@ export const SuppliersPage = () => {
         bValue = b.supplierId.toLowerCase();
       }
 
-      return aValue.localeCompare(bValue, "vi");
+      const result = aValue.localeCompare(bValue, "vi");
+      return order === 'desc' ? -result : result;
     });
 
     return sorted;
   };
 
   /** ================= HANDLE SORT CHANGE ================= */
-  const handleSortChange = (sortKey: string) => {
+  const handleSortChange = (sortKey: string, order: 'asc' | 'desc') => {
     setSortBy(sortKey);
-    const sortedData = sortSuppliers(data, sortKey);
+    setSortOrder(order);
+    const sortedData = sortSuppliers(data, sortKey, order);
     setData(sortedData);
   };
 
@@ -310,44 +317,43 @@ export const SuppliersPage = () => {
   };
 
   return (
-    <div className="relative w-full h-full overflow-hidden">
-      {/* Header */}
-      <header className="flex flex-col w-[calc(100%_-_64px)] items-start absolute top-[11px] left-8">
-        <h1 className="relative flex items-center justify-start self-stretch mt-[-1.00px] font-bold text-[#102e3c] text-4xl tracking-[-0.75px] leading-[37.5px]">
-          Danh sách Nhà cung cấp
-        </h1>
-      </header>
+    <div className="relative w-full h-full overflow-hidden flex flex-col">
+      {/* Header with responsive layout */}
+      <div className="flex-shrink-0 px-6 pt-3 pb-2">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <h1 className="font-bold text-[#102e3c] text-2xl sm:text-3xl lg:text-4xl tracking-[-0.75px] leading-tight">
+            Danh sách Nhà cung cấp
+          </h1>
 
-      {/* Action Buttons */}
-      <section className="absolute top-[7px] right-7 h-[58px] flex items-center">
-        {/* Sorter — bigger gap */}
-        <div className="mr-10">
-          <SorterButton onSortChange={handleSortChange} currentSort={sortBy} />
-        </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex-shrink-0">
+              <SorterButton onSortChange={handleSortChange} currentSort={sortBy} currentSortOrder={sortOrder} />
+            </div>
 
-        {/* Action buttons — smaller gap */}
-        <div className="flex items-center gap-2.5">
-          <ActionButton
-            label="Xóa"
-            variant="outlined"
-            onClick={handleDeleteClick}
-          />
-          <ActionButton
-            label="Sửa"
-            variant="outlined"
-            onClick={handleEditClick}
-          />
-          <ActionButton
-            label="Tạo Mới"
-            variant="filled"
-            onClick={() => setIsAddPanelOpen(true)}
-          />
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <ActionButton
+                label="Xóa"
+                variant="outlined"
+                onClick={handleDeleteClick}
+              />
+              <ActionButton
+                label="Sửa"
+                variant="outlined"
+                onClick={handleEditClick}
+              />
+              <ActionButton
+                label="Tạo Mới"
+                variant="filled"
+                onClick={() => setIsAddPanelOpen(true)}
+              />
+            </div>
+          </div>
         </div>
-      </section>
+      </div>
 
       {/* Main Section */}
-      <main>
-        <section className="absolute top-[70px] left-6 right-6 bottom-6 bg-white rounded-[20px] overflow-hidden border border-solid border-[#102e3c] shadow-[0px_1px_2px_#0000000d]">
+      <main className="flex-1 px-6 pb-6 overflow-hidden">
+        <section className="relative w-full h-full bg-white rounded-[20px] overflow-hidden border border-solid border-[#102e3c] shadow-[0px_1px_2px_#0000000d]">
           {/* Custom Scrollbar Slider */}
           {needsScroll && (
             <div

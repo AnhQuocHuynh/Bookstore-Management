@@ -17,7 +17,7 @@ import { Repository } from 'typeorm';
 
 @Injectable()
 export class CategoriesService {
-  constructor(private readonly tenantsService: TenantService) {}
+  constructor(private readonly tenantsService: TenantService) { }
 
   async getCategories(
     userSession: TUserSession,
@@ -46,7 +46,7 @@ export class CategoriesService {
 
     const [data, total] = await categoryRepo.findAndCount({
       where,
-      relations: parentId ? [] : ['parent'],
+      // relations: parentId ? [] : ['parent'],
       skip,
       take: limit,
       order: {
