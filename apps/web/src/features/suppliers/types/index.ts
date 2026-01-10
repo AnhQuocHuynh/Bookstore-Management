@@ -13,7 +13,17 @@ export interface Supplier {
     updatedAt: string;
 }
 
-// Dữ liệu dùng cho Table (có thêm key)
 export interface SupplierTableRow extends Supplier {
     key: string;
+}
+
+// THÊM MỚI: Dữ liệu dùng cho Form Thêm/Sửa
+export interface SupplierFormData {
+    name: string;
+    email: string;
+    phoneNumber: string;
+    address: string;
+    taxCode?: string;
+    contactPerson?: string;
+    note?: string;
 }
