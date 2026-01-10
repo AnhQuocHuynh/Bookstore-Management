@@ -9,13 +9,17 @@ import {
   ApiOperation,
   ApiResponse,
   ApiTags,
+  ApiParam
 } from '@nestjs/swagger';
+// Import thêm
+import { UpdateCustomerDto } from '@/common/dtos/customers';
+import { Patch, Delete, Param, ParseUUIDPipe } from '@nestjs/common';
 
 @Controller('customers')
 @ApiTags('Khách hàng')
 @ApiBearerAuth()
 export class CustomersController {
-  constructor(private readonly customersService: CustomersService) {}
+  constructor(private readonly customersService: CustomersService) { }
 
   @ApiOperation({
     summary: 'Tạo mới khách hàng',
@@ -302,5 +306,50 @@ export class CustomersController {
       bookStoreId,
       getCustomersQueryDto,
     );
+  }
+
+  @ApiOperation({
+    summary: 'Cập nhật thông tin khách hàng',
+    description: 'Chỉ OWNER hoặc EMPLOYEE mới có quyền thực hiện.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ID của khách hàng cần sửa',
+    example: 'f51ff2f8-d601-408b-9f71-341244f72f88',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Cập nhật thành công',
+  })
+  @Patch(':id')
+  @Roles(UserRole.OWNER, UserRole.EMPLOYEE)
+  async updateCustomer(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updateCustomerDto: UpdateCustomerDto,
+    @BookStoreId() bookStoreId: string,
+  ) {
+    return this.customersService.updateCustomer(id, updateCustomerDto, bookStoreId);
+  }
+
+  @ApiOperation({
+    summary: 'Xóa khách hàng',
+    description: 'Chỉ OWNER mới có quyền xóa khách hàng (Ví dụ logic nghiệp vụ).',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ID của khách hàng cần xóa',
+    example: 'f51ff2f8-d601-408b-9f71-341244f72f88',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Xóa thành công',
+  })
+  @Delete(':id')
+  @Roles(UserRole.OWNER) // Giới hạn chỉ chủ cửa hàng mới được xóa
+  async deleteCustomer(
+    @Param('id', ParseUUIDPipe) id: string,
+    @BookStoreId() bookStoreId: string,
+  ) {
+    return this.customersService.deleteCustomer(id, bookStoreId);
   }
 }
