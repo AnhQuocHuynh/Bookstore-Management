@@ -19,4 +19,7 @@ export interface CategoryFormData {
     slug: string;
     taxRate: number;
     description?: string;
+
+    // THÊM MỚI:
+    status?: 'active' | 'inactive';
 }

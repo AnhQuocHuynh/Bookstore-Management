@@ -58,6 +58,7 @@ export const CategoriesPage = () => {
         slug: selectedCategory.slug,
         taxRate: selectedCategory.taxRate,
         description: selectedCategory.description || "",
+        status: selectedCategory.status,
     } : undefined;
 
     // --- Handlers ---
