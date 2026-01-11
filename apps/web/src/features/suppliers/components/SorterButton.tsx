@@ -1,13 +1,15 @@
 import { useState, useRef, useEffect } from "react";
 
 interface SorterButtonProps {
-  onSortChange: (sortBy: string) => void;
+  onSortChange: (sortBy: string, sortOrder: 'asc' | 'desc') => void;
   currentSort: string;
+  currentSortOrder?: 'asc' | 'desc';
 }
 
 export const SorterButton: React.FC<SorterButtonProps> = ({
   onSortChange,
   currentSort,
+  currentSortOrder = 'asc',
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -30,8 +32,12 @@ export const SorterButton: React.FC<SorterButtonProps> = ({
   };
 
   const handleSelectOption = (value: string) => {
-    onSortChange(value);
+    onSortChange(value, currentSortOrder);
     setIsOpen(false);
+  };
+
+  const toggleSortOrder = () => {
+    onSortChange(currentSort, currentSortOrder === 'asc' ? 'desc' : 'asc');
   };
 
   // Close dropdown when clicking outside
@@ -59,9 +65,9 @@ export const SorterButton: React.FC<SorterButtonProps> = ({
     "Tên Nhà Cung Cấp";
 
   return (
-    <div ref={dropdownRef} className="h-[58px] w-[300px] relative">
+    <div ref={dropdownRef} className="h-[58px] w-[360px] relative flex items-center gap-2">
       <button
-        className="absolute top-[calc(50.00%_-_18px)] left-[calc(50.00%_-_150px)] w-[300px] h-[37px] bg-white rounded-[20px] border-2 border-solid border-[#1a998f] cursor-pointer hover:bg-[#f0f9f8] transition-colors"
+        className="w-[300px] h-[37px] bg-white rounded-[20px] border-2 border-solid border-[#1a998f] cursor-pointer hover:bg-[#f0f9f8] transition-colors relative"
         onClick={handleToggle}
         onKeyDown={handleKeyDown}
         aria-expanded={isOpen}
@@ -92,10 +98,28 @@ export const SorterButton: React.FC<SorterButtonProps> = ({
         </div>
       </button>
 
+      {/* Sort Order Toggle Button */}
+      <button
+        className="w-[48px] h-[37px] bg-white rounded-[20px] border-2 border-solid border-[#1a998f] cursor-pointer hover:bg-[#f0f9f8] transition-colors flex items-center justify-center"
+        onClick={toggleSortOrder}
+        aria-label={currentSortOrder === 'asc' ? 'Sắp xếp tăng dần' : 'Sắp xếp giảm dần'}
+        type="button"
+      >
+        {currentSortOrder === 'asc' ? (
+          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
+            <path d="M7 10L12 15L17 10H7Z" fill="#102E3C" />
+          </svg>
+        ) : (
+          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
+            <path d="M7 14L12 9L17 14H7Z" fill="#102E3C" />
+          </svg>
+        )}
+      </button>
+
       {/* Dropdown Menu */}
       {isOpen && (
         <div
-          className="absolute top-[calc(58px_+_2px)] left-[calc(50.00%_-_140px)] w-[280px] bg-white rounded-[10px] border-2 border-solid border-[#1a998f] shadow-lg z-50"
+          className="absolute top-[calc(37px_+_2px)] left-0 w-[280px] bg-white rounded-[10px] border-2 border-solid border-[#1a998f] shadow-lg z-50"
           role="listbox"
         >
           {sortOptions.map((option) => (

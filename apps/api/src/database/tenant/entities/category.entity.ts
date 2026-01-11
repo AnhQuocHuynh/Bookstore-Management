@@ -5,10 +5,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
-  JoinColumn,
   ManyToMany,
-  ManyToOne,
-  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -26,20 +23,6 @@ export class Category {
 
   @Column({ type: 'text', nullable: true })
   description?: string;
-
-  @ManyToOne(() => Category, (category) => category.children, {
-    nullable: true,
-    onDelete: 'CASCADE',
-  })
-  @JoinColumn({
-    name: 'parent_id',
-  })
-  parent?: Category;
-
-  @OneToMany(() => Category, (category) => category.parent, {
-    cascade: true,
-  })
-  children: Category[];
 
   @Column({
     type: 'enum',

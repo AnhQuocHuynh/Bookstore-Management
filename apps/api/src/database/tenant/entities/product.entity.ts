@@ -57,6 +57,15 @@ export class Product {
   imageUrl?: string;
 
   @Column({
+    type: 'decimal',
+    precision: 4,
+    scale: 2,
+    nullable: true,
+    transformer: DecimalTransformer,
+  })
+  taxRate?: number;
+
+  @Column({
     type: 'enum',
     enum: ProductType,
   })

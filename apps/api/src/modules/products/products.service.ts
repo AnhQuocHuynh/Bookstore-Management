@@ -24,7 +24,12 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { EntityManager, FindOptionsRelations, Repository, Brackets } from 'typeorm';
+import {
+  EntityManager,
+  FindOptionsRelations,
+  Repository,
+  Brackets,
+} from 'typeorm';
 
 @Injectable()
 export class ProductsService {
@@ -94,6 +99,7 @@ export class ProductsService {
           type,
           supplier,
           categories: [],
+          ...(res?.taxRate && { taxRate: res.taxRate }),
         },
       );
     } else {
@@ -239,14 +245,16 @@ export class ProductsService {
     });
 
     if (categoryName?.trim() || categorySlug?.trim()) {
+      // Code MỚI (Đã sửa)
       if (categoryName?.trim()) {
-        qb.andWhere('category.name ILIKE :categoryName', {
+        // Đổi category -> categories
+        qb.andWhere('categories.name ILIKE :categoryName', {
           categoryName: `%${categoryName?.trim()}%`,
         });
       }
-
       if (categorySlug?.trim()) {
-        qb.andWhere('category.slug = :categorySlug', {
+        // Đổi category -> categories
+        qb.andWhere('categories.slug = :categorySlug', {
           categorySlug: categorySlug?.trim(),
         });
       }

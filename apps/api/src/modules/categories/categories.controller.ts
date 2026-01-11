@@ -27,13 +27,14 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { BadRequestException } from '@nestjs/common/exceptions';
 
 @Controller('categories')
 @ApiTags('CategoriesController')
 @ApiBearerAuth()
 @Roles(UserRole.OWNER)
 export class CategoriesController {
-  constructor(private readonly categoriesService: CategoriesService) {}
+  constructor(private readonly categoriesService: CategoriesService) { }
 
   @ApiOperation({
     summary: 'Tạo mới danh mục',
@@ -97,13 +98,33 @@ export class CategoriesController {
       limit: 10,
     },
   })
+  @Roles(UserRole.OWNER, UserRole.EMPLOYEE, UserRole.CUSTOMER)
   @Get()
   async getCategories(
-    @UserSession() userSession: TUserSession,
     @Query() getCategoriesQueryDto: GetCategoriesQueryDto,
+    @UserSession() userSession?: TUserSession, // 1. Thêm dấu ? để báo biến này có thể undefined
   ) {
+    // 2. Dùng Optional Chaining (?.) để tránh lỗi 500 nếu userSession là null
+    const targetBookStoreId = getCategoriesQueryDto.bookStoreId || userSession?.bookStoreId;
+
+    if (!targetBookStoreId) {
+      throw new BadRequestException(
+        'Vui lòng cung cấp bookStoreId (qua query param) để xem danh mục của cửa hàng.',
+      );
+    }
+
+    // 3. Tạo một session giả lập an toàn để truyền xuống Service
+    // Vì Service đang mong đợi một object TUserSession, không được truyền null xuống
+    const safeUserSession = userSession
+      ? { ...userSession, bookStoreId: targetBookStoreId }
+      : {
+        userId: 'guest',
+        role: UserRole.CUSTOMER,
+        bookStoreId: targetBookStoreId
+      } as TUserSession;
+
     return this.categoriesService.getCategories(
-      userSession,
+      safeUserSession,
       getCategoriesQueryDto,
     );
   }

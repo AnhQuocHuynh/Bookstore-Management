@@ -46,3 +46,29 @@ export interface TransactionParams {
     from?: string;
     to?: string;
 }
+
+// Thêm các type mới cho việc tạo transaction
+export interface CreateTransactionDetailDto {
+    productId: string;
+    quantity: number;
+    unitPrice: number;
+}
+
+export interface CreateTransactionDto {
+    createTransactionDetailDtos: CreateTransactionDetailDto[];
+    note?: string;
+    paidAmount: number;
+    changeAmount: number;
+}
+
+export interface TransactionResponse {
+    id: string;
+    details: any[]; // Bạn có thể định nghĩa chi tiết hơn nếu cần
+    totalAmount: number;
+    finalAmount: number;
+    paidAmount: number;
+    changeAmount: number;
+    note: string;
+    isCompleted: boolean;
+    createdAt: string;
+}

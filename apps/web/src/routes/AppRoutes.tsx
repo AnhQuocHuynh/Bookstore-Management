@@ -6,6 +6,7 @@ import { DashboardPage } from "../features/dashboard/pages/DashboardPage";
 import { EmployeesPage } from "../features/employees/components/EmployeesPage";
 import { ProductsPage } from "../features/products/components/ProductsPage";
 import { SuppliersPage } from "../features/suppliers/components/SuppliersPage";
+import { InventoryPage } from "../features/inventory/components/InventoryPage";
 import { UsersPage } from "../features/users/components/UsersPage";
 import { UserEditPage } from "../features/users/components/UserEditPage";
 import { CreateSalesPage } from "../features/sales/components/pages/CreateSalesPage";
@@ -14,12 +15,16 @@ import { SalesListPage } from "../features/sales/components/pages/SalesListPage"
 import SelectStorePage from "@/features/auth/pages/SelectStorePage";
 import VerifyEmailPage from "@/features/auth/pages/VerifyEmailPage";
 import VerifyEmailSuccessPage from "@/features/auth/pages/VerifyEmailSuccessPage";
-import CustomerPage from "@/features/customers/pages/CustomerPage";
+import { CustomerPage } from "@/features/customers/components/CustomerPage";
 import { AuthLayout } from "../layouts/AuthLayout";
 import { MainLayout } from "../layouts/MainLayout";
 import { ProtectedRoute } from "./ProtectedRoute";
 import { PublicRoute } from "./PublicRoute";
 import { TokenProtectedRoute } from "./TokenProtectedRoute";
+import RevenuePage from "@/features/reports/pages/RevenuePage";
+import EmployeePerformancePage from "@/features/reports/pages/EmployeePerformancePage";
+import { CategoriesPage } from "@/features/categories/components/CategoriesPage";
+import { PublishersPage } from "@/features/publishers/components/PublishersPage";
 
 // Select Store Page (Semi-protected: requires token but no store)
 // const SelectStorePage = () => (
@@ -34,13 +39,6 @@ const SalesPage = () => (
   <div>
     <h1 className="text-2xl font-bold mb-6">Bán hàng</h1>
     <p>Trang bán hàng đang được phát triển...</p>
-  </div>
-);
-
-const InventoryPage = () => (
-  <div>
-    <h1 className="text-2xl font-bold mb-6">Kho hàng</h1>
-    <p>Trang kho hàng đang được phát triển...</p>
   </div>
 );
 
@@ -102,6 +100,14 @@ export const AppRoutes = () => {
           }
         />
         <Route
+          path="/dashboard/products/inventories"
+          element={
+            <MainLayout>
+              <InventoryPage />
+            </MainLayout>
+          }
+        />
+        <Route
           path="/sales/create" // Đổi path nếu cần hoặc giữ /sales/create
           element={
             <MainLayout>
@@ -130,6 +136,22 @@ export const AppRoutes = () => {
           element={
             <MainLayout>
               <CustomerPage />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/dashboard/categories"
+          element={
+            <MainLayout>
+              <CategoriesPage />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/dashboard/publishers"
+          element={
+            <MainLayout>
+              <PublishersPage />
             </MainLayout>
           }
         />
@@ -165,7 +187,21 @@ export const AppRoutes = () => {
             </MainLayout>
           }
         />
+        <Route
+          path="/reports/revenue" element={
+            <MainLayout>
+              <RevenuePage />
+            </MainLayout>} />
       </Route>
+
+      <Route
+        path="/reports/employees"
+        element={
+          <MainLayout>
+            <EmployeePerformancePage />
+          </MainLayout>
+        }
+      />
 
       {/* 404 - Redirect to login */}
       <Route path="*" element={<Navigate to="/auth/login" replace />} />

@@ -59,6 +59,7 @@ export class CreatePurchaseOrderDto {
             stockQuantity: 5,
             costPrice: 120000,
           },
+          taxRate: 0.03,
         },
       },
       {

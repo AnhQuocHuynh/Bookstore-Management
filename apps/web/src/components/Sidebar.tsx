@@ -52,13 +52,23 @@ const menuItems = [
     icon: "local_shipping",
   },
   {
-    path: "/dashboard/reports",
+    path: "/dashboard/categories",
+    label: "Danh mục",
+    icon: "category",
+  },
+  {
+    path: "/dashboard/publishers",
+    label: "Nhà xuất bản",
+    icon: "public",
+  },
+  {
+    path: "/reports",
     label: "Thống kê",
     icon: "pie_chart",
     children: [
-      { path: "/dashboard/reports/revenues", label: "Doanh thu" },
-      { path: "/dashboard/reports/inventories", label: "Tồn kho" },
-      { path: "/dashboard/reports/employees", label: "Nhân viên" },
+      { path: "/reports/revenue", label: "Doanh thu" },
+      { path: "/reports/inventories", label: "Tồn kho" },
+      { path: "/reports/employees", label: "Nhân viên" },
     ],
   },
 ];

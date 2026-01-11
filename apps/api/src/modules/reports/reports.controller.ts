@@ -2,6 +2,9 @@ import { BookStoreId, Roles } from '@/common/decorators';
 import {
   GetChartFinancialMetricsQueryDto,
   GetOverviewQueryDto,
+  GetRevenueDashboardQueryDto,
+  GetEmployeesDashboardQueryDto,
+  GetStockDashboardQueryDto,
 } from '@/common/dtos';
 import { UserRole } from '@/modules/users/enums';
 import { Controller, Get, HttpStatus, Query } from '@nestjs/common';
@@ -71,7 +74,6 @@ export class ReportsController {
       },
     },
   })
-  @Get('overview')
   @Roles(UserRole.EMPLOYEE, UserRole.OWNER)
   async getOverview(
     @BookStoreId() bookStoreId: string,
@@ -134,5 +136,200 @@ export class ReportsController {
     @Query() query: GetChartFinancialMetricsQueryDto,
   ) {
     return this.reportsService.getProductChart(bookStoreId, query);
+  }
+
+  @Get('revenue/dashboard')
+  @ApiOperation({
+    summary: 'Lấy dữ liệu dashboard doanh thu đầy đủ',
+    description: `
+      Trả về tất cả dữ liệu cần thiết cho trang dashboard doanh thu:
+      - cards: các metric cards (revenue, profit, orders, itemsSold, purchaseSpend, serviceFee)
+      - pie: biểu đồ tròn top sản phẩm theo doanh thu
+      - line: biểu đồ đường doanh thu theo thời gian, nhóm theo category
+      - top: danh sách top sản phẩm bán chạy
+    `,
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Dữ liệu dashboard doanh thu trả về thành công',
+    schema: {
+      example: {
+        meta: {
+          generatedAt: '2025-12-18T07:30:00.000Z',
+          lastDataAt: '2025-12-18T07:25:00.000Z',
+        },
+        cards: {
+          revenue: { value: 3625000, currency: 'VND', growthPercent: 4.8, growthAbs: 175000 },
+          profit: { value: 1200000, currency: 'VND', growthPercent: 5.2, growthAbs: 60000, note: 'Lợi nhuận = Doanh thu - Giá vốn' },
+          orders: { count: 76, growthPercent: 2.5, growthAbs: 2 },
+          itemsSold: { total: 276, growthPercent: 3.1, growthAbs: 8 },
+          purchaseSpend: { total: 2000000, currency: 'VND', growthPercent: 4.5, growthAbs: 90000 },
+          serviceFee: { total: 0, currency: 'VND' },
+        },
+        pie: {
+          total: 3600000,
+          items: [
+            { productId: 'uuid1', name: 'Tập 100 trang', sku: '7K9P-2WXM', imageUrl: 'https://...', value: 1200000, percent: 33.3 },
+          ],
+        },
+        line: {
+          labels: ['2025-12-01', '2025-12-02', '2025-12-03'],
+          datasets: [
+            { name: 'Sách văn học', values: [500000, 450000, 600000] },
+            { name: 'Văn phòng phẩm', values: [300000, 350000, 400000] },
+          ],
+        },
+        top: [
+          { productId: 'uuid1', name: 'Tập 100 trang', sku: '7K9P-2WXM', imageUrl: 'https://...', revenue: 1200000, percent: 33.1 },
+        ],
+      },
+    },
+  })
+  @Roles(UserRole.EMPLOYEE, UserRole.OWNER)
+  async getRevenueDashboard(
+    @BookStoreId() bookStoreId: string,
+    @Query() getRevenueDashboardQueryDto: GetRevenueDashboardQueryDto,
+  ) {
+    return this.reportsService.getRevenueDashboard(
+      bookStoreId,
+      getRevenueDashboardQueryDto,
+    );
+  }
+
+  @Get('employees/dashboard')
+  @ApiOperation({
+    summary: 'Lấy dữ liệu dashboard hiệu suất nhân viên',
+    description: `
+      Trả về tất cả dữ liệu cần thiết cho trang dashboard hiệu suất nhân viên:
+      - pie: biểu đồ tròn phần trăm giao dịch theo nhân viên
+      - bar: biểu đồ cột số lượng giao dịch theo nhân viên
+      - table: bảng danh sách giao dịch (có phân trang)
+    `,
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Dữ liệu dashboard nhân viên trả về thành công',
+    schema: {
+      example: {
+        meta: {
+          generatedAt: '2025-12-18T07:30:00.000Z',
+          lastDataAt: '2025-12-18T07:25:00.000Z',
+        },
+        pie: {
+          total: 729,
+          items: [
+            { employeeId: 'uuid1', employeeName: 'Nhân viên A', avatarUrl: 'https://...', value: 138, percent: 18.9 },
+          ],
+        },
+        bar: {
+          labels: ['Nhân viên A', 'Nhân viên B'],
+          values: [138, 121],
+        },
+        table: {
+          total: 729,
+          page: 1,
+          limit: 20,
+          items: [
+            { transactionId: 'uuid1', occurredAt: '2025-12-18T09:03:35.000Z', employeeId: 'uuid1', employeeName: 'Nhân viên A', totalAmount: 217500, currency: 'VND' },
+          ],
+        },
+      },
+    },
+  })
+  @Roles(UserRole.EMPLOYEE, UserRole.OWNER)
+  async getEmployeesDashboard(
+    @BookStoreId() bookStoreId: string,
+    @Query() getEmployeesDashboardQueryDto: GetEmployeesDashboardQueryDto,
+  ) {
+    return this.reportsService.getEmployeesDashboard(
+      bookStoreId,
+      getEmployeesDashboardQueryDto,
+    );
+  }
+
+  @Get('stock/dashboard')
+  @ApiOperation({
+    summary: 'Lấy dữ liệu dashboard tồn kho',
+    description: `
+      Trả về tất cả dữ liệu cần thiết cho trang dashboard tồn kho:
+      - table: bảng danh sách sản phẩm với số lượng tồn kho và trạng thái (có phân trang, lọc, sắp xếp)
+      - salesChart: biểu đồ số lượng bán được theo thời gian (chỉ khi có productId)
+      - importChart: biểu đồ số lượng nhập về theo thời gian (chỉ khi có productId)
+    `,
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Dữ liệu dashboard tồn kho trả về thành công',
+    schema: {
+      example: {
+        meta: {
+          generatedAt: '2025-12-18T07:30:00.000Z',
+          lastDataAt: '2025-12-18T07:25:00.000Z',
+        },
+        table: {
+          total: 150,
+          page: 1,
+          limit: 20,
+          items: [
+            {
+              productId: 'uuid1',
+              sku: '7K9P-2WXM',
+              name: 'Tập 100 trang',
+              imageUrl: 'https://...',
+              stockQuantity: 100,
+              status: 'Dư hàng',
+              statusPercent: 100,
+            },
+            {
+              productId: 'uuid2',
+              sku: 'B5ND-L8QY',
+              name: 'Tập 200 trang',
+              imageUrl: 'https://...',
+              stockQuantity: 30,
+              status: 'Bình thường',
+              statusPercent: 60,
+            },
+            {
+              productId: 'uuid3',
+              sku: 'M1RH-X9FZ',
+              name: 'Bút bi (Xanh)',
+              imageUrl: 'https://...',
+              stockQuantity: 5,
+              status: 'Sắp hết hàng',
+              statusPercent: 10,
+            },
+            {
+              productId: 'uuid4',
+              sku: 'B5ND-L8QY',
+              name: 'Bộ Thước Kẻ',
+              imageUrl: 'https://...',
+              stockQuantity: -2,
+              status: 'Lỗi tồn kho',
+              statusPercent: -2,
+            },
+          ],
+        },
+        salesChart: {
+          labels: ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'CN'],
+          values: [15, 20, 18, 35, 25, 30, 28],
+          productName: 'Tập 100 trang',
+        },
+        importChart: {
+          labels: ['T.7', 'T.8', 'T.9', 'T.10', 'T.11', 'T.12'],
+          values: [200, 150, 180, 120, 160, 250],
+          productName: 'Tập 100 trang',
+        },
+      },
+    },
+  })
+  @Roles(UserRole.EMPLOYEE, UserRole.OWNER)
+  async getStockDashboard(
+    @BookStoreId() bookStoreId: string,
+    @Query() getStockDashboardQueryDto: GetStockDashboardQueryDto,
+  ) {
+    return this.reportsService.getStockDashboard(
+      bookStoreId,
+      getStockDashboardQueryDto,
+    );
   }
 }

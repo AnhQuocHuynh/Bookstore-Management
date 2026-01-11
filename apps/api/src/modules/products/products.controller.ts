@@ -23,13 +23,15 @@ import {
   ApiParam,
   ApiResponse,
   ApiTags,
+  ApiBearerAuth
 } from '@nestjs/swagger';
 import { ProductsService } from './products.service';
 
 @Controller('products')
 @ApiTags('Sản phẩm')
+@ApiBearerAuth()
 export class ProductsController {
-  constructor(private readonly productsService: ProductsService) {}
+  constructor(private readonly productsService: ProductsService) { }
 
   @ApiOperation({
     summary: 'Lấy chi tiết thông tin sản phẩm',
@@ -83,6 +85,7 @@ export class ProductsController {
       ],
       book: null,
       deletedAt: null,
+      taxRate: null,
     },
   })
   @Get('detail')
@@ -150,6 +153,7 @@ export class ProductsController {
         ],
         book: null,
         deletedAt: null,
+        taxRate: 0.03,
       },
     ],
   })
@@ -246,6 +250,7 @@ export class ProductsController {
       ],
       book: null,
       deletedAt: null,
+      taxRate: 0.03,
     },
   })
   @Patch(':id')

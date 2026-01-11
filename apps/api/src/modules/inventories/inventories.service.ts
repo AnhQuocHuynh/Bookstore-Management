@@ -1,7 +1,11 @@
 import { CreateInventoryDto, GetInventoryLogsQueryDto } from '@/common/dtos';
 import { Inventory, InventoryLog } from '@/database/tenant/entities';
 import { TenantService } from '@/tenants/tenant.service';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { omit } from 'lodash';
 import { EntityManager, Repository } from 'typeorm';
 
@@ -102,5 +106,44 @@ export class InventoriesService {
       ...log,
       employee: log.employee ? omit(log.employee, ['password']) : null,
     };
+  }
+
+  async updateStockOfProductInventory(
+    productId: string,
+    quantity: number,
+    repo: Repository<Inventory>,
+    type: 'decrease' | 'increase',
+  ) {
+    const inventory = await repo.findOne({
+      where: {
+        product: {
+          id: productId,
+        },
+      },
+    });
+
+    if (!inventory) {
+      throw new NotFoundException(
+        'Không tìm thấy tồn kho tương ứng cho sản phẩm',
+      );
+    }
+
+    if (type === 'increase') {
+      inventory.stockQuantity += quantity;
+      inventory.availableQuantity += quantity;
+    } else {
+      if (
+        inventory.stockQuantity < quantity ||
+        inventory.availableQuantity < quantity
+      ) {
+        throw new BadRequestException(
+          'Số lượng giảm vượt quá tồn kho hiện tại',
+        );
+      }
+      inventory.stockQuantity -= quantity;
+      inventory.availableQuantity -= quantity;
+    }
+
+    await repo.save(inventory);
   }
 }

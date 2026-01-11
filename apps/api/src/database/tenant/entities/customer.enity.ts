@@ -1,5 +1,5 @@
 import { CustomerType } from '@/common/enums';
-import { ReturnOrder } from '@/database/tenant/entities';
+import { ReturnOrder, Transaction } from '@/database/tenant/entities';
 import {
   Column,
   CreateDateColumn,
@@ -30,7 +30,9 @@ export class Customer {
   @Column()
   address: string;
 
-  @Column()
+  @Column({
+    unique: true,
+  })
   customerCode: string;
 
   @Column({
@@ -42,6 +44,7 @@ export class Customer {
   @Column({
     type: 'enum',
     enum: CustomerType,
+    default: CustomerType.REGULAR,
   })
   customerType: CustomerType;
 
@@ -59,4 +62,9 @@ export class Customer {
     cascade: true,
   })
   returnOrders: ReturnOrder[];
+
+  @OneToMany(() => Transaction, (t) => t.customer, {
+    cascade: true,
+  })
+  readonly transactions: Transaction[];
 }

@@ -46,7 +46,7 @@ export class CategoriesService {
 
     const [data, total] = await categoryRepo.findAndCount({
       where,
-      relations: parentId ? [] : ['parent'],
+      // relations: parentId ? [] : ['parent'],
       skip,
       take: limit,
       order: {
@@ -81,47 +81,36 @@ export class CategoriesService {
     userSession: TUserSession,
   ) {
     const { bookStoreId } = userSession;
-    const { slug, name, parentId } = createCategoryDto;
+    const { slug, name } = createCategoryDto;
 
     const dataSource = await this.tenantsService.getTenantConnection({
       bookStoreId,
     });
-
     const categoryRepo = dataSource.getRepository(Category);
 
-    let parent: Category | null = null;
-
-    if (parentId?.trim()) {
-      parent = await this.findCategoryByField('id', parentId, categoryRepo);
-      if (!parent)
-        throw new NotFoundException('Không tìm thấy thông tin danh mục cha.');
-    }
-
-    const existedSlug = await this.findCategoryByField(
-      'slug',
-      slug,
-      categoryRepo,
-    );
-
-    if (existedSlug)
-      throw new ConflictException(`Danh mục có slug ${slug} đã tồn tại.`);
-
-    const existedName = await this.findCategoryByField(
-      'name',
-      name,
-      categoryRepo,
-    );
-
-    if (existedName)
-      throw new ConflictException(`Danh mục có tên ${name} đã tồn tại.`);
-
-    const newCategory = categoryRepo.create({
-      ...omit(createCategoryDto, ['parentId']),
-      ...(parent && { parent }),
+    const existingSlug = await categoryRepo.findOne({
+      where: {
+        slug,
+      },
     });
 
-    await categoryRepo.save(newCategory);
+    if (existingSlug) {
+      throw new ConflictException(`Danh mục có slug ${slug} đã tồn tại.`);
+    }
 
+    const existingName = await categoryRepo.findOne({
+      where: {
+        name,
+      },
+    });
+
+    if (existingName) {
+      throw new ConflictException(`Danh mục có tên ${name} đã tồn tại.`);
+    }
+
+    const newCategory = categoryRepo.create(createCategoryDto);
+
+    await categoryRepo.save(newCategory);
     return {
       message: 'New category created successfully.',
       data: newCategory,
@@ -157,7 +146,7 @@ export class CategoriesService {
     updateCategoryDto: UpdateCategoryDto,
   ) {
     const { bookStoreId } = userSession;
-    const { slug, name, parentId } = updateCategoryDto;
+    const { slug, name } = updateCategoryDto;
 
     const dataSource = await this.tenantsService.getTenantConnection({
       bookStoreId,
@@ -173,19 +162,6 @@ export class CategoriesService {
 
     if (!category) {
       throw new NotFoundException('Không tìm thấy thông tin danh mục.');
-    }
-
-    let parent: Category | null = null;
-    if (parentId?.trim()) {
-      parent = await this.findCategoryByField('id', parentId, categoryRepo);
-      if (!parent) {
-        throw new NotFoundException('Không tìm thấy thông tin danh mục cha.');
-      }
-      if (parent.id === id) {
-        throw new ConflictException(
-          'Một danh mục không thể được đặt làm danh mục cha của chính nó.',
-        );
-      }
     }
 
     if (slug && slug !== category.slug) {
@@ -211,10 +187,6 @@ export class CategoriesService {
     }
 
     assignDefined(category, omit(updateCategoryDto, ['parentId']));
-
-    if (parentId !== undefined) {
-      category.parent = parent || undefined;
-    }
 
     await categoryRepo.save(category);
 

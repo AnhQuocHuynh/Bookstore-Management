@@ -7,6 +7,10 @@ import { ScannerModal } from "@/features/sales/components/pos/ScannerModal";
 import { CartItem, PaymentMethod } from "@/features/sales/types/pos.types";
 import { ProductResponse } from "@/features/products/api/products.api";
 
+import { useAuthStore } from "@/stores/useAuthStore"; // [Import Store]
+import { useCreateTransaction } from "@/features/sales/hooks/useCreateTransaction"; // [Import Hook]
+import { CreateTransactionDto } from "@/features/sales/types/sales.types"; // [Import Type]
+
 // --- MOCK DATA FOR SIMULATION (Nếu cần) ---
 const MOCK_PRODUCTS: any[] = [
     { id: "1", code: "7K9P-2WXM", name: "Tập 100 trang", price: 20000, image: "https://placehold.co/60x60" },
@@ -23,6 +27,10 @@ export const CreateSalesPage = () => {
     const [isPrintInvoice, setIsPrintInvoice] = useState(true);
     const [isScanning, setIsScanning] = useState(false);
     const [currentTime, setCurrentTime] = useState(new Date());
+
+    // --- Auth Store & API Hook ---
+    const { user } = useAuthStore(); // Lấy thông tin user hiện tại
+    const { mutate: createTransaction, isPending: isPaying } = useCreateTransaction();
 
     // --- Effects ---
     useEffect(() => {
@@ -89,16 +97,56 @@ export const CreateSalesPage = () => {
         // Không đóng modal để quét tiếp, hoặc đóng tùy yêu cầu
         // setIsScanning(false);
     };
-
     const handlePayment = () => {
+        // 1. Kiểm tra giỏ hàng rỗng
         if (cart.length === 0) {
             toast.error("Giỏ hàng đang trống");
             return;
         }
-        toast.success(`Thanh toán thành công! ${isPrintInvoice ? "(Đang in hóa đơn...)" : ""}`);
-        // Reset state sau khi thanh toán
-        setCart([]);
-        setAmountGiven(0);
+
+        // 2. Kiểm tra quyền EMPLOYEE
+        // Lưu ý: Role trong store của bạn đang lưu là "EMPLOYEE", "OWNER", hoặc "ADMIN"
+        if (user?.role !== "EMPLOYEE") {
+            toast.error("Chỉ tài khoản Nhân viên mới được phép thực hiện thanh toán.");
+            return;
+        }
+
+        // 3. Kiểm tra số tiền khách đưa
+        if (amountGiven < totalAmount) {
+            toast.error("Số tiền khách đưa không đủ.");
+            return;
+        }
+
+        // 4. Chuẩn bị Payload
+        const payload: CreateTransactionDto = {
+            createTransactionDetailDtos: cart.map((item) => ({
+                productId: item.id,
+                quantity: item.quantity,
+                unitPrice: item.price,
+            })),
+            note: customerName
+                ? `${customerName} - ${customerPhone}`
+                : "Khách lẻ", // Logic note tùy chỉnh
+            paidAmount: amountGiven,
+            changeAmount: changeAmount, // Đã được tính toán ở useMemo changeAmount = amountGiven - totalAmount
+        };
+
+        // 5. Gọi API
+        createTransaction(payload, {
+            onSuccess: (data) => {
+                // Xử lý sau khi thành công
+                if (isPrintInvoice) {
+                    toast.info(`Đang in hóa đơn #${data.id.substring(0, 8)}...`);
+                    // Gọi hàm in hóa đơn ở đây nếu có
+                }
+
+                // Reset form
+                setCart([]);
+                setAmountGiven(0);
+                setCustomerName("");
+                setCustomerPhone("");
+            },
+        });
     };
 
     return (

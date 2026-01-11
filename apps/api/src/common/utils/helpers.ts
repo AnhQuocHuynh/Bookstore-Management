@@ -293,7 +293,18 @@ export const handleGenerateUserNotificationContent = (
       return [`Bạn có một thông báo mới.`, `Thời gian: ${time}.`];
   }
 };
+
 export const getEmployeeRoleLabel = (role?: EmployeeRole): string => {
   if (!role) return 'Không rõ vai trò';
   return EmployeeRoleLabelMap[role] ?? 'Không rõ vai trò';
+};
+
+export const generateCustomerCode = (fullName: string): string => {
+  const initials = fullName
+    .split(' ')
+    .filter(Boolean)
+    .map((word) => word[0].toUpperCase())
+    .join('');
+  const randomNumber = Math.floor(1000 + Math.random() * 9000);
+  return `${initials}${randomNumber}`;
 };

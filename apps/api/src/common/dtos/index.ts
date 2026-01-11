@@ -12,3 +12,4 @@ export * from './schedule';
 export * from './shifts';
 export * from './return-orders';
 export * from './transactions';
+export * from './customers';
