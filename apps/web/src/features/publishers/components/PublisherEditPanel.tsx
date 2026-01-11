@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Modal, Form, Input, Button } from "antd";
+import { Modal, Form, Input, Button, Switch, Tag } from "antd"; // Thêm Switch, Tag
 import { PublisherFormData } from "../types";
 
 interface PublisherEditPanelProps {
@@ -20,23 +20,40 @@ export const PublisherEditPanel: React.FC<PublisherEditPanelProps> = ({
 
     useEffect(() => {
         if (initialData) {
-            form.setFieldsValue(initialData);
+            // Map data từ API vào Form
+            form.setFieldsValue({
+                ...initialData,
+                // Chuyển đổi status string -> boolean cho Switch
+                isActive: initialData.status === 'active',
+            });
         }
     }, [initialData, form]);
 
     const handleSubmit = async () => {
         try {
             const values = await form.validateFields();
-            onSubmit(values);
+
+            // Chuyển đổi ngược lại: boolean (Switch) -> status string (API)
+            const submitData: PublisherFormData = {
+                ...values,
+                status: values.isActive ? 'active' : 'inactive',
+            };
+
+            // Xóa trường tạm isActive
+            delete (submitData as any).isActive;
+
+            onSubmit(submitData);
             setIsDirty(false);
-        } catch { }
+        } catch {
+            // Validate fail
+        }
     };
 
     const handleClose = () => {
         if (isDirty) {
             Modal.confirm({
                 title: "Hủy thay đổi?",
-                content: "Dữ liệu chưa lưu sẽ bị mất.",
+                content: "Các thay đổi chưa lưu sẽ bị mất.",
                 okText: "Đóng",
                 onOk: onClose,
             });
@@ -65,9 +82,33 @@ export const PublisherEditPanel: React.FC<PublisherEditPanelProps> = ({
                 <h2 className="text-center text-2xl font-bold text-[#102e3c] mb-6">Cập Nhật Nhà Xuất Bản</h2>
 
                 <Form form={form} layout="vertical" onValuesChange={() => setIsDirty(true)}>
-                    <Form.Item name="name" label={<span className="font-semibold">Tên Nhà Xuất Bản</span>} rules={[{ required: true }]}>
-                        <Input className="border-[#102e3c]" />
-                    </Form.Item>
+
+                    {/* Hàng 1: Tên & Trạng thái */}
+                    <div className="grid grid-cols-3 gap-4">
+                        <Form.Item name="name" label={<span className="font-semibold">Tên Nhà Xuất Bản</span>} rules={[{ required: true }]} className="col-span-2">
+                            <Input className="border-[#102e3c]" />
+                        </Form.Item>
+
+                        {/* --- TOGGLE STATUS --- */}
+                        <div className="flex flex-col gap-2 pt-1">
+                            <span className="font-semibold text-[#102e3c]">Trạng thái:</span>
+                            <div className="flex items-center gap-3 h-[32px]">
+                                <Form.Item name="isActive" valuePropName="checked" noStyle>
+                                    <Switch />
+                                </Form.Item>
+                                <Form.Item noStyle shouldUpdate={(prev, curr) => prev.isActive !== curr.isActive}>
+                                    {({ getFieldValue }) =>
+                                        getFieldValue("isActive") ? (
+                                            <Tag color="success">Hoạt động</Tag>
+                                        ) : (
+                                            <Tag color="error">Ngừng</Tag>
+                                        )
+                                    }
+                                </Form.Item>
+                            </div>
+                        </div>
+                        {/* --------------------- */}
+                    </div>
 
                     <div className="grid grid-cols-2 gap-4">
                         <Form.Item name="email" label={<span className="font-semibold">Email</span>} rules={[{ type: 'email' }]}>

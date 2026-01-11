@@ -22,4 +22,5 @@ export interface PublisherFormData {
     address?: string;
     website?: string;
     description?: string;
+    status?: 'active' | 'inactive';
 }

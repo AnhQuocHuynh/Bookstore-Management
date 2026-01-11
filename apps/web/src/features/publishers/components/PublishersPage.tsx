@@ -60,6 +60,7 @@ export const PublishersPage = () => {
         address: selectedPublisher.address || "",
         website: selectedPublisher.website || "",
         description: selectedPublisher.description || "",
+        status: selectedPublisher.status,
     } : undefined;
 
     // --- Handlers ---
