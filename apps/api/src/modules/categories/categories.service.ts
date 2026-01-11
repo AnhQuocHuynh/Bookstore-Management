@@ -15,10 +15,9 @@ import {
 import { omit } from 'lodash';
 import { Repository } from 'typeorm';
 
-
 @Injectable()
 export class CategoriesService {
-  constructor(private readonly tenantsService: TenantService) { }
+  constructor(private readonly tenantsService: TenantService) {}
 
   async getCategories(
     userSession: TUserSession,
@@ -82,28 +81,34 @@ export class CategoriesService {
     userSession: TUserSession,
   ) {
     const { bookStoreId } = userSession;
-    // Bây giờ có thể lấy trực tiếp parentId từ DTO
-    const { slug, name, parentId } = createCategoryDto;
+    const { slug, name } = createCategoryDto;
 
     const dataSource = await this.tenantsService.getTenantConnection({
       bookStoreId,
     });
     const categoryRepo = dataSource.getRepository(Category);
 
-    // ... (Giữ nguyên các đoạn kiểm tra trùng lặp slug, name) ...
+    const existingSlug = await categoryRepo.findOne({
+      where: {
+        slug,
+      },
+    });
 
-    let parent: Category | null = null;
-    if (parentId) {
-      parent = await this.findCategoryByField('id', parentId, categoryRepo);
-      if (!parent) {
-        throw new NotFoundException('Danh mục cha không tồn tại.');
-      }
+    if (existingSlug) {
+      throw new ConflictException(`Danh mục có slug ${slug} đã tồn tại.`);
     }
 
-    const newCategory = categoryRepo.create({
-      ...omit(createCategoryDto, ['parentId']), // Loại bỏ parentId string
-      parent: parent || undefined, // Gán object parent (nếu có)
+    const existingName = await categoryRepo.findOne({
+      where: {
+        name,
+      },
     });
+
+    if (existingName) {
+      throw new ConflictException(`Danh mục có tên ${name} đã tồn tại.`);
+    }
+
+    const newCategory = categoryRepo.create(createCategoryDto);
 
     await categoryRepo.save(newCategory);
     return {
