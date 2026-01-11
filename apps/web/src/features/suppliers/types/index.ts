@@ -26,4 +26,6 @@ export interface SupplierFormData {
     taxCode?: string;
     contactPerson?: string;
     note?: string;
+
+    status?: 'active' | 'inactive';
 }

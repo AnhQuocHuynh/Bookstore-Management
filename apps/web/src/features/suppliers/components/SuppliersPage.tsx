@@ -63,6 +63,7 @@ export const SuppliersPage = () => {
     taxCode: selectedSupplier.taxCode,
     contactPerson: selectedSupplier.contactPerson,
     note: selectedSupplier.note,
+    status: selectedSupplier.status,
   } : undefined;
 
   // --- Handlers ---
