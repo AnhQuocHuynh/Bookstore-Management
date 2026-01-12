@@ -52,10 +52,23 @@ export const useUpdateAuthor = () => {
             queryClient.invalidateQueries({ queryKey: ["authors-list"] });
         },
         onError: (error: any) => {
+            // Logic hiển thị lỗi chi tiết
+            const backendMsg = error?.response?.data?.message;
             const status = error?.response?.status;
-            if (status === 409) message.error("Email hoặc SĐT trùng lặp");
-            else if (status === 403) message.error("Bạn không có quyền thực hiện");
-            else message.error("Lỗi khi cập nhật");
+
+            if (status === 409) {
+                message.error("Cập nhật thất bại: Email hoặc SĐT đã tồn tại ở tác giả khác.");
+            } else if (status === 400) {
+                if (Array.isArray(backendMsg)) {
+                    message.error(backendMsg[0]); // Lỗi validation cụ thể
+                } else {
+                    message.error(backendMsg || "Dữ liệu không hợp lệ (Lỗi 400)");
+                }
+            } else if (status === 403) {
+                message.error("Bạn không có quyền thực hiện.");
+            } else {
+                message.error("Lỗi khi cập nhật tác giả");
+            }
         },
     });
 };

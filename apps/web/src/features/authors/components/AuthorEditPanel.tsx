@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Modal, Form, Input, Button, Select } from "antd"; // Import Select
+import { Modal, Form, Input, Button, Select } from "antd";
 import { AuthorFormData } from "../types";
 
 interface AuthorEditPanelProps {
@@ -27,9 +27,26 @@ export const AuthorEditPanel: React.FC<AuthorEditPanelProps> = ({
     const handleSubmit = async () => {
         try {
             const values = await form.validateFields();
-            onSubmit(values);
+
+            // --- XỬ LÝ DỮ LIỆU ---
+            // Khi sửa, nếu người dùng xóa trắng một trường, ta cần gửi null
+            // để Backend hiểu là "hãy xóa giá trị này trong database"
+            const cleanData: AuthorFormData = {
+                fullName: values.fullName,
+                status: values.status,
+                // Dùng (values.field || null) để chuyển chuỗi rỗng "" thành null
+                penName: values.penName || null,
+                email: values.email || null,
+                phone: values.phone || null,
+                nationality: values.nationality || null,
+                bio: values.bio || null,
+            };
+
+            onSubmit(cleanData);
             setIsDirty(false);
-        } catch { }
+        } catch {
+            // Validate fail
+        }
     };
 
     const handleClose = () => {
@@ -56,7 +73,7 @@ export const AuthorEditPanel: React.FC<AuthorEditPanelProps> = ({
             width={700}
             centered
             footer={null}
-            destroyOnClose={true}
+            destroyOnClose={true} // Reset DOM để tránh lỗi cache form cũ
             title={null}
             closeIcon={<span className="text-2xl text-[#102e3c] hover:opacity-70">×</span>}
             styles={{ body: { padding: 0 }, mask: { backgroundColor: "rgba(16, 46, 60, 0.5)" } }}
@@ -66,11 +83,10 @@ export const AuthorEditPanel: React.FC<AuthorEditPanelProps> = ({
 
                 <Form form={form} layout="vertical" onValuesChange={() => setIsDirty(true)}>
                     <div className="grid grid-cols-2 gap-4">
-                        <Form.Item name="fullName" label={<span className="font-semibold">Họ và Tên</span>} rules={[{ required: true }]}>
+                        <Form.Item name="fullName" label={<span className="font-semibold">Họ và Tên</span>} rules={[{ required: true, message: "Tên không được để trống" }]}>
                             <Input className="border-[#102e3c]" />
                         </Form.Item>
 
-                        {/* STATUS DROPDOWN */}
                         <Form.Item name="status" label={<span className="font-semibold">Trạng Thái</span>}>
                             <Select className="border-[#102e3c]">
                                 <Select.Option value="active">Hoạt động</Select.Option>
@@ -90,7 +106,7 @@ export const AuthorEditPanel: React.FC<AuthorEditPanelProps> = ({
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
-                        <Form.Item name="email" label={<span className="font-semibold">Email</span>} rules={[{ type: 'email' }]}>
+                        <Form.Item name="email" label={<span className="font-semibold">Email</span>} rules={[{ type: 'email', message: "Email không hợp lệ" }]}>
                             <Input className="border-[#102e3c]" />
                         </Form.Item>
                         <Form.Item name="phone" label={<span className="font-semibold">Số Điện Thoại</span>}>
