@@ -45,7 +45,7 @@ export class CreateBookDto {
       message: 'Đường dẫn đến ảnh bìa không hợp lệ.',
     },
   )
-  readonly coverImage: string;
+
 
   @ApiPropertyOptional({
     description: 'Ngày phát hành',
