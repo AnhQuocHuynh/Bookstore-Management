@@ -13,7 +13,7 @@ const menuItems = [
     label: "Sản phẩm",
     icon: "menu_book",
     children: [
-      { path: "/dashboard/products/list", label: "Danh sách sản phẩm" },
+      // { path: "/dashboard/products/list", label: "Danh sách sản phẩm" },
       { path: "/dashboard/products/inventories", label: "Tồn kho" },
       { path: "/dashboard/products/display", label: "Hàng trưng bày" },
     ],
