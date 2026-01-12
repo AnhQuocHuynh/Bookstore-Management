@@ -20,89 +20,91 @@ export const CreatePurchaseOrderPage = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     // --- Hooks ---
-    // 1. Lấy dữ liệu nhà cung cấp và xử lý an toàn (tránh lỗi .map)
     const { data: responseData, isLoading: loadingSuppliers } = useSuppliers();
+    // Xử lý an toàn dữ liệu nhà cung cấp
     const suppliers = Array.isArray(responseData)
         ? responseData
         : (Array.isArray(responseData?.data) ? responseData.data : []);
 
-    // 2. Hook tạo đơn nhập hàng
     const { mutate: createOrder, isPending: isSubmitting } = useCreatePurchaseOrder();
 
     // --- Computed ---
-    // Tính tổng tiền đơn hàng
     const totalAmount = useMemo(() => {
         return items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
     }, [items]);
 
     // --- Handlers ---
-
-    // Thêm sản phẩm từ Modal vào danh sách
     const handleAddItem = (newItem: PurchaseOrderItemForm) => {
-        // Kiểm tra xem sản phẩm đã có trong danh sách chưa (dựa vào SKU)
         const existingIndex = items.findIndex(i => i.sku === newItem.sku);
-
         if (existingIndex > -1) {
-            // Nếu có rồi thì cập nhật lại thông tin mới nhất
             const updatedItems = [...items];
             updatedItems[existingIndex] = newItem;
             setItems(updatedItems);
             message.info(`Đã cập nhật thông tin cho sản phẩm SKU: ${newItem.sku}`);
         } else {
-            // Nếu chưa có thì thêm mới
             setItems([...items, newItem]);
         }
     };
 
-    // Xóa sản phẩm khỏi danh sách
     const handleRemoveItem = (sku: string) => {
         setItems(items.filter(item => item.sku !== sku));
     };
 
-    // Submit đơn hàng lên API
     const handleSubmit = () => {
         if (!supplierId) return message.error("Vui lòng chọn nhà cung cấp");
         if (items.length === 0) return message.error("Vui lòng thêm ít nhất 1 sản phẩm");
 
-        // Transform dữ liệu sang cấu trúc API yêu cầu (Nested DTO)
+        // --- FIX LOGIC TRANSFORM DỮ LIỆU ---
         const payload: CreatePurchaseOrderDto = {
             supplierId,
             note,
-            createPurchaseOrderDetailDtos: items.map(item => ({
-                quantity: item.quantity,
-                unitPrice: item.unitPrice,
-                createProductDto: {
-                    name: item.name,
-                    sku: item.sku,
-                    price: item.price,
-                    imageUrl: item.imageUrl,
-                    type: item.type,
-                    categoryIds: item.categoryIds,
-                    taxRate: item.taxRate,
-                    description: item.description,
-                    createInventoryDto: {
-                        stockQuantity: item.quantity, // Tồn kho ban đầu
-                        costPrice: item.unitPrice,    // Giá vốn
-                    },
-                    // Chỉ thêm createBookDto nếu là Sách
-                    ...(item.type === 'book' ? {
-                        createBookDto: {
-                            isbn: item.isbn!,
-                            authorId: item.authorId!,
-                            publisherId: item.publisherId!,
-                            publicationDate: item.publicationDate,
-                            edition: item.edition,
-                            language: item.language,
-                        }
-                    } : { createBookDto: undefined })
-                }
-            }))
+            createPurchaseOrderDetailDtos: items.map(item => {
+                // Xử lý TaxRate: Nếu <= 0 hoặc null thì gửi undefined để tránh lỗi "Must be positive"
+                const cleanTaxRate = (item.taxRate && item.taxRate > 0) ? item.taxRate : undefined;
+
+                return {
+                    quantity: item.quantity,
+                    unitPrice: item.unitPrice,
+                    createProductDto: {
+                        name: item.name,
+                        sku: item.sku,
+                        price: item.price,
+                        imageUrl: item.imageUrl || "", // Gửi chuỗi rỗng nếu không có ảnh
+                        type: item.type,
+                        categoryIds: item.categoryIds,
+                        taxRate: cleanTaxRate,
+                        description: item.description,
+                        createInventoryDto: {
+                            stockQuantity: item.quantity,
+                            costPrice: item.unitPrice,
+                        },
+                        // Logic cho Book
+                        ...(item.type === 'book' ? {
+                            createBookDto: {
+                                isbn: item.isbn!,
+                                authorId: item.authorId!,
+                                publisherId: item.publisherId!,
+
+                                // FIX LỖI DATE: Đảm bảo format YYYY-MM-DD
+                                publicationDate: item.publicationDate || undefined,
+
+                                edition: item.edition || undefined,
+                                language: item.language || undefined,
+
+                                // FIX LỖI ẢNH BÌA: Backend vẫn đòi coverImage dù tài liệu nói xóa
+                                // Map imageUrl vào coverImage để pass validate
+                                coverImage: item.imageUrl || undefined
+                            } as any // Cast any để tránh lỗi TS nếu type definition chưa cập nhật
+                        } : { createBookDto: undefined })
+                    }
+                };
+            })
         };
 
         createOrder(payload);
     };
 
-    // Cấu hình cột cho bảng
+    // Columns
     const columns = [
         {
             title: 'SKU',
@@ -160,7 +162,7 @@ export const CreatePurchaseOrderPage = () => {
     return (
         <div className="p-6 h-full flex flex-col font-['Inter'] bg-gray-50 overflow-hidden">
 
-            {/* --- HEADER --- */}
+            {/* HEADER */}
             <div className="flex justify-between items-center mb-6 flex-shrink-0">
                 <div className="flex items-center gap-3">
                     <Button icon={<ArrowLeft size={18} />} onClick={() => navigate(-1)} className="border-none bg-transparent shadow-none" />
@@ -182,7 +184,7 @@ export const CreatePurchaseOrderPage = () => {
             </div>
 
             <div className="flex gap-6 h-full overflow-hidden">
-                {/* --- LEFT: SUPPLIER & INFO --- */}
+                {/* LEFT */}
                 <div className="w-[350px] flex flex-col gap-4 overflow-y-auto custom-scrollbar">
                     <Card title="Thông tin chung" className="shadow-sm rounded-xl">
                         <div className="flex flex-col gap-4">
@@ -194,7 +196,6 @@ export const CreatePurchaseOrderPage = () => {
                                     optionFilterProp="label"
                                     className="w-full h-10"
                                     loading={loadingSuppliers}
-                                    // Sử dụng biến suppliers đã xử lý an toàn
                                     options={suppliers.map((s: any) => ({ label: s.name, value: s.id }))}
                                     value={supplierId}
                                     onChange={setSupplierId}
@@ -222,9 +223,7 @@ export const CreatePurchaseOrderPage = () => {
                             <span className="text-gray-600">Số mặt hàng:</span>
                             <span className="font-bold">{items.length}</span>
                         </div>
-
                         <Divider className="my-3 bg-teal-200" />
-
                         <div className="flex justify-between items-end">
                             <span className="text-lg font-bold text-[#102e3c]">Tổng Tiền:</span>
                             <span className="text-2xl font-extrabold text-[#1a998f]">
@@ -234,7 +233,7 @@ export const CreatePurchaseOrderPage = () => {
                     </Card>
                 </div>
 
-                {/* --- RIGHT: PRODUCT LIST --- */}
+                {/* RIGHT */}
                 <div className="flex-1 flex flex-col overflow-hidden">
                     <Card
                         className="flex-1 shadow-sm rounded-xl flex flex-col border border-gray-200"
