@@ -62,6 +62,11 @@ const menuItems = [
     icon: "public",
   },
   {
+    path: "/dashboard/authors",
+    label: "Tác giả",
+    icon: "person",
+  },
+  {
     path: "/reports",
     label: "Thống kê",
     icon: "pie_chart",

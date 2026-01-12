@@ -25,6 +25,7 @@ import RevenuePage from "@/features/reports/pages/RevenuePage";
 import EmployeePerformancePage from "@/features/reports/pages/EmployeePerformancePage";
 import { CategoriesPage } from "@/features/categories/components/CategoriesPage";
 import { PublishersPage } from "@/features/publishers/components/PublishersPage";
+import { AuthorsPage } from "@/features/authors/components/AuthorsPage";
 
 // Select Store Page (Semi-protected: requires token but no store)
 // const SelectStorePage = () => (
@@ -144,6 +145,14 @@ export const AppRoutes = () => {
           element={
             <MainLayout>
               <CategoriesPage />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/dashboard/authors"
+          element={
+            <MainLayout>
+              <AuthorsPage />
             </MainLayout>
           }
         />
