@@ -67,7 +67,7 @@ export const CustomerSection = ({
                         <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400 pointer-events-none" />
 
                         <Input
-                            placeholder="Tìm SĐT hoặc Email khách..."
+                            placeholder="Tìm SĐT khách hàng"
                             className="pl-9 h-10 rounded-xl border-2 border-gray-100 focus-visible:border-teal-600 focus-visible:ring-0 transition-all"
                             value={searchTerm}
                             onChange={(e) => {
