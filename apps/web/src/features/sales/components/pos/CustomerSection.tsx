@@ -1,4 +1,3 @@
-// src/features/sales/components/pos/CustomerSection.tsx
 import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -19,7 +18,6 @@ export const CustomerSection = ({
     const [searchTerm, setSearchTerm] = useState("");
     const [showResults, setShowResults] = useState(false);
 
-    // Debounce input để tránh spam API
     const debouncedSearch = useDebounce(searchTerm, 500);
     const { data: customers, isLoading } = useSearchCustomers(debouncedSearch);
 
@@ -41,7 +39,6 @@ export const CustomerSection = ({
             </h3>
 
             {selectedCustomer ? (
-                // --- VIEW: ĐÃ CHỌN KHÁCH ---
                 <div className="bg-teal-50 border border-teal-200 rounded-xl p-3 relative flex items-center gap-3 animate-in fade-in zoom-in-95 duration-200">
                     <div className="w-10 h-10 bg-teal-200 rounded-full flex items-center justify-center text-teal-800 flex-shrink-0">
                         <UserCheck size={20} />
@@ -62,10 +59,13 @@ export const CustomerSection = ({
                     </button>
                 </div>
             ) : (
-                // --- VIEW: TÌM KIẾM ---
                 <div className="relative">
                     <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                        {/* CĂN CHỈNH ICON: Dùng absolute top-0 bottom-0 để căn giữa theo chiều dọc */}
+                        <div className="absolute left-3 top-0 bottom-0 flex items-center justify-center pointer-events-none">
+                            <Search className="w-4 h-4 text-gray-400" />
+                        </div>
+
                         <Input
                             placeholder="Tìm SĐT hoặc Email khách..."
                             className="pl-9 h-10 rounded-xl border-2 border-gray-100 focus-visible:border-teal-600 focus-visible:ring-0"
@@ -75,16 +75,16 @@ export const CustomerSection = ({
                                 setShowResults(true);
                             }}
                             onFocus={() => setShowResults(true)}
-                            onBlur={() => setTimeout(() => setShowResults(false), 200)} // Delay để kịp click item
+                            onBlur={() => setTimeout(() => setShowResults(false), 200)}
                         />
+
                         {isLoading && (
-                            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                            <div className="absolute right-3 top-0 bottom-0 flex items-center justify-center pointer-events-none">
                                 <Loader2 className="animate-spin w-4 h-4 text-teal-600" />
                             </div>
                         )}
                     </div>
 
-                    {/* Dropdown Kết quả */}
                     {showResults && searchTerm.length >= 1 && (
                         <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-50 max-h-60 overflow-y-auto">
                             {customers && customers.length > 0 ? (

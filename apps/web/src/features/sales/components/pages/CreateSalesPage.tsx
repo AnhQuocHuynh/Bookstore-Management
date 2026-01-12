@@ -15,7 +15,6 @@ import { CreateTransactionDto, CalculateTransactionDto } from "@/features/sales/
 import { useDebounce } from "@/hooks/use-debounce";
 
 export const CreateSalesPage = () => {
-    // --- State ---
     const [cart, setCart] = useState<CartItem[]>([]);
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
@@ -24,36 +23,38 @@ export const CreateSalesPage = () => {
     const [isScanning, setIsScanning] = useState(false);
     const [currentTime, setCurrentTime] = useState(new Date());
 
-    // --- Backend Calculation State ---
     const [backendTotals, setBackendTotals] = useState({
         totalAmount: 0,
         taxAmount: 0,
         finalAmount: 0
     });
 
-    // --- Hooks ---
     const { user } = useAuthStore();
     const { mutate: createTransaction, isPending: isPaying } = useCreateTransaction();
     const { mutate: calculateTransaction, isPending: isCalculating } = useCalculateTransaction();
 
     const debouncedCart = useDebounce(cart, 500);
 
-    // --- Clock Effect ---
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date()), 1000);
         return () => clearInterval(timer);
     }, []);
 
-    // --- Calculation Logic (FIX LỖI 1: setState trong useEffect) ---
+    // --- SỬA LỖI VÒNG LẶP RENDER ---
     useEffect(() => {
+        // 1. Nếu giỏ hàng trống, reset về 0
         if (debouncedCart.length === 0) {
-            // Chỉ reset nếu giá trị hiện tại khác 0 để tránh re-render liên tục
-            if (backendTotals.finalAmount !== 0) {
-                setBackendTotals({ totalAmount: 0, taxAmount: 0, finalAmount: 0 });
-            }
+            setBackendTotals(prev => {
+                // Chỉ update nếu giá trị hiện tại KHÁC 0 để tránh re-render
+                if (prev.finalAmount !== 0) {
+                    return { totalAmount: 0, taxAmount: 0, finalAmount: 0 };
+                }
+                return prev; // Giữ nguyên tham chiếu object cũ -> React không render lại
+            });
             return;
         }
 
+        // 2. Nếu có hàng, gọi API tính toán
         const payload: CalculateTransactionDto = {
             createTransactionDetailDtos: debouncedCart.map(item => ({
                 productId: item.id,
@@ -78,13 +79,11 @@ export const CreateSalesPage = () => {
                 }
             }
         });
-        // Thêm backendTotals.finalAmount vào dependency để useEffect biết khi nào cần chạy lại logic check 0
-    }, [debouncedCart, calculateTransaction, backendTotals.finalAmount]);
+        // QUAN TRỌNG: Bỏ backendTotals.finalAmount ra khỏi dependency array
+    }, [debouncedCart, calculateTransaction]);
 
-    // Derived State
     const changeAmount = amountGiven - backendTotals.finalAmount;
 
-    // --- Handlers ---
     const handleAddToCart = (product: ProductResponse) => {
         setCart((prev) => {
             const existing = prev.find((item) => item.id === product.id);
@@ -120,16 +119,13 @@ export const CreateSalesPage = () => {
     };
 
     const handlePayment = () => {
-        // Validation
         if (cart.length === 0) return toast.error("Giỏ hàng trống");
         if (user?.role !== "EMPLOYEE") return toast.error("Chỉ nhân viên mới được thanh toán");
         if (amountGiven < backendTotals.finalAmount) return toast.error("Khách đưa chưa đủ tiền");
 
-        // FIX LỖI 2: Map Payment Method (Frontend 'qr' -> Backend 'bank_transfer')
         let finalPaymentMethod: "cash" | "card" | "bank_transfer" | "e_wallet" = "cash";
-
         if (paymentMethod === "qr") {
-            finalPaymentMethod = "bank_transfer"; // Backend không có 'qr', map sang chuyển khoản
+            finalPaymentMethod = "bank_transfer";
         } else {
             finalPaymentMethod = paymentMethod as any;
         }
@@ -167,18 +163,14 @@ export const CreateSalesPage = () => {
                 <ScannerModal onClose={() => setIsScanning(false)} onScan={(code) => toast.info(code)} />
             )}
 
-            {/* --- LEFT SECTION (Cột Trái) --- */}
+            {/* LEFT SECTION */}
             <div className="flex-1 flex flex-col gap-4 h-full min-h-0">
-
-                {/* 1. Customer Section (THAY ĐỔI: Đưa lên trên) */}
                 <div className="flex-shrink-0">
                     <CustomerSection
                         selectedCustomer={selectedCustomer}
                         onSelectCustomer={setSelectedCustomer}
                     />
                 </div>
-
-                {/* 2. Product List (Ở dưới, chiếm hết chiều cao còn lại) */}
                 <ProductListSection
                     cart={cart}
                     onUpdateQuantity={handleUpdateQuantity}
@@ -188,7 +180,7 @@ export const CreateSalesPage = () => {
                 />
             </div>
 
-            {/* --- RIGHT SECTION (Cột Phải) --- */}
+            {/* RIGHT SECTION */}
             <div className="w-full lg:w-[420px] flex flex-col gap-4 h-full min-h-0">
                 <PaymentSection
                     currentTime={currentTime}
