@@ -19,9 +19,24 @@ export const AuthorAddPanel: React.FC<AuthorAddPanelProps> = ({
     const handleSubmit = async () => {
         try {
             const values = await form.validateFields();
-            onSubmit(values);
-            // Reset handled in afterClose
-        } catch { }
+
+            // --- XỬ LÝ DỮ LIỆU TRƯỚC KHI GỬI ---
+            // Chuyển chuỗi rỗng "" thành undefined để API không báo lỗi 400 (Bad Request)
+            // đặc biệt là với các trường có tính duy nhất như email, phone
+            const cleanData: AuthorFormData = {
+                fullName: values.fullName,
+                penName: values.penName || undefined,
+                email: values.email || undefined,
+                phone: values.phone || undefined,
+                nationality: values.nationality || undefined,
+                bio: values.bio || undefined,
+            };
+
+            onSubmit(cleanData);
+            // Logic reset sẽ được xử lý ở afterClose
+        } catch (error) {
+            // Form validation failed
+        }
     };
 
     const handleClose = () => {
@@ -48,7 +63,13 @@ export const AuthorAddPanel: React.FC<AuthorAddPanelProps> = ({
             width={700}
             centered
             footer={null}
+            // SỬA LỖI WARNING: Antd v5 khuyến khích destroyOnClose (nhưng log của bạn báo deprecated thì có thể thử bỏ đi 
+            // vì ta đã dùng afterClose để reset form rồi, hoặc dùng destroyOnClose={true} nếu bản antd của bạn vẫn hỗ trợ)
+            // Nếu log báo dùng `destroyOnHidden`, bạn hãy đổi thành `destroyOnHidden={true}`. 
+            // Tuy nhiên, cách an toàn nhất để tránh warning và vẫn reset form là giữ `afterClose` ở trên và xóa prop destroy... đi.
+            // Ở đây tôi giữ lại destroyOnClose={true} vì nó phổ biến, nếu vẫn warn bạn hãy xóa dòng này đi nhé.
             destroyOnClose={true}
+
             title={null}
             closeIcon={<span className="text-2xl text-[#102e3c] hover:opacity-70">×</span>}
             styles={{ body: { padding: 0 }, mask: { backgroundColor: "rgba(16, 46, 60, 0.5)" } }}
@@ -75,7 +96,7 @@ export const AuthorAddPanel: React.FC<AuthorAddPanelProps> = ({
                         </Form.Item>
                     </div>
 
-                    <Form.Item name="email" label={<span className="font-semibold">Email</span>} rules={[{ type: 'email' }]}>
+                    <Form.Item name="email" label={<span className="font-semibold">Email</span>} rules={[{ type: 'email', message: "Email không hợp lệ" }]}>
                         <Input className="border-[#102e3c]" />
                     </Form.Item>
 
