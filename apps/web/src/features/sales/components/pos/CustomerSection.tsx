@@ -39,6 +39,7 @@ export const CustomerSection = ({
             </h3>
 
             {selectedCustomer ? (
+                // --- VIEW: ĐÃ CHỌN KHÁCH ---
                 <div className="bg-teal-50 border border-teal-200 rounded-xl p-3 relative flex items-center gap-3 animate-in fade-in zoom-in-95 duration-200">
                     <div className="w-10 h-10 bg-teal-200 rounded-full flex items-center justify-center text-teal-800 flex-shrink-0">
                         <UserCheck size={20} />
@@ -59,16 +60,15 @@ export const CustomerSection = ({
                     </button>
                 </div>
             ) : (
-                <div className="relative">
+                // --- VIEW: TÌM KIẾM ---
+                <div className="relative group">
                     <div className="relative">
-                        {/* CĂN CHỈNH ICON: Dùng absolute top-0 bottom-0 để căn giữa theo chiều dọc */}
-                        <div className="absolute left-3 top-0 bottom-0 flex items-center justify-center pointer-events-none">
-                            <Search className="w-4 h-4 text-gray-400" />
-                        </div>
+                        {/* FIX CĂN CHỈNH: Dùng top-3 (12px) cho input h-10 (40px) */}
+                        <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400 pointer-events-none" />
 
                         <Input
                             placeholder="Tìm SĐT hoặc Email khách..."
-                            className="pl-9 h-10 rounded-xl border-2 border-gray-100 focus-visible:border-teal-600 focus-visible:ring-0"
+                            className="pl-9 h-10 rounded-xl border-2 border-gray-100 focus-visible:border-teal-600 focus-visible:ring-0 transition-all"
                             value={searchTerm}
                             onChange={(e) => {
                                 setSearchTerm(e.target.value);
@@ -79,12 +79,13 @@ export const CustomerSection = ({
                         />
 
                         {isLoading && (
-                            <div className="absolute right-3 top-0 bottom-0 flex items-center justify-center pointer-events-none">
+                            <div className="absolute right-3 top-3 pointer-events-none">
                                 <Loader2 className="animate-spin w-4 h-4 text-teal-600" />
                             </div>
                         )}
                     </div>
 
+                    {/* Dropdown Kết quả */}
                     {showResults && searchTerm.length >= 1 && (
                         <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-50 max-h-60 overflow-y-auto">
                             {customers && customers.length > 0 ? (
@@ -92,13 +93,13 @@ export const CustomerSection = ({
                                     <div
                                         key={cus.id}
                                         onClick={() => handleSelect(cus)}
-                                        className="p-3 hover:bg-teal-50 cursor-pointer border-b last:border-0 transition-colors flex items-center justify-between"
+                                        className="p-3 hover:bg-teal-50 cursor-pointer border-b last:border-0 transition-colors flex items-center justify-between group/item"
                                     >
                                         <div>
-                                            <p className="font-semibold text-sm text-cyan-950">{cus.fullName}</p>
+                                            <p className="font-semibold text-sm text-cyan-950 group-hover/item:text-teal-700 transition-colors">{cus.fullName}</p>
                                             <p className="text-xs text-gray-500">{cus.phoneNumber}</p>
                                         </div>
-                                        <div className="text-xs font-mono bg-gray-100 px-2 py-1 rounded text-gray-600">
+                                        <div className="text-xs font-mono bg-gray-100 px-2 py-1 rounded text-gray-600 group-hover/item:bg-teal-100 group-hover/item:text-teal-800">
                                             {cus.customerCode}
                                         </div>
                                     </div>

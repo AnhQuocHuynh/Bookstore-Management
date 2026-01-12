@@ -15,6 +15,7 @@ import { CreateTransactionDto, CalculateTransactionDto } from "@/features/sales/
 import { useDebounce } from "@/hooks/use-debounce";
 
 export const CreateSalesPage = () => {
+    // --- State ---
     const [cart, setCart] = useState<CartItem[]>([]);
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
@@ -29,32 +30,25 @@ export const CreateSalesPage = () => {
         finalAmount: 0
     });
 
+    // --- Hooks ---
     const { user } = useAuthStore();
     const { mutate: createTransaction, isPending: isPaying } = useCreateTransaction();
     const { mutate: calculateTransaction, isPending: isCalculating } = useCalculateTransaction();
 
     const debouncedCart = useDebounce(cart, 500);
 
+    // --- Clock ---
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date()), 1000);
         return () => clearInterval(timer);
     }, []);
 
-    // --- SỬA LỖI VÒNG LẶP RENDER ---
+    // --- Calculation Logic (FIXED) ---
     useEffect(() => {
-        // 1. Nếu giỏ hàng trống, reset về 0
-        if (debouncedCart.length === 0) {
-            setBackendTotals(prev => {
-                // Chỉ update nếu giá trị hiện tại KHÁC 0 để tránh re-render
-                if (prev.finalAmount !== 0) {
-                    return { totalAmount: 0, taxAmount: 0, finalAmount: 0 };
-                }
-                return prev; // Giữ nguyên tham chiếu object cũ -> React không render lại
-            });
-            return;
-        }
+        // Nếu giỏ hàng rỗng, ta KHÔNG làm gì cả (việc reset đã được xử lý ở event handler)
+        // Điều này giúp tránh vòng lặp render trong useEffect
+        if (debouncedCart.length === 0) return;
 
-        // 2. Nếu có hàng, gọi API tính toán
         const payload: CalculateTransactionDto = {
             createTransactionDetailDtos: debouncedCart.map(item => ({
                 productId: item.id,
@@ -79,11 +73,19 @@ export const CreateSalesPage = () => {
                 }
             }
         });
-        // QUAN TRỌNG: Bỏ backendTotals.finalAmount ra khỏi dependency array
     }, [debouncedCart, calculateTransaction]);
 
+    // Derived State
     const changeAmount = amountGiven - backendTotals.finalAmount;
 
+    // --- Helpers ---
+    const resetOrder = () => {
+        setCart([]);
+        setAmountGiven(0);
+        setBackendTotals({ totalAmount: 0, taxAmount: 0, finalAmount: 0 });
+    };
+
+    // --- Handlers ---
     const handleAddToCart = (product: ProductResponse) => {
         setCart((prev) => {
             const existing = prev.find((item) => item.id === product.id);
@@ -114,8 +116,18 @@ export const CreateSalesPage = () => {
         }));
     };
 
+    // FIX LỖI: Reset totals ngay khi xóa sản phẩm cuối cùng
     const handleRemoveItem = (id: string) => {
-        setCart((prev) => prev.filter((item) => item.id !== id));
+        setCart((prev) => {
+            const newCart = prev.filter((item) => item.id !== id);
+
+            // Nếu giỏ hàng trở nên rỗng sau khi xóa
+            if (newCart.length === 0) {
+                // Reset ngay lập tức để UI cập nhật về 0
+                setBackendTotals({ totalAmount: 0, taxAmount: 0, finalAmount: 0 });
+            }
+            return newCart;
+        });
     };
 
     const handlePayment = () => {
@@ -149,10 +161,8 @@ export const CreateSalesPage = () => {
         createTransaction(payload, {
             onSuccess: (data) => {
                 if (isPrintInvoice) toast.info(`Đang in hóa đơn #${data.id.substring(0, 8)}...`);
-                setCart([]);
-                setAmountGiven(0);
+                resetOrder();
                 setSelectedCustomer(null);
-                setBackendTotals({ totalAmount: 0, taxAmount: 0, finalAmount: 0 });
             },
         });
     };
