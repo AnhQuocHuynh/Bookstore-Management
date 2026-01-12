@@ -19,12 +19,12 @@ const menuItems = [
     ],
   },
   {
-    path: "/dashboard/purchases",
+    path: "/purchase-orders",
     label: "Nhập hàng",
     icon: "inventory",
     children: [
-      { path: "/dashboard/purchases/create", label: "Tạo phiếu nhập" },
-      { path: "/dashboard/purchases/list", label: "Danh sách phiếu nhập" },
+      { path: "/purchase-orders/create", label: "Tạo phiếu nhập" },
+      { path: "/purchase-orders/list", label: "Danh sách phiếu nhập" },
     ],
   },
   {
