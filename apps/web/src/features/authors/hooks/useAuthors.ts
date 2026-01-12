@@ -78,13 +78,31 @@ export const useDeleteAuthor = () => {
     return useMutation({
         mutationFn: (id: string) => authorApi.delete(id),
         onSuccess: () => {
-            message.success("Đã xóa tác giả");
+            message.success("Đã xóa tác giả thành công");
             queryClient.invalidateQueries({ queryKey: ["authors-list"] });
         },
         onError: (error: any) => {
             const status = error?.response?.status;
-            if (status === 403) message.error("Bạn không có quyền xóa (Chỉ Owner)");
-            else message.error("Lỗi khi xóa tác giả");
+            const backendMsg = error?.response?.data?.message;
+
+            // Log lỗi ra console để bạn dễ debug
+            console.error("Lỗi xóa tác giả:", error);
+
+            if (status === 403) {
+                message.error("Bạn không có quyền xóa tác giả (Chỉ Owner).");
+            } else if (status === 404) {
+                message.error("Tác giả không tồn tại hoặc đã bị xóa trước đó.");
+            } else {
+                // Ưu tiên hiển thị message từ backend trả về
+                if (backendMsg) {
+                    // Nếu message là array (validation) hoặc string
+                    const msgToShow = Array.isArray(backendMsg) ? backendMsg[0] : backendMsg;
+                    message.error(`Xóa thất bại: ${msgToShow}`);
+                } else {
+                    // Fallback nếu không có message
+                    message.error("Không thể xóa tác giả. Có thể do tác giả này đã có sách nằm trong các đơn hàng cũ.");
+                }
+            }
         },
     });
 };
