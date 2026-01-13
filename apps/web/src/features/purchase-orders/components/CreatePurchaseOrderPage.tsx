@@ -70,16 +70,32 @@ export const CreatePurchaseOrderPage = () => {
         setEditingItem(null);
     };
 
+    // --- VALIDATE & SUBMIT ---
     const handleSubmit = () => {
+        // 1. Validate cơ bản
         if (!supplierId) return message.error("Vui lòng chọn nhà cung cấp");
         if (items.length === 0) return message.error("Vui lòng thêm ít nhất 1 sản phẩm");
 
-        // --- TRANSFORM DỮ LIỆU (ĐÃ SỬA LỖI) ---
+        // 2. Validate chi tiết từng sản phẩm (Fix lỗi UUID)
+        for (const item of items) {
+            if (item.type === 'book') {
+                if (!item.authorId) {
+                    return message.error(`Sách "${item.name}" chưa chọn Tác giả!`);
+                }
+                if (!item.publisherId) {
+                    return message.error(`Sách "${item.name}" chưa chọn Nhà xuất bản!`);
+                }
+                if (!item.isbn) {
+                    return message.error(`Sách "${item.name}" thiếu mã ISBN!`);
+                }
+            }
+        }
+
+        // 3. Transform dữ liệu
         const payload: CreatePurchaseOrderDto = {
             supplierId,
             note,
             createPurchaseOrderDetailDtos: items.map(item => {
-                // Xử lý TaxRate: Nếu <= 0 hoặc null thì gửi undefined
                 const cleanTaxRate = (item.taxRate && item.taxRate > 0) ? item.taxRate : undefined;
 
                 return {
@@ -89,7 +105,7 @@ export const CreatePurchaseOrderPage = () => {
                         name: item.name,
                         sku: item.sku,
                         price: item.price,
-                        imageUrl: item.imageUrl || "", // Ảnh sản phẩm nằm ở đây
+                        imageUrl: item.imageUrl || "",
                         type: item.type,
                         categoryIds: item.categoryIds,
                         taxRate: cleanTaxRate,
@@ -98,23 +114,19 @@ export const CreatePurchaseOrderPage = () => {
                             stockQuantity: item.quantity,
                             costPrice: item.unitPrice,
                         },
-                        // Logic cho Book
+                        // Chỉ gửi createBookDto nếu là Sách VÀ có đủ ID
                         ...(item.type === 'book' ? {
                             createBookDto: {
                                 isbn: item.isbn!,
-                                // Đảm bảo ID luôn có giá trị, nếu rỗng modal đã chặn rồi, 
-                                // nhưng ở đây ta cứ truyền thẳng vì DTO yêu cầu string UUID
+                                // Ép kiểu đảm bảo gửi chuỗi UUID, nếu rỗng thì logic validation ở trên đã chặn rồi
                                 authorId: item.authorId!,
                                 publisherId: item.publisherId!,
 
                                 publicationDate: item.publicationDate || undefined,
                                 edition: item.edition || undefined,
                                 language: item.language || undefined,
-
-                                // --- FIX QUAN TRỌNG: KHÔNG GỬI TRƯỜNG coverImage ---
-                                // Backend báo lỗi "property coverImage should not exist" 
-                                // nên ta xóa bỏ dòng coverImage ở đây.
-                            }
+                                // Không gửi coverImage
+                            } as any
                         } : { createBookDto: undefined })
                     }
                 };
@@ -137,11 +149,17 @@ export const CreatePurchaseOrderPage = () => {
             dataIndex: 'name',
             render: (text: string, record: PurchaseOrderItemForm) => (
                 <div
-                    className="cursor-pointer hover:text-teal-600"
+                    className="cursor-pointer hover:text-teal-600 group"
                     onClick={() => handleEditItem(record)}
                 >
-                    <div className="font-medium">{text}</div>
-                    <div className="text-xs text-gray-500">{record.type === 'book' ? 'Sách' : 'VPP'}</div>
+                    <div className="font-medium group-hover:underline">{text}</div>
+                    <div className="text-xs text-gray-500 flex items-center gap-1">
+                        {record.type === 'book' ? 'Sách' : 'VPP'}
+                        {/* Hiển thị cảnh báo nếu thiếu thông tin quan trọng */}
+                        {record.type === 'book' && (!record.authorId || !record.publisherId) && (
+                            <span className="text-red-500 font-bold ml-1">(Thiếu thông tin!)</span>
+                        )}
+                    </div>
                 </div>
             )
         },

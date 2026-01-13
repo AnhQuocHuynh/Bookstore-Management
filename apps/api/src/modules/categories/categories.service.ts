@@ -17,7 +17,7 @@ import { Repository } from 'typeorm';
 
 @Injectable()
 export class CategoriesService {
-  constructor(private readonly tenantsService: TenantService) {}
+  constructor(private readonly tenantsService: TenantService) { }
 
   async getCategories(
     userSession: TUserSession,
@@ -229,19 +229,42 @@ export class CategoriesService {
     categoryRepo: Repository<Category>,
     productRepo: Repository<Product>,
   ) {
-    await Promise.all(
-      categoryIds.map(async (categoryId) => {
-        const category = await categoryRepo.findOne({
-          where: {
-            id: categoryId,
-          },
-        });
+    // 1. Load lại sản phẩm kèm theo danh sách categories hiện có để kiểm tra trùng
+    const productWithCategories = await productRepo.findOne({
+      where: { id: product.id },
+      relations: { categories: true },
+    });
 
+    if (!productWithCategories) return;
+
+    // Đảm bảo mảng categories đã được khởi tạo
+    if (!productWithCategories.categories) {
+      productWithCategories.categories = [];
+    }
+
+    let isModified = false;
+
+    for (const categoryId of categoryIds) {
+      // 2. Kiểm tra xem sản phẩm đã có danh mục này chưa
+      const exists = productWithCategories.categories.some(
+        (c) => c.id === categoryId,
+      );
+
+      // Nếu chưa có thì mới thêm vào
+      if (!exists) {
+        const category = await categoryRepo.findOne({
+          where: { id: categoryId },
+        });
         if (category) {
-          product.categories.push(category);
-          await productRepo.save(product);
+          productWithCategories.categories.push(category);
+          isModified = true;
         }
-      }),
-    );
+      }
+    }
+
+    // 3. Chỉ lưu xuống DB nếu có sự thay đổi
+    if (isModified) {
+      await productRepo.save(productWithCategories);
+    }
   }
 }
