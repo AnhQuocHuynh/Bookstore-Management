@@ -33,7 +33,7 @@ export class PurchaseOrdersService {
     private readonly tenantService: TenantService,
     private readonly productsService: ProductsService,
     private readonly inventoriesService: InventoriesService,
-  ) {}
+  ) { }
 
   async findPurchaseOrderByField(
     repo: Repository<PurchaseOrder>,
@@ -97,6 +97,7 @@ export class PurchaseOrdersService {
         },
         ...(note?.trim() && { note }),
         totalAmount: 0,
+        purchaseDate: new Date(),
       });
 
       await purchaseOrderRepo.save(newPurchaseOrder);

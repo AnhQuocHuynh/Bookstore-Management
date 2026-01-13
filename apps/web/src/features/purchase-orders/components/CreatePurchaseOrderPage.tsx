@@ -70,33 +70,19 @@ export const CreatePurchaseOrderPage = () => {
         setEditingItem(null);
     };
 
-    // --- VALIDATE & SUBMIT ---
     const handleSubmit = () => {
-        // 1. Validate cơ bản
         if (!supplierId) return message.error("Vui lòng chọn nhà cung cấp");
         if (items.length === 0) return message.error("Vui lòng thêm ít nhất 1 sản phẩm");
 
-        // 2. Validate chi tiết từng sản phẩm (Fix lỗi UUID)
-        for (const item of items) {
-            if (item.type === 'book') {
-                if (!item.authorId) {
-                    return message.error(`Sách "${item.name}" chưa chọn Tác giả!`);
-                }
-                if (!item.publisherId) {
-                    return message.error(`Sách "${item.name}" chưa chọn Nhà xuất bản!`);
-                }
-                if (!item.isbn) {
-                    return message.error(`Sách "${item.name}" thiếu mã ISBN!`);
-                }
-            }
-        }
-
-        // 3. Transform dữ liệu
         const payload: CreatePurchaseOrderDto = {
             supplierId,
             note,
             createPurchaseOrderDetailDtos: items.map(item => {
                 const cleanTaxRate = (item.taxRate && item.taxRate > 0) ? item.taxRate : undefined;
+
+                // --- FIX LỖI IMAGE URL ---
+                // Nếu có ảnh -> giữ nguyên. Nếu là chuỗi rỗng -> chuyển thành undefined để Backend bỏ qua validate URL
+                const cleanImageUrl = (item.imageUrl && item.imageUrl.trim() !== "") ? item.imageUrl : undefined;
 
                 return {
                     quantity: item.quantity,
@@ -105,7 +91,10 @@ export const CreatePurchaseOrderPage = () => {
                         name: item.name,
                         sku: item.sku,
                         price: item.price,
-                        imageUrl: item.imageUrl || "",
+
+                        // Sửa tại đây:
+                        imageUrl: cleanImageUrl,
+
                         type: item.type,
                         categoryIds: item.categoryIds,
                         taxRate: cleanTaxRate,
@@ -114,18 +103,14 @@ export const CreatePurchaseOrderPage = () => {
                             stockQuantity: item.quantity,
                             costPrice: item.unitPrice,
                         },
-                        // Chỉ gửi createBookDto nếu là Sách VÀ có đủ ID
                         ...(item.type === 'book' ? {
                             createBookDto: {
                                 isbn: item.isbn!,
-                                // Ép kiểu đảm bảo gửi chuỗi UUID, nếu rỗng thì logic validation ở trên đã chặn rồi
                                 authorId: item.authorId!,
                                 publisherId: item.publisherId!,
-
                                 publicationDate: item.publicationDate || undefined,
                                 edition: item.edition || undefined,
                                 language: item.language || undefined,
-                                // Không gửi coverImage
                             } as any
                         } : { createBookDto: undefined })
                     }
@@ -155,7 +140,6 @@ export const CreatePurchaseOrderPage = () => {
                     <div className="font-medium group-hover:underline">{text}</div>
                     <div className="text-xs text-gray-500 flex items-center gap-1">
                         {record.type === 'book' ? 'Sách' : 'VPP'}
-                        {/* Hiển thị cảnh báo nếu thiếu thông tin quan trọng */}
                         {record.type === 'book' && (!record.authorId || !record.publisherId) && (
                             <span className="text-red-500 font-bold ml-1">(Thiếu thông tin!)</span>
                         )}
