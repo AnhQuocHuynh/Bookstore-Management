@@ -97,6 +97,8 @@ export class PurchaseOrdersService {
         },
         ...(note?.trim() && { note }),
         totalAmount: 0,
+
+        status: PurchaseStatus.COMPLETED,
         purchaseDate: new Date(),
       });
 

@@ -76,7 +76,7 @@ export const CreatePurchaseOrderPage = () => {
 
         const payload: CreatePurchaseOrderDto = {
             supplierId,
-            note,
+            note: note && note.trim() !== "" ? note : undefined,
             createPurchaseOrderDetailDtos: items.map(item => {
                 const cleanTaxRate = (item.taxRate && item.taxRate > 0) ? item.taxRate : undefined;
 
