@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
-import { Button, Card, Input, Select, Table, message, Typography, Tag, Divider } from "antd";
-import { Plus, Save, Trash2, ArrowLeft } from "lucide-react";
+import { Button, Card, Input, Select, Table, message, Typography, Tag, Divider, Tooltip } from "antd";
+import { Plus, Save, Trash2, ArrowLeft, Edit } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import { useSuppliers } from "@/features/suppliers/hooks/useSuppliers";
@@ -17,11 +17,13 @@ export const CreatePurchaseOrderPage = () => {
     const [supplierId, setSupplierId] = useState<string | null>(null);
     const [note, setNote] = useState("");
     const [items, setItems] = useState<PurchaseOrderItemForm[]>([]);
+
+    // State Modal
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingItem, setEditingItem] = useState<PurchaseOrderItemForm | null>(null);
 
     // --- Hooks ---
     const { data: responseData, isLoading: loadingSuppliers } = useSuppliers();
-    // Xử lý an toàn dữ liệu nhà cung cấp
     const suppliers = Array.isArray(responseData)
         ? responseData
         : (Array.isArray(responseData?.data) ? responseData.data : []);
@@ -34,32 +36,50 @@ export const CreatePurchaseOrderPage = () => {
     }, [items]);
 
     // --- Handlers ---
+
     const handleAddItem = (newItem: PurchaseOrderItemForm) => {
         const existingIndex = items.findIndex(i => i.sku === newItem.sku);
+
         if (existingIndex > -1) {
             const updatedItems = [...items];
             updatedItems[existingIndex] = newItem;
             setItems(updatedItems);
-            message.info(`Đã cập nhật thông tin cho sản phẩm SKU: ${newItem.sku}`);
+
+            if (editingItem) {
+                message.success("Cập nhật thông tin sản phẩm thành công");
+            } else {
+                message.info(`Đã cập nhật thông tin cho sản phẩm SKU: ${newItem.sku}`);
+            }
         } else {
             setItems([...items, newItem]);
+            message.success("Đã thêm sản phẩm vào danh sách");
         }
+    };
+
+    const handleEditItem = (item: PurchaseOrderItemForm) => {
+        setEditingItem(item);
+        setIsModalOpen(true);
     };
 
     const handleRemoveItem = (sku: string) => {
         setItems(items.filter(item => item.sku !== sku));
     };
 
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        setEditingItem(null);
+    };
+
     const handleSubmit = () => {
         if (!supplierId) return message.error("Vui lòng chọn nhà cung cấp");
         if (items.length === 0) return message.error("Vui lòng thêm ít nhất 1 sản phẩm");
 
-        // --- FIX LOGIC TRANSFORM DỮ LIỆU ---
+        // --- TRANSFORM DỮ LIỆU (ĐÃ SỬA LỖI) ---
         const payload: CreatePurchaseOrderDto = {
             supplierId,
             note,
             createPurchaseOrderDetailDtos: items.map(item => {
-                // Xử lý TaxRate: Nếu <= 0 hoặc null thì gửi undefined để tránh lỗi "Must be positive"
+                // Xử lý TaxRate: Nếu <= 0 hoặc null thì gửi undefined
                 const cleanTaxRate = (item.taxRate && item.taxRate > 0) ? item.taxRate : undefined;
 
                 return {
@@ -69,7 +89,7 @@ export const CreatePurchaseOrderPage = () => {
                         name: item.name,
                         sku: item.sku,
                         price: item.price,
-                        imageUrl: item.imageUrl || "", // Gửi chuỗi rỗng nếu không có ảnh
+                        imageUrl: item.imageUrl || "", // Ảnh sản phẩm nằm ở đây
                         type: item.type,
                         categoryIds: item.categoryIds,
                         taxRate: cleanTaxRate,
@@ -82,19 +102,19 @@ export const CreatePurchaseOrderPage = () => {
                         ...(item.type === 'book' ? {
                             createBookDto: {
                                 isbn: item.isbn!,
+                                // Đảm bảo ID luôn có giá trị, nếu rỗng modal đã chặn rồi, 
+                                // nhưng ở đây ta cứ truyền thẳng vì DTO yêu cầu string UUID
                                 authorId: item.authorId!,
                                 publisherId: item.publisherId!,
 
-                                // FIX LỖI DATE: Đảm bảo format YYYY-MM-DD
                                 publicationDate: item.publicationDate || undefined,
-
                                 edition: item.edition || undefined,
                                 language: item.language || undefined,
 
-                                // FIX LỖI ẢNH BÌA: Backend vẫn đòi coverImage dù tài liệu nói xóa
-                                // Map imageUrl vào coverImage để pass validate
-                                coverImage: item.imageUrl || undefined
-                            } as any // Cast any để tránh lỗi TS nếu type definition chưa cập nhật
+                                // --- FIX QUAN TRỌNG: KHÔNG GỬI TRƯỜNG coverImage ---
+                                // Backend báo lỗi "property coverImage should not exist" 
+                                // nên ta xóa bỏ dòng coverImage ở đây.
+                            }
                         } : { createBookDto: undefined })
                     }
                 };
@@ -116,7 +136,10 @@ export const CreatePurchaseOrderPage = () => {
             title: 'Tên Sản Phẩm',
             dataIndex: 'name',
             render: (text: string, record: PurchaseOrderItemForm) => (
-                <div>
+                <div
+                    className="cursor-pointer hover:text-teal-600"
+                    onClick={() => handleEditItem(record)}
+                >
                     <div className="font-medium">{text}</div>
                     <div className="text-xs text-gray-500">{record.type === 'book' ? 'Sách' : 'VPP'}</div>
                 </div>
@@ -147,14 +170,27 @@ export const CreatePurchaseOrderPage = () => {
         },
         {
             title: '',
-            width: 60,
+            width: 100,
+            align: 'center' as const,
             render: (_: any, record: PurchaseOrderItemForm) => (
-                <Button
-                    type="text"
-                    danger
-                    icon={<Trash2 size={16} />}
-                    onClick={() => handleRemoveItem(record.sku)}
-                />
+                <div className="flex justify-center gap-1">
+                    <Tooltip title="Sửa thông tin">
+                        <Button
+                            type="text"
+                            className="text-blue-600 hover:bg-blue-50"
+                            icon={<Edit size={16} />}
+                            onClick={() => handleEditItem(record)}
+                        />
+                    </Tooltip>
+                    <Tooltip title="Xóa">
+                        <Button
+                            type="text"
+                            danger
+                            icon={<Trash2 size={16} />}
+                            onClick={() => handleRemoveItem(record.sku)}
+                        />
+                    </Tooltip>
+                </div>
             )
         }
     ];
@@ -245,7 +281,10 @@ export const CreatePurchaseOrderPage = () => {
                                 type="primary"
                                 icon={<Plus size={18} />}
                                 className="bg-[#1a998f]"
-                                onClick={() => setIsModalOpen(true)}
+                                onClick={() => {
+                                    setEditingItem(null);
+                                    setIsModalOpen(true);
+                                }}
                             >
                                 Thêm Sản Phẩm
                             </Button>
@@ -271,8 +310,9 @@ export const CreatePurchaseOrderPage = () => {
 
             <ProductEntryModal
                 isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
+                onClose={handleCloseModal}
                 onSubmit={handleAddItem}
+                initialValues={editingItem}
             />
         </div>
     );

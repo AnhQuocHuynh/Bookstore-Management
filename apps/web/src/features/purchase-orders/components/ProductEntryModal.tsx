@@ -8,57 +8,59 @@ import { Upload as UploadIcon, Trash2 } from "lucide-react";
 import { useCategories } from "@/features/categories/hooks/useCategories";
 import { useAuthors } from "@/features/authors/hooks/useAuthors";
 import { usePublishers } from "@/features/publishers/hooks/usePublishers";
-import { uploadApi } from "@/api/upload"; // Import API upload bạn cung cấp
+import { uploadApi } from "@/api/upload";
 
 interface ProductEntryModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSubmit: (item: PurchaseOrderItemForm) => void;
+    initialValues?: PurchaseOrderItemForm | null; // Thêm prop này để nhận dữ liệu sửa
 }
 
 export const ProductEntryModal: React.FC<ProductEntryModalProps> = ({
     isOpen,
     onClose,
     onSubmit,
+    initialValues,
 }) => {
     const [form] = Form.useForm();
 
-    // Watch values để render điều kiện
     const type = Form.useWatch("type", form);
-    const imageUrl = Form.useWatch("imageUrl", form); // Theo dõi URL để hiện preview
-
-    // State loading cho upload
+    const imageUrl = Form.useWatch("imageUrl", form);
     const [isUploading, setIsUploading] = useState(false);
 
-    // --- LẤY DỮ LIỆU ---
+    // --- DATA ---
     const { data: categoriesData } = useCategories();
     const { data: authorsData } = useAuthors();
     const { data: publishersData } = usePublishers();
 
-    const categories = Array.isArray(categoriesData)
-        ? categoriesData : (Array.isArray(categoriesData?.data) ? categoriesData.data : []);
-    const authors = Array.isArray(authorsData)
-        ? authorsData : (Array.isArray(authorsData?.data) ? authorsData.data : []);
-    const publishers = Array.isArray(publishersData)
-        ? publishersData : (Array.isArray(publishersData?.data) ? publishersData.data : []);
+    const categories = Array.isArray(categoriesData) ? categoriesData : (Array.isArray(categoriesData?.data) ? categoriesData.data : []);
+    const authors = Array.isArray(authorsData) ? authorsData : (Array.isArray(authorsData?.data) ? authorsData.data : []);
+    const publishers = Array.isArray(publishersData) ? publishersData : (Array.isArray(publishersData?.data) ? publishersData.data : []);
 
-    // --- EFFECT ---
+    // --- EFFECT: FILL DATA KHI MỞ MODAL ---
     useEffect(() => {
         if (isOpen) {
-            form.resetFields();
-            form.setFieldsValue({ type: 'book', quantity: 1, taxRate: 0 });
+            if (initialValues) {
+                // TRƯỜNG HỢP SỬA: Fill dữ liệu
+                form.setFieldsValue({
+                    ...initialValues,
+                    // Convert string date về Dayjs object cho DatePicker
+                    publicationDate: initialValues.publicationDate ? dayjs(initialValues.publicationDate) : undefined,
+                });
+            } else {
+                // TRƯỜNG HỢP THÊM MỚI: Reset form
+                form.resetFields();
+                form.setFieldsValue({ type: 'book', quantity: 1, taxRate: 0 });
+            }
         }
-    }, [isOpen, form]);
+    }, [isOpen, initialValues, form]);
 
     // --- HANDLERS ---
-
-    // Xử lý Upload ảnh
     const handleUploadImage = async (file: File) => {
         try {
             setIsUploading(true);
             const url = await uploadApi.uploadFile(file);
-
-            // Set URL vào form field (ẩn)
             form.setFieldsValue({ imageUrl: url });
             message.success("Tải ảnh lên thành công!");
         } catch (error) {
@@ -66,10 +68,9 @@ export const ProductEntryModal: React.FC<ProductEntryModalProps> = ({
         } finally {
             setIsUploading(false);
         }
-        return false; // Prevent default upload behavior of Antd
+        return false;
     };
 
-    // Xóa ảnh
     const handleRemoveImage = () => {
         form.setFieldsValue({ imageUrl: null });
     };
@@ -95,21 +96,22 @@ export const ProductEntryModal: React.FC<ProductEntryModalProps> = ({
             open={isOpen}
             onCancel={onClose}
             onOk={handleOk}
-            title="Thêm Sản Phẩm Vào Đơn Nhập"
+            title={initialValues ? "Cập Nhật Thông Tin Sản Phẩm" : "Thêm Sản Phẩm Vào Đơn Nhập"} // Đổi tiêu đề dynamic
             width={900}
-            okText="Thêm vào danh sách"
+            okText={initialValues ? "Cập nhật" : "Thêm vào danh sách"}
             cancelText="Hủy"
             style={{ top: 20 }}
             destroyOnClose={true}
         >
             <Form form={form} layout="vertical" initialValues={{ type: 'book' }}>
 
-                {/* --- 1. Loại sản phẩm & Định danh --- */}
+                {/* --- 1. Loại & Định danh --- */}
                 <div className="bg-gray-50 p-4 rounded-lg mb-4 border border-gray-200">
                     <Row gutter={16}>
                         <Col span={24}>
                             <Form.Item name="type" label="Loại sản phẩm">
-                                <Radio.Group optionType="button" buttonStyle="solid">
+                                <Radio.Group optionType="button" buttonStyle="solid" disabled={!!initialValues}>
+                                    {/* Có thể disable đổi loại khi đang sửa để tránh lỗi logic */}
                                     <Radio.Button value="book">Sách</Radio.Button>
                                     <Radio.Button value="stationery">Văn phòng phẩm</Radio.Button>
                                 </Radio.Group>
@@ -117,7 +119,8 @@ export const ProductEntryModal: React.FC<ProductEntryModalProps> = ({
                         </Col>
                         <Col span={12}>
                             <Form.Item name="sku" label="Mã SKU (Barcode)" rules={[{ required: true, message: "Bắt buộc nhập SKU" }]}>
-                                <Input placeholder="VD: BOOK-001 hoặc quét mã vạch" />
+                                {/* Nếu muốn chặn sửa SKU khi edit thì thêm prop disabled={!!initialValues} */}
+                                <Input placeholder="VD: BOOK-001" disabled={!!initialValues} />
                             </Form.Item>
                         </Col>
                         <Col span={12}>
@@ -132,22 +135,12 @@ export const ProductEntryModal: React.FC<ProductEntryModalProps> = ({
                 <Row gutter={16}>
                     <Col span={8}>
                         <Form.Item name="unitPrice" label="Giá nhập (Giá vốn)" rules={[{ required: true, message: "Nhập giá vốn" }]}>
-                            <InputNumber
-                                className="w-full"
-                                min={0}
-                                addonAfter="đ"
-                                formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                            />
+                            <InputNumber className="w-full" min={0} addonAfter="đ" formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')} />
                         </Form.Item>
                     </Col>
                     <Col span={8}>
                         <Form.Item name="price" label="Giá bán niêm yết" rules={[{ required: true, message: "Nhập giá bán" }]}>
-                            <InputNumber
-                                className="w-full"
-                                min={0}
-                                addonAfter="đ"
-                                formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                            />
+                            <InputNumber className="w-full" min={0} addonAfter="đ" formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')} />
                         </Form.Item>
                     </Col>
                     <Col span={8}>
@@ -159,71 +152,43 @@ export const ProductEntryModal: React.FC<ProductEntryModalProps> = ({
 
                 <Divider style={{ borderColor: '#1a998f', color: '#1a998f' }}>Thông tin chi tiết</Divider>
 
-                {/* --- 3. Thông tin chung & Upload Ảnh --- */}
+                {/* --- 3. Thông tin chung & Ảnh --- */}
                 <Row gutter={16}>
                     <Col span={12}>
                         <Form.Item name="categoryIds" label="Danh mục" rules={[{ required: true, message: "Chọn ít nhất 1 danh mục" }]}>
-                            <Select
-                                mode="multiple"
-                                placeholder="Chọn danh mục"
-                                options={categories.map((c: any) => ({ label: c.name, value: c.id }))}
-                            />
+                            <Select mode="multiple" placeholder="Chọn danh mục" options={categories.map((c: any) => ({ label: c.name, value: c.id }))} />
                         </Form.Item>
-
                         <Form.Item name="taxRate" label="Thuế suất (VD: 0.08 = 8%)">
                             <InputNumber className="w-full" step={0.01} max={1} min={0} placeholder="0.08" />
                         </Form.Item>
                     </Col>
 
-                    {/* CỘT UPLOAD ẢNH */}
                     <Col span={12}>
-                        {/* Input ẩn để lưu URL */}
-                        <Form.Item name="imageUrl" hidden>
-                            <Input />
-                        </Form.Item>
-
+                        <Form.Item name="imageUrl" hidden><Input /></Form.Item>
                         <Form.Item label="Ảnh sản phẩm">
                             <div className="flex items-start gap-4">
-                                {/* Khu vực Preview Ảnh */}
                                 <div className="w-24 h-24 border border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50 overflow-hidden relative group">
                                     {imageUrl ? (
                                         <>
                                             <Image src={imageUrl} alt="preview" width="100%" height="100%" className="object-cover" />
-                                            {/* Nút xóa ảnh khi hover */}
                                             <div className="absolute inset-0 bg-black/50 hidden group-hover:flex items-center justify-center transition-all">
-                                                <Button
-                                                    type="text"
-                                                    icon={<Trash2 className="text-white" size={20} />}
-                                                    onClick={handleRemoveImage}
-                                                />
+                                                <Button type="text" icon={<Trash2 className="text-white" size={20} />} onClick={handleRemoveImage} />
                                             </div>
                                         </>
-                                    ) : (
-                                        <span className="text-gray-400 text-xs text-center px-1">Chưa có ảnh</span>
-                                    )}
+                                    ) : (<span className="text-gray-400 text-xs text-center px-1">Chưa có ảnh</span>)}
                                 </div>
-
-                                {/* Nút Upload */}
                                 <div className="flex flex-col gap-2">
-                                    <Upload
-                                        beforeUpload={handleUploadImage}
-                                        showUploadList={false}
-                                        accept="image/*"
-                                    >
-                                        <Button icon={<UploadIcon size={16} />} loading={isUploading}>
-                                            {isUploading ? "Đang tải lên..." : "Tải ảnh lên"}
-                                        </Button>
+                                    <Upload beforeUpload={handleUploadImage} showUploadList={false} accept="image/*">
+                                        <Button icon={<UploadIcon size={16} />} loading={isUploading}>{isUploading ? "Đang tải lên..." : "Tải ảnh lên"}</Button>
                                     </Upload>
-                                    <span className="text-xs text-gray-500">
-                                        Hỗ trợ: JPG, PNG, WEBP. <br /> Max size: 5MB.
-                                    </span>
+                                    <span className="text-xs text-gray-500">JPG, PNG, WEBP. Max 5MB.</span>
                                 </div>
                             </div>
                         </Form.Item>
                     </Col>
                 </Row>
 
-                {/* --- 4. Form riêng cho SÁCH --- */}
+                {/* --- 4. Sách --- */}
                 {type === 'book' && (
                     <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 mt-2">
                         <h4 className="text-blue-800 font-bold mb-3">Thông tin Sách</h4>
@@ -234,49 +199,29 @@ export const ProductEntryModal: React.FC<ProductEntryModalProps> = ({
                                 </Form.Item>
                             </Col>
                             <Col span={12}>
-                                <Form.Item name="language" label="Ngôn ngữ">
-                                    <Input placeholder="VD: Tiếng Việt" />
-                                </Form.Item>
+                                <Form.Item name="language" label="Ngôn ngữ"><Input placeholder="VD: Tiếng Việt" /></Form.Item>
                             </Col>
-
                             <Col span={12}>
                                 <Form.Item name="authorId" label="Tác giả" rules={[{ required: true, message: "Chọn tác giả" }]}>
-                                    <Select
-                                        showSearch
-                                        optionFilterProp="label"
-                                        placeholder="Chọn tác giả"
-                                        options={authors.map((a: any) => ({ label: a.fullName, value: a.id }))}
-                                    />
+                                    <Select showSearch optionFilterProp="label" placeholder="Chọn tác giả" options={authors.map((a: any) => ({ label: a.fullName, value: a.id }))} />
                                 </Form.Item>
                             </Col>
                             <Col span={12}>
                                 <Form.Item name="publisherId" label="Nhà xuất bản" rules={[{ required: true, message: "Chọn NXB" }]}>
-                                    <Select
-                                        showSearch
-                                        optionFilterProp="label"
-                                        placeholder="Chọn NXB"
-                                        options={publishers.map((p: any) => ({ label: p.name, value: p.id }))}
-                                    />
-                                </Form.Item>
-                            </Col>
-
-                            <Col span={12}>
-                                <Form.Item name="publicationDate" label="Ngày xuất bản">
-                                    <DatePicker className="w-full" format="DD/MM/YYYY" placeholder="Chọn ngày" />
+                                    <Select showSearch optionFilterProp="label" placeholder="Chọn NXB" options={publishers.map((p: any) => ({ label: p.name, value: p.id }))} />
                                 </Form.Item>
                             </Col>
                             <Col span={12}>
-                                <Form.Item name="edition" label="Tái bản">
-                                    <Input placeholder="VD: Tái bản lần 1" />
-                                </Form.Item>
+                                <Form.Item name="publicationDate" label="Ngày xuất bản"><DatePicker className="w-full" format="DD/MM/YYYY" placeholder="Chọn ngày" /></Form.Item>
+                            </Col>
+                            <Col span={12}>
+                                <Form.Item name="edition" label="Tái bản"><Input placeholder="VD: Tái bản lần 1" /></Form.Item>
                             </Col>
                         </Row>
                     </div>
                 )}
 
-                <Form.Item name="description" label="Mô tả" className="mt-4">
-                    <Input.TextArea rows={2} />
-                </Form.Item>
+                <Form.Item name="description" label="Mô tả" className="mt-4"><Input.TextArea rows={2} /></Form.Item>
             </Form>
         </Modal>
     );
