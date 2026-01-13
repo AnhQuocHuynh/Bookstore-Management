@@ -26,6 +26,8 @@ import EmployeePerformancePage from "@/features/reports/pages/EmployeePerformanc
 import { CategoriesPage } from "@/features/categories/components/CategoriesPage";
 import { PublishersPage } from "@/features/publishers/components/PublishersPage";
 import { AuthorsPage } from "@/features/authors/components/AuthorsPage";
+import { CreatePurchaseOrderPage } from "@/features/purchase-orders/components/CreatePurchaseOrderPage";
+import { PurchaseOrderListPage } from "@/features/purchase-orders/components/PurchaseOrderListPage";
 
 // Select Store Page (Semi-protected: requires token but no store)
 // const SelectStorePage = () => (
@@ -212,8 +214,20 @@ export const AppRoutes = () => {
         }
       />
 
+      <Route path="/purchase-orders/create"
+        element={
+          <MainLayout>
+            <CreatePurchaseOrderPage />
+          </MainLayout>
+        }
+      />
+      <Route path="purchase-orders/list" element={<MainLayout><PurchaseOrderListPage /></MainLayout>} />
+
+
       {/* 404 - Redirect to login */}
       <Route path="*" element={<Navigate to="/auth/login" replace />} />
+
+
     </Routes>
   );
 };
