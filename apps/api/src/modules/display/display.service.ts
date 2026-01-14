@@ -875,7 +875,9 @@ export class DisplayService {
         id: targetShelfId,
       },
       relations: {
-        displayProducts: true,
+        displayProducts: {
+          product: true, // <--- Thêm dòng này để load thông tin sản phẩm
+        },
       },
     });
 
