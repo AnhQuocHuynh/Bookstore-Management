@@ -73,6 +73,7 @@ export class DisplayService {
     return displaySelfRepo.save(newDisplaySelf);
   }
 
+  // --- [UPDATED] Xử lý logic Hồi sinh (Revive) ---
   async createDisplayProduct(
     createDisplayProductDto: CreateDisplayProductDto,
     userSession: TUserSession,
@@ -126,6 +127,7 @@ export class DisplayService {
       );
     }
 
+    // 1. Kiểm tra xem sản phẩm đã từng tồn tại trên kệ này chưa (Active hoặc Inactive)
     const existing = await displayProductRepo.findOne({
       where: {
         product: { id: product.id },
@@ -133,28 +135,45 @@ export class DisplayService {
       },
     });
 
+    let newDisplayProduct;
+
     if (existing) {
-      throw new BadRequestException('Sản phẩm đã được trưng bày trên kệ này.');
-    }
+      // Trường hợp 1: Đang hiển thị -> Báo lỗi trùng
+      if (existing.status === DisplayProductStatus.ACTIVE) {
+        throw new BadRequestException(
+          'Sản phẩm đã được trưng bày trên kệ này.',
+        );
+      }
 
-    const displayShelf = await this.findDisplayShelfByField(
-      'id',
-      displayShelfId,
-      displayShelfRepo,
-    );
+      // Trường hợp 2: Đang ẩn (Inactive) -> Hồi sinh lại (Update thành Active)
+      existing.status = DisplayProductStatus.ACTIVE;
+      existing.quantity = quantity;
+      existing.displayOrder = createDisplayProductDto.displayOrder ?? existing.displayOrder;
 
-    if (!displayShelf)
-      throw new NotFoundException(
-        `Không tìm thấy kệ có mã ID '${displayShelfId}'`,
+      newDisplayProduct = await displayProductRepo.save(existing);
+    } else {
+      // Trường hợp 3: Chưa có -> Tạo mới hoàn toàn
+      const displayShelf = await this.findDisplayShelfByField(
+        'id',
+        displayShelfId,
+        displayShelfRepo,
       );
 
-    const newDisplayProduct = displayProductRepo.create({
-      ...createDisplayProductDto,
-      product,
-      displayShelf,
-    });
-    await displayProductRepo.save(newDisplayProduct);
+      if (!displayShelf)
+        throw new NotFoundException(
+          `Không tìm thấy kệ có mã ID '${displayShelfId}'`,
+        );
 
+      newDisplayProduct = displayProductRepo.create({
+        ...createDisplayProductDto,
+        product,
+        displayShelf,
+        status: DisplayProductStatus.ACTIVE,
+      });
+      await displayProductRepo.save(newDisplayProduct);
+    }
+
+    // Trừ tồn kho
     product.inventory.availableQuantity -= createDisplayProductDto.quantity;
     product.inventory.displayQuantity += createDisplayProductDto.quantity;
     await inventoryRepo.save(product.inventory);
@@ -162,7 +181,12 @@ export class DisplayService {
     await this.createNewDisplayLog(
       {
         displayProduct: newDisplayProduct,
-        shelf: displayShelf,
+        // [FIX LỖI TẠI ĐÂY]: Thêm "|| undefined" để convert null -> undefined
+        shelf: (await this.findDisplayShelfByField(
+          'id',
+          displayShelfId,
+          displayShelfRepo,
+        )) || undefined,
         action: DisplayLogAction.ADD,
         employee,
         note: 'Thêm mới sản phẩm vào kệ trưng bày',
@@ -220,6 +244,11 @@ export class DisplayService {
       throw new NotFoundException(
         'Không tìm thấy thông tin trưng bày sản phẩm.',
       );
+
+    // Lọc bỏ các sản phẩm Inactive khỏi danh sách chi tiết kệ
+    shelf.displayProducts = shelf.displayProducts.filter(
+      (dp) => dp.status === DisplayProductStatus.ACTIVE
+    );
 
     return shelf;
   }
@@ -329,15 +358,24 @@ export class DisplayService {
 
     await Promise.all(
       shelf.displayProducts.map(async (dp) => {
-        const inventory = await inventoryRepo.findOne({
-          where: {
-            id: dp.product.inventory.id,
-          },
-        });
+        // Chỉ trả về kho nếu sản phẩm đang ACTIVE
+        if (dp.status === DisplayProductStatus.ACTIVE) {
+          const inventory = await inventoryRepo.findOne({
+            where: {
+              id: dp.product.inventory.id,
+            },
+          });
 
-        if (inventory) {
-          inventory.availableQuantity += dp.quantity;
-          await inventoryRepo.save(inventory);
+          if (inventory) {
+            inventory.availableQuantity += dp.quantity;
+            await inventoryRepo.save(inventory);
+          }
+
+          // Soft delete các sản phẩm trên kệ luôn
+          const displayProductRepo = dataSource.getRepository(DisplayProduct);
+          dp.status = DisplayProductStatus.INACTIVE;
+          dp.quantity = 0;
+          await displayProductRepo.save(dp);
         }
       }),
     );
@@ -461,8 +499,6 @@ export class DisplayService {
       .leftJoinAndSelect('dp.displayShelf', 'shelf')
       .where('dp.status = :status', { status: DisplayProductStatus.ACTIVE });
 
-    // --- Start FIX LOGIC Filter ---
-
     // 1. Filter theo Shelf ID (nếu có)
     if (query.displayShelfId) {
       qb.andWhere('shelf.id = :displayShelfId', {
@@ -494,8 +530,6 @@ export class DisplayService {
     if (query.status) {
       qb.andWhere('dp.status = :queryStatus', { queryStatus: query.status });
     }
-
-    // --- End FIX LOGIC Filter ---
 
     const rangeFilters = [
       ['quantityMin', 'dp.quantity', '>='],
@@ -667,6 +701,7 @@ export class DisplayService {
     };
   }
 
+  // --- [UPDATED] Xóa mềm (Soft Delete) ---
   async deleteDisplayProductFromShelf(
     userSession: TUserSession,
     displayProductId: string,
@@ -705,7 +740,8 @@ export class DisplayService {
         `Không tìm thấy trưng bày sản phẩm có mã ID '${displayProductId}'.`,
       );
 
-    await displayProductRepo.delete({ id: displayProductId });
+    // Không dùng .delete() để tránh mất ID gây lỗi Log
+    // await displayProductRepo.delete({ id: displayProductId }); <-- DELETE THIS LINE
 
     const inventory = await inventoryRepo.findOne({
       where: {
@@ -720,13 +756,19 @@ export class DisplayService {
       await inventoryRepo.save(inventory);
     }
 
+    // [FIX] Cập nhật trạng thái Inactive và số lượng 0
+    displayProduct.quantity = 0;
+    displayProduct.status = DisplayProductStatus.INACTIVE;
+    await displayProductRepo.save(displayProduct);
+
+    // Ghi log hoạt động bình thường vì ID vẫn còn trong DB
     await this.createNewDisplayLog(
       {
         displayProduct,
         shelf: displayProduct.displayShelf,
         action: DisplayLogAction.RETURN_TO_INVENTORY,
         employee,
-        note: `Đã trả tất cả (${displayProduct.quantity}) bản của sản phẩm "${displayProduct.product.name}" từ kệ "${displayProduct.displayShelf.name}" về kho.`,
+        note: `Đã trả tất cả bản của sản phẩm "${displayProduct.product.name}" từ kệ "${displayProduct.displayShelf.name}" về kho.`,
         quantity: displayProduct.quantity,
       },
       dataSource.getRepository(DisplayLog),
@@ -821,6 +863,7 @@ export class DisplayService {
     };
   }
 
+  // --- [UPDATED] Sửa lỗi relations cho Move ---
   async moveDisplayProduct(
     userSession: TUserSession,
     displayProductId: string,
@@ -876,7 +919,7 @@ export class DisplayService {
       },
       relations: {
         displayProducts: {
-          product: true, // <--- Thêm dòng này để load thông tin sản phẩm
+          product: true, // [FIX] QUAN TRỌNG: Load thông tin Product để check ID
         },
       },
     });
@@ -888,9 +931,22 @@ export class DisplayService {
 
     const moveQty = quantity ?? displayProduct.quantity;
 
+    // Check item tồn tại ở kệ đích (bao gồm cả Active)
     let targetDP = targetShelf.displayProducts.find(
-      (dp) => dp.product.id === displayProduct.product.id,
+      (dp) => dp.product.id === displayProduct.product.id && dp.status === DisplayProductStatus.ACTIVE,
     );
+
+    // Nếu chưa thấy Active, tìm thử Inactive để Revive (Hồi sinh) cho clean
+    if (!targetDP) {
+      targetDP = targetShelf.displayProducts.find(
+        (dp) => dp.product.id === displayProduct.product.id,
+      );
+      if (targetDP) {
+        // Found inactive one, reviving it
+        targetDP.status = DisplayProductStatus.ACTIVE;
+        targetDP.quantity = 0; // Reset to 0 before adding
+      }
+    }
 
     if (targetDP) {
       targetDP.quantity += moveQty;
@@ -908,8 +964,10 @@ export class DisplayService {
 
     displayProduct.quantity -= moveQty;
 
+    // Soft delete ở kệ nguồn nếu hết hàng
     if (displayProduct.quantity <= 0) {
       displayProduct.status = DisplayProductStatus.INACTIVE;
+      displayProduct.quantity = 0;
     }
 
     await displayProductRepo.save(displayProduct);
