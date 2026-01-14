@@ -30,7 +30,7 @@ import { Repository } from 'typeorm';
 
 @Injectable()
 export class DisplayService {
-  constructor(private readonly tenantService: TenantService) {}
+  constructor(private readonly tenantService: TenantService) { }
 
   async findDisplayShelfByField(
     field: keyof DisplayShelf,
@@ -458,28 +458,44 @@ export class DisplayService {
       .createQueryBuilder('dp')
       .leftJoinAndSelect('dp.product', 'product')
       .leftJoinAndSelect('product.book', 'book')
-      .leftJoinAndSelect('dp.displayShelf', 'shelf');
+      .leftJoinAndSelect('dp.displayShelf', 'shelf')
+      .where('dp.status = :status', { status: DisplayProductStatus.ACTIVE });
 
-    const simpleFilters = {
-      displayShelfId: ['shelf.id', '='],
-      displayShelfName: ['shelf.name', 'LIKE'],
-      bookId: ['book.id', '='],
-      bookTitle: ['book.title', 'LIKE'],
-      status: ['dp.status', '='],
-    };
+    // --- Start FIX LOGIC Filter ---
 
-    for (const key in simpleFilters) {
-      const value = query[key];
-      if (!value) continue;
-
-      const [field, op] = simpleFilters[key];
-
-      if (op === 'LIKE') {
-        qb.andWhere(`${field} LIKE :${key}`, { [key]: `%${value}%` });
-      } else {
-        qb.andWhere(`${field} = :${key}`, { [key]: value });
-      }
+    // 1. Filter theo Shelf ID (nếu có)
+    if (query.displayShelfId) {
+      qb.andWhere('shelf.id = :displayShelfId', {
+        displayShelfId: query.displayShelfId,
+      });
     }
+
+    // 2. Filter theo Shelf Name
+    if (query.displayShelfName) {
+      qb.andWhere('shelf.name ILIKE :displayShelfName', {
+        displayShelfName: `%${query.displayShelfName}%`,
+      });
+    }
+
+    // 3. Filter theo Product ID
+    if (query.productId) {
+      qb.andWhere('product.id = :productId', { productId: query.productId });
+    }
+
+    // 4. Filter theo Product Name hoặc SKU
+    if (query.productName) {
+      qb.andWhere(
+        '(product.name ILIKE :productName OR product.sku ILIKE :productName)',
+        { productName: `%${query.productName}%` },
+      );
+    }
+
+    // 5. Filter theo Status
+    if (query.status) {
+      qb.andWhere('dp.status = :queryStatus', { queryStatus: query.status });
+    }
+
+    // --- End FIX LOGIC Filter ---
 
     const rangeFilters = [
       ['quantityMin', 'dp.quantity', '>='],

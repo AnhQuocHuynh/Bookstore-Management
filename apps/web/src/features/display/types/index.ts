@@ -21,6 +21,10 @@ export interface DisplayProduct {
         imageUrl?: string;
         type: 'book' | 'stationery';
         isActive: boolean;
+        // Bổ sung thêm thông tin book để hiển thị tác giả nếu cần
+        book?: {
+            author?: string;
+        };
     };
 }
 
@@ -46,10 +50,10 @@ export interface MoveProductDto { targetShelfId: string; quantity: number; }
 export interface ReduceProductDto { quantity: number; }
 
 
-// --- PRODUCT TYPES FOR SELECTION ---
+// --- PRODUCT TYPES FOR SELECTION (Dùng cho Modal thêm hàng) ---
 export interface ProductInventory {
     stockQuantity: number;
-    availableQuantity: number; // Quan trọng: Chỉ hiển thị những SP có available > 0
+    availableQuantity: number;
     costPrice: number;
 }
 
@@ -77,6 +81,7 @@ export interface ProductListResponse {
     meta: ProductListMeta;
 }
 
+// Param cho việc tìm sản phẩm TRONG KHO (Modal)
 export interface ProductListParams {
     page?: number;
     limit?: number;
@@ -84,4 +89,19 @@ export interface ProductListParams {
     type?: 'book' | 'stationery';
     categoryId?: string;
     status?: 'active' | 'inactive';
+}
+
+// --- [MỚI] DISPLAY PRODUCT LIST PARAMS (Dùng cho màn hình danh sách trưng bày) ---
+// Đây là phần bạn cần thêm vào để khớp với API Backend mới sửa
+export interface DisplayProductListParams {
+    productName?: string;      // Thay thế keyword
+    displayShelfId?: string;   // Thay thế shelfId
+    status?: 'active' | 'inactive';
+    sort?: string;             // VD: 'quantity.desc'
+    page?: number;
+    limit?: number;
+
+    // Các field cũ map sang (nếu cần tương thích ngược ở code cũ, nhưng nên dùng cái mới)
+    keyword?: string;
+    shelfId?: string;
 }
