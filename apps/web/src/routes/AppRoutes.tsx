@@ -28,6 +28,10 @@ import { PublishersPage } from "@/features/publishers/components/PublishersPage"
 import { AuthorsPage } from "@/features/authors/components/AuthorsPage";
 import { CreatePurchaseOrderPage } from "@/features/purchase-orders/components/CreatePurchaseOrderPage";
 import { PurchaseOrderListPage } from "@/features/purchase-orders/components/PurchaseOrderListPage";
+import { DisplayPage } from "@/features/display/components/DisplayPage";
+import { ShelvesView } from "@/features/display/components/ShelvesView";
+import { DisplayProductsView } from "@/features/display/components/DisplayProductsView";
+import { DisplayLogsView } from "@/features/display/components/DisplayLogsView";
 
 // Select Store Page (Semi-protected: requires token but no store)
 // const SelectStorePage = () => (
@@ -222,6 +226,11 @@ export const AppRoutes = () => {
         }
       />
       <Route path="purchase-orders/list" element={<MainLayout><PurchaseOrderListPage /></MainLayout>} />
+
+      <Route path="dashboard/products/display/list" element={<MainLayout><ShelvesView /></MainLayout>} />
+
+      <Route path="dashboard/products/display/filter" element={<MainLayout><DisplayProductsView /></MainLayout>} />
+      <Route path="dashboard/products/display/history" element={<MainLayout><DisplayLogsView /></MainLayout>} />
 
 
       {/* 404 - Redirect to login */}
