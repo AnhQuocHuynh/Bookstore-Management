@@ -32,6 +32,7 @@ import { DisplayPage } from "@/features/display/components/DisplayPage";
 import { ShelvesView } from "@/features/display/components/ShelvesView";
 import { DisplayProductsView } from "@/features/display/components/DisplayProductsView";
 import { DisplayLogsView } from "@/features/display/components/DisplayLogsView";
+import { EmployeeListPage } from "@/features/employees/components/EmployeeListPage";
 
 // Select Store Page (Semi-protected: requires token but no store)
 // const SelectStorePage = () => (
@@ -171,10 +172,10 @@ export const AppRoutes = () => {
           }
         />
         <Route
-          path="/employees"
+          path="/dashboard/employees/list"
           element={
             <MainLayout>
-              <EmployeesPage />
+              <EmployeeListPage />
             </MainLayout>
           }
         />
@@ -230,6 +231,7 @@ export const AppRoutes = () => {
       <Route path="dashboard/products/display/list" element={<MainLayout><ShelvesView /></MainLayout>} />
 
       <Route path="dashboard/products/display/filter" element={<MainLayout><DisplayProductsView /></MainLayout>} />
+
       <Route path="dashboard/products/display/history" element={<MainLayout><DisplayLogsView /></MainLayout>} />
 
 
