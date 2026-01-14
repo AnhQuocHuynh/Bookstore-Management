@@ -34,13 +34,19 @@ export const useDisplayMutations = () => {
 };
 
 
-// --- HOOK MỚI ---
-export const useProductsForSelection = (params?: ProductListParams) => {
+// --- HOOK MỚI: COPY LOGIC TỪ useInventory ---
+export const useProductsForSelection = (params: ProductListParams) => {
+    // FIX: Logic làm sạch params giống hệt Inventory
+    // Loại bỏ các key có giá trị undefined, null hoặc chuỗi rỗng
+    const cleanParams = Object.fromEntries(
+        Object.entries(params).filter(([_, v]) => v != null && v !== "")
+    );
+
     return useQuery({
-        // Key riêng biệt để tránh conflict cache với module products chính
-        queryKey: ["display-module-products", params],
-        queryFn: () => displayApi.getProductsForSelection(params),
-        // Giữ cache ngắn hơn chút vì tồn kho thay đổi liên tục
-        staleTime: 1000 * 30,
+        // Key riêng biệt để tránh conflict cache
+        queryKey: ["display-module-products-selection", cleanParams],
+        queryFn: () => displayApi.getProductsForSelection(cleanParams),
+        staleTime: 1000 * 60,
+        retry: false,
     });
 }

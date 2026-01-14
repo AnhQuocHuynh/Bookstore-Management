@@ -64,7 +64,10 @@ export interface ProductForSelection {
     price: number;
     imageUrl?: string;
     type: 'book' | 'stationery';
+
     status: 'active' | 'inactive';
+    isActive?: boolean; // <--- THÊM DÒNG NÀY ĐỂ FIX LỖI TS
+
     inventory: ProductInventory;
 }
 
@@ -77,20 +80,25 @@ export interface ProductListMeta {
 }
 
 export interface ProductListResponse {
-    items: ProductForSelection[];
-    meta: ProductListMeta;
+    data: ProductForSelection[]; // Đổi items thành data
+    meta?: ProductListMeta;      // Để meta là optional cho an toàn
 }
 
-// Param cho việc tìm sản phẩm TRONG KHO (Modal)
 export interface ProductListParams {
     page?: number;
     limit?: number;
     keyword?: string;
     type?: 'book' | 'stationery';
     categoryId?: string;
-    status?: 'active' | 'inactive';
-}
 
+    // FIX LỖI TS: Thêm 2 dòng này vào
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+
+    // Giữ lại cả status và isActive cho chắc
+    status?: 'active' | 'inactive';
+    isActive?: boolean;
+}
 // --- [MỚI] DISPLAY PRODUCT LIST PARAMS (Dùng cho màn hình danh sách trưng bày) ---
 // Đây là phần bạn cần thêm vào để khớp với API Backend mới sửa
 export interface DisplayProductListParams {

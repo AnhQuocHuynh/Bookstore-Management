@@ -27,12 +27,9 @@ export const displayApi = {
 
     // --- API MỚI: Lấy danh sách sản phẩm để chọn ---
     getProductsForSelection: async (params?: ProductListParams) => {
-        // Gọi API /products nhưng ngữ cảnh là dùng cho display
+        // FIX: Chỉ truyền params đã được làm sạch từ Hook xuống, không hardcode status
         const response = await apiClient.get<ProductListResponse>("/products", {
-            params: {
-                ...params,
-                status: 'active' // Mặc định chỉ lấy sản phẩm đang hoạt động
-            }
+            params
         });
         return response.data;
     },
