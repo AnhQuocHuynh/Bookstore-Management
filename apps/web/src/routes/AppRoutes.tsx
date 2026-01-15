@@ -32,6 +32,7 @@ import { DisplayPage } from "@/features/display/components/DisplayPage";
 import { ShelvesView } from "@/features/display/components/ShelvesView";
 import { DisplayProductsView } from "@/features/display/components/DisplayProductsView";
 import { DisplayLogsView } from "@/features/display/components/DisplayLogsView";
+import { RevenueReportView } from "@/features/reports/components/RevenueReportView";
 
 // Select Store Page (Semi-protected: requires token but no store)
 // const SelectStorePage = () => (
@@ -205,7 +206,7 @@ export const AppRoutes = () => {
         <Route
           path="/reports/revenue" element={
             <MainLayout>
-              <RevenuePage />
+              <RevenueReportView />
             </MainLayout>} />
       </Route>
 
