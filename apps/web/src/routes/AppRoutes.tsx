@@ -11,6 +11,7 @@ import { UsersPage } from "../features/users/components/UsersPage";
 import { UserEditPage } from "../features/users/components/UserEditPage";
 import { CreateSalesPage } from "../features/sales/components/pages/CreateSalesPage";
 import { SalesListPage } from "../features/sales/components/pages/SalesListPage";
+import { EmployeeListPage } from "@/features/employees/components/EmployeeListPage";
 
 import SelectStorePage from "@/features/auth/pages/SelectStorePage";
 import VerifyEmailPage from "@/features/auth/pages/VerifyEmailPage";
