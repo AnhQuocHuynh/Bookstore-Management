@@ -11,7 +11,7 @@ import { assignDefined } from '@/common/utils';
 
 @Injectable()
 export class CustomersService {
-  constructor(private readonly tenantsService: TenantService) { }
+  constructor(private readonly tenantsService: TenantService) {}
 
   async getCustomers(
     bookStoreId: string,
@@ -83,7 +83,7 @@ export class CustomersService {
   async updateCustomer(
     id: string,
     updateCustomerDto: UpdateCustomerDto,
-    bookStoreId: string
+    bookStoreId: string,
   ) {
     const dataSource = await this.tenantsService.getTenantConnection({
       bookStoreId,
@@ -99,20 +99,27 @@ export class CustomersService {
     // Kiểm tra trùng lặp Email (nếu có gửi lên để sửa)
     if (updateCustomerDto.email && updateCustomerDto.email !== customer.email) {
       const existingEmail = await customerRepo.findOne({
-        where: { email: updateCustomerDto.email }
+        where: { email: updateCustomerDto.email },
       });
       if (existingEmail) {
-        throw new ConflictException('Email này đã được sử dụng bởi khách hàng khác.');
+        throw new ConflictException(
+          'Email này đã được sử dụng bởi khách hàng khác.',
+        );
       }
     }
 
     // Kiểm tra trùng lặp SĐT (nếu có gửi lên để sửa)
-    if (updateCustomerDto.phoneNumber && updateCustomerDto.phoneNumber !== customer.phoneNumber) {
+    if (
+      updateCustomerDto.phoneNumber &&
+      updateCustomerDto.phoneNumber !== customer.phoneNumber
+    ) {
       const existingPhone = await customerRepo.findOne({
-        where: { phoneNumber: updateCustomerDto.phoneNumber }
+        where: { phoneNumber: updateCustomerDto.phoneNumber },
       });
       if (existingPhone) {
-        throw new ConflictException('Số điện thoại này đã được sử dụng bởi khách hàng khác.');
+        throw new ConflictException(
+          'Số điện thoại này đã được sử dụng bởi khách hàng khác.',
+        );
       }
     }
 
@@ -139,7 +146,7 @@ export class CustomersService {
 
     return {
       message: 'Khách hàng đã được xóa thành công.',
-      id: id
+      id: id,
     };
   }
 }

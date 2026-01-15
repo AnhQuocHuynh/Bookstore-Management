@@ -8,7 +8,7 @@ import {
   Delete,
   Query,
   Param,
-  ParseUUIDPipe
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { AuthorsService } from './authors.service';
 import { Roles, UserSession } from '@/common/decorators';
@@ -16,7 +16,7 @@ import { UserRole } from '@/modules/users/enums';
 import {
   CreateAuthorDto,
   GetAuthorsQueryDto,
-  UpdateAuthorDto
+  UpdateAuthorDto,
 } from '@/common/dtos';
 import { TUserSession } from '@/common/utils';
 import {
@@ -25,14 +25,14 @@ import {
   ApiOperation,
   ApiResponse,
   ApiTags,
-  ApiParam
+  ApiParam,
 } from '@nestjs/swagger';
 
 @Controller('authors')
 @ApiBearerAuth()
 @ApiTags('Tác giả')
 export class AuthorsController {
-  constructor(private readonly authorsService: AuthorsService) { }
+  constructor(private readonly authorsService: AuthorsService) {}
 
   @ApiOperation({
     summary: 'Tạo mới tác giả',
@@ -53,7 +53,8 @@ export class AuthorsController {
 
   @ApiOperation({
     summary: 'Lấy danh sách tác giả',
-    description: 'Có thể lọc theo tên hoặc bút danh. Cho phép cả OWNER và EMPLOYEE.',
+    description:
+      'Có thể lọc theo tên hoặc bút danh. Cho phép cả OWNER và EMPLOYEE.',
   })
   @Get()
   @Roles(UserRole.OWNER, UserRole.EMPLOYEE)
@@ -82,7 +83,8 @@ export class AuthorsController {
 
   @ApiOperation({
     summary: 'Xóa tác giả',
-    description: 'Chỉ OWNER mới có quyền thực hiện. Cẩn thận: Có thể xóa các sách liên quan.',
+    description:
+      'Chỉ OWNER mới có quyền thực hiện. Cẩn thận: Có thể xóa các sách liên quan.',
   })
   @ApiParam({ name: 'id', description: 'ID tác giả' })
   @Delete(':id')

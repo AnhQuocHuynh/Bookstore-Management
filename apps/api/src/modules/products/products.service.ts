@@ -39,7 +39,7 @@ export class ProductsService {
     private readonly supplierService: SupplierService,
     private readonly categoriesService: CategoriesService,
     private readonly inventoriesService: InventoriesService,
-  ) { }
+  ) {}
 
   async findProductByField(
     field: keyof Product,
