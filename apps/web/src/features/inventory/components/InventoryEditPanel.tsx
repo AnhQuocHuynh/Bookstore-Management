@@ -1,78 +1,63 @@
 import React, { useEffect, useState } from "react";
-import { Modal, Form, Input, InputNumber, Select, Button, message, Spin } from "antd";
+import {
+  Modal,
+  Form,
+  Input,
+  InputNumber,
+  Button,
+  message,
+  Spin,
+  Switch,
+  Tag,
+} from "antd";
 import { InventoryFormData } from "../types";
 import { uploadApi } from "@/api/upload";
 
 interface InventoryEditPanelProps {
   isOpen: boolean;
+  initialData: InventoryFormData | null;
   onClose: () => void;
   onSubmit: (data: InventoryFormData) => void;
-  initialData?: InventoryFormData;
 }
 
 export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
   isOpen,
+  initialData,
   onClose,
   onSubmit,
-  initialData,
 }) => {
   const [form] = Form.useForm();
-  const [imageUrl, setImageUrl] = useState<string>("");
+  const [imageUrl, setImageUrl] = useState("");
   const [rawFile, setRawFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
-  const [isBookType, setIsBookType] = useState<boolean>(false);
 
   useEffect(() => {
     if (isOpen && initialData) {
       form.setFieldsValue({
+        sku: initialData.sku,
         name: initialData.name,
-        purchasePrice: initialData.purchasePrice,
         sellingPrice: initialData.sellingPrice,
-        stock: initialData.stock,
-        category: initialData.category,
-        supplier: initialData.supplier,
         description: initialData.description,
-        author: initialData.author,
-        publisher: initialData.publisher,
-        releaseYear: initialData.releaseYear,
-        releaseVersion: initialData.releaseVersion,
-        language: initialData.language,
+        isActive: initialData.isActive ?? true,
       });
       setImageUrl(initialData.image || "");
-      setIsBookType(initialData.type === "book");
       setRawFile(null);
       setIsDirty(false);
     } else if (!isOpen) {
       form.resetFields();
       setImageUrl("");
-      setIsBookType(false);
       setRawFile(null);
       setIsDirty(false);
     }
   }, [isOpen, initialData, form]);
 
-  const handleClose = () => {
-    if (isDirty || rawFile) {
-      Modal.confirm({
-        title: "Bạn có chắc muốn hủy những thay đổi?",
-        okText: "Có",
-        cancelText: "Không",
-        onOk: onClose,
-      });
-    } else {
-      onClose();
-    }
-  };
-
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setRawFile(file);
-      const previewUrl = URL.createObjectURL(file);
-      setImageUrl(previewUrl);
-      setIsDirty(true);
-    }
+    if (!file) return;
+    setRawFile(file);
+    setImageUrl(URL.createObjectURL(file));
+    setIsDirty(true);
   };
 
   const handleSubmit = async () => {
@@ -82,26 +67,19 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
 
       let finalImageUrl = imageUrl;
       if (rawFile) {
-        try {
-          finalImageUrl = await uploadApi.uploadFile(rawFile);
-        } catch (error) {
-          message.error("Upload ảnh thất bại. Vui lòng thử lại.");
-          setIsUploading(false);
-          return;
-        }
+        finalImageUrl = await uploadApi.uploadFile(rawFile);
       }
 
-      const formData = {
+      await onSubmit({
+        ...initialData,
         ...values,
         image: finalImageUrl,
-      };
+      } as InventoryFormData);
 
-      onSubmit(formData as InventoryFormData);
-
+      message.success("Cập nhật thành công");
       setIsDirty(false);
       setRawFile(null);
-      message.success("Hàng hóa đã được cập nhật thành công");
-    } catch (error) {
+    } catch {
       message.error("Vui lòng kiểm tra lại thông tin");
     } finally {
       setIsUploading(false);
@@ -111,119 +89,171 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
   return (
     <Modal
       open={isOpen}
-      onCancel={handleClose}
-      width={1200}
+      onCancel={onClose}
       centered
+      width={900}
       footer={null}
-      destroyOnClose={true}
-      closeIcon={<span className="text-3xl text-[#102e3c] cursor-pointer hover:opacity-70">×</span>}
+      destroyOnClose
+      className="inventory-edit-modal"
+      closeIcon={
+        <span className="text-3xl text-[#102e3c] cursor-pointer hover:opacity-70">
+          ×
+        </span>
+      }
       styles={{
-        body: { backgroundColor: "#D4E5E4", padding: 0 },
-        mask: { backgroundColor: "rgba(16, 46, 60, 0.5)" },
+        content: {
+          backgroundColor: "#D4E5E4",
+          padding: 0,
+          borderRadius: 12,
+          overflow: "hidden",
+        },
+        body: {
+          backgroundColor: "#D4E5E4",
+          padding: 0,
+          overflow: "hidden",
+        },
       }}
-      title={null}
     >
-      <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "#D4E5E4", borderRadius: 12, zIndex: 0 }} />
+      <style>{`
+        .inventory-edit-modal .ant-modal-content {
+          background-color: #D4E5E4 !important;
+          border: none !important;
+          overflow: hidden !important;
+        }
+        .inventory-edit-modal .ant-modal-body {
+          background-color: #D4E5E4 !important;
+          padding: 0 !important;
+        }
+      `}</style>
 
-      <div className="bg-[#D4E5E4] rounded-xl p-8 relative" style={{ zIndex: 1 }}>
-        <h2 className="text-center text-3xl font-bold text-[#102e3c] mb-8">Cập Nhật Hàng hóa</h2>
+      <div className="absolute inset-0 bg-[#D4E5E4]" />
+      <div className="relative z-10 bg-[#D4E5E4] p-8 rounded-xl">
+        <h2 className="text-center text-3xl font-bold text-[#102e3c] mb-8">
+          Cập Nhật Sản Phẩm
+        </h2>
 
-        <div className="flex gap-8 justify-center">
-          {/* Image Upload Area */}
-          <div className="flex-shrink-0 w-[320px] flex flex-col items-center">
-            <div className="relative w-80 h-80 bg-black rounded-2xl border-2 border-[#102e3c] flex items-center justify-center overflow-hidden group cursor-pointer hover:border-[#1a998f] transition-colors">
+        <div className="flex gap-8">
+          {/* IMAGE */}
+          <div className="w-[280px] flex flex-col items-center">
+            <div className="relative w-64 h-64 bg-white rounded-2xl border-2 border-[#102e3c] flex items-center justify-center overflow-hidden cursor-pointer hover:border-[#1a998f] transition">
               {imageUrl ? (
-                <img src={imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                <img src={imageUrl} className="w-full h-full object-cover" />
               ) : (
-                <svg className="w-20 h-20 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" /></svg>
+                <div className="text-gray-400 text-center">
+                  <div className="text-4xl">+</div>
+                  <div>Tải ảnh lên</div>
+                </div>
               )}
-              <input type="file" accept="image/*" onChange={handleImageChange} className="absolute inset-0 opacity-0 cursor-pointer" />
-
-              {/* Loading overlay khi đang upload */}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="absolute inset-0 opacity-0 cursor-pointer"
+              />
               {isUploading && (
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
-                  <Spin size="large" />
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                  <Spin />
                 </div>
               )}
             </div>
-            <p className="text-center text-sm text-[#102e3c] mt-4">Chọn ảnh cho Hàng hóa (320 × 320)</p>
+            <p className="text-sm italic mt-3 text-[#102e3c]">
+              Nhấn vào ảnh để thay đổi
+            </p>
           </div>
 
+          {/* FORM */}
           <div className="flex-1">
-            <Form form={form} layout="vertical" requiredMark={false} className="space-y-4" onValuesChange={() => setIsDirty(true)}>
-              <Form.Item name="name" label={<span className="text-lg font-semibold text-[#102e3c]">Tên Sản Phẩm:</span>} rules={[{ required: true, message: "Vui lòng nhập tên" }]}>
-                <Input className="border-0 border-b-2 border-[#102e3c] rounded-none bg-transparent text-lg px-0 focus:shadow-none hover:border-[#1a998f] focus:border-[#1a998f]" />
-              </Form.Item>
+            <Form
+              form={form}
+              layout="vertical"
+              requiredMark={false}
+              onValuesChange={() => setIsDirty(true)}
+            >
+              <div className="grid grid-cols-3 gap-4">
+                <Form.Item name="sku" label="Mã SKU">
+                  <Input disabled className="bg-gray-100" />
+                </Form.Item>
 
-              <div className="grid grid-cols-2 gap-4">
-                <Form.Item name="purchasePrice" label={<span className="text-lg font-semibold text-[#102e3c]">Giá nhập:</span>} rules={[{ required: true }]}>
-                  <InputNumber min={0} controls={false} className="w-full border-0 border-b-2 border-[#102e3c] rounded-none bg-transparent text-lg px-0" />
-                </Form.Item>
-                <Form.Item name="sellingPrice" label={<span className="text-lg font-semibold text-[#102e3c]">Giá Bán:</span>} rules={[{ required: true }]}>
-                  <InputNumber min={0} controls={false} className="w-full border-0 border-b-2 border-[#102e3c] rounded-none bg-transparent text-lg px-0" />
-                </Form.Item>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <Form.Item name="stock" label={<span className="text-lg font-semibold text-[#102e3c]">Tồn Kho:</span>} rules={[{ required: true }]}>
-                  <InputNumber min={0} controls={false} className="w-full border-0 border-b-2 border-[#102e3c] rounded-none bg-transparent text-lg px-0" />
-                </Form.Item>
-                <Form.Item name="category" label={<span className="text-lg font-semibold text-[#102e3c]">Loại:</span>}>
-                  <Select variant="borderless" style={{ fontSize: 18, borderBottom: "2px solid #102e3c" }} disabled>
-                    <Select.Option value="Sách">Sách</Select.Option>
-                    <Select.Option value="Văn phòng phẩm">Văn phòng phẩm</Select.Option>
-                  </Select>
+                <Form.Item
+                  name="name"
+                  label="Tên Sản Phẩm"
+                  className="col-span-2"
+                  rules={[{ required: true }]}
+                >
+                  <Input />
                 </Form.Item>
               </div>
 
-              <Form.Item name="supplier" label={<span className="text-lg font-semibold text-[#102e3c]">Nhà Cung Cấp:</span>}>
-                <Input variant="borderless" style={{ width: "100%", fontSize: 18, borderBottom: "2px solid #102e3c", padding: "4px 0", backgroundColor: "transparent" }} />
-              </Form.Item>
+              <div className="grid grid-cols-2 gap-4 items-end">
+                <Form.Item
+                  name="sellingPrice"
+                  label="Giá Bán (VNĐ)"
+                  rules={[{ required: true }]}
+                >
+                  <InputNumber
+                    min={0}
+                    className="w-full"
+                    formatter={(v) =>
+                      `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                    }
+                    parser={(v) =>
+                      v!.replace(/,/g, "") as unknown as number
+                    }
+                  />
+                </Form.Item>
 
-              {isBookType && (
-                <>
-                  <Form.Item name="author" label={<span className="text-lg font-semibold text-[#102e3c]">Tác Giả:</span>}>
-                    <Input variant="borderless" style={{ width: "100%", fontSize: 18, borderBottom: "2px solid #102e3c", padding: "4px 0", backgroundColor: "transparent" }} />
-                  </Form.Item>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <Form.Item name="publisher" label={<span className="text-lg font-semibold text-[#102e3c]">Nhà Xuất Bản:</span>}>
-                      <Input variant="borderless" style={{ width: "100%", fontSize: 18, borderBottom: "2px solid #102e3c", padding: "4px 0", backgroundColor: "transparent" }} />
+                <div className="mb-6">
+                  <div className="font-semibold mb-2">
+                    Trạng thái kinh doanh:
+                  </div>
+                  <div className="flex gap-3 items-center">
+                    <Form.Item
+                      name="isActive"
+                      valuePropName="checked"
+                      noStyle
+                    >
+                      <Switch />
                     </Form.Item>
-                    <Form.Item name="releaseYear" label={<span className="text-lg font-semibold text-[#102e3c]">Năm Xuất:</span>}>
-                      <Input variant="borderless" style={{ width: "100%", fontSize: 18, borderBottom: "2px solid #102e3c", padding: "4px 0", backgroundColor: "transparent" }} />
+
+                    <Form.Item shouldUpdate noStyle>
+                      {({ getFieldValue }) =>
+                        getFieldValue("isActive") ? (
+                          <Tag color="success">Đang bán</Tag>
+                        ) : (
+                          <Tag color="error">Ngừng kinh doanh</Tag>
+                        )
+                      }
                     </Form.Item>
                   </div>
+                </div>
+              </div>
 
-                  <Form.Item name="releaseVersion" label={<span className="text-lg font-semibold text-[#102e3c]">Phiên Bản Phát Hành:</span>}>
-                    <Input variant="borderless" style={{ width: "100%", fontSize: 18, borderBottom: "2px solid #102e3c", padding: "4px 0", backgroundColor: "transparent" }} />
-                  </Form.Item>
-
-                  <Form.Item name="language" label={<span className="text-lg font-semibold text-[#102e3c]">Ngôn Ngữ:</span>}>
-                    <Input variant="borderless" style={{ width: "100%", fontSize: 18, borderBottom: "2px solid #102e3c", padding: "4px 0", backgroundColor: "transparent" }} />
-                  </Form.Item>
-                </>
-              )}
-
-              <Form.Item name="description" label={<span className="text-lg font-semibold text-[#102e3c]">Mô Tả:</span>}>
-                <Input.TextArea rows={3} className="border-2 border-[#102e3c] rounded-lg bg-transparent text-lg resize-none focus:border-[#1a998f] hover:border-[#1a998f]" />
+              <Form.Item name="description" label="Mô Tả Chi Tiết">
+                <Input.TextArea rows={4} />
               </Form.Item>
+
+              <div className="bg-[#1a998f]/10 p-3 rounded-lg text-sm">
+                <b>Lưu ý:</b> Để cập nhật <b>Tồn kho</b> hoặc <b>Giá nhập</b>,
+                vui lòng sử dụng chức năng <b>Nhập Kho</b>.
+              </div>
             </Form>
           </div>
         </div>
 
-        <div className="flex justify-center mt-8">
+        <div className="flex justify-end gap-3 mt-6">
+          <Button onClick={onClose}>Hủy bỏ</Button>
           <Button
             type="primary"
             onClick={handleSubmit}
             loading={isUploading}
-            disabled={isUploading}
-            className="h-12 px-20 rounded-2xl bg-[#1a998f] text-2xl font-bold border-none hover:bg-[#158f85]"
+            disabled={!isDirty && !rawFile}
+            className="bg-[#1a998f]"
           >
-            {isUploading ? "Đang xử lý..." : "Cập Nhật Hàng hóa"}
+            Lưu Thay Đổi
           </Button>
         </div>
       </div>
     </Modal>
   );
 };
+export default InventoryEditPanel;
