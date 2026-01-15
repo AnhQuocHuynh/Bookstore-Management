@@ -207,15 +207,6 @@ export const InventoryPage = () => {
               >
                 Sửa
               </Button>
-
-              <Button
-                type="primary"
-                icon={<Plus size={18} />}
-                className="bg-[#1a998f] hover:bg-[#158f85] h-10 px-4 rounded-xl font-bold border-none"
-                onClick={() => setIsAddPanelOpen(true)}
-              >
-                Tạo Mới
-              </Button>
             </div>
           </div>
 
@@ -297,13 +288,6 @@ export const InventoryPage = () => {
       </main>
 
       {/* --- Modals --- */}
-      <InventoryAddPanel
-        isOpen={isAddPanelOpen}
-        category={activeCategory}
-        onClose={() => setIsAddPanelOpen(false)}
-        onSubmit={(data) => console.log("Create:", data)}
-      />
-
       <InventoryEditPanel
         isOpen={isEditPanelOpen}
         onClose={() => setIsEditPanelOpen(false)}
