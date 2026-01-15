@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from "react";
-import { DatePicker, Empty, Spin, Select } from "antd";
+import { DatePicker, Spin, Empty } from "antd";
 import {
     PieChart, Pie, Cell, ResponsiveContainer,
-    BarChart, Bar, XAxis, Tooltip as RechartsTooltip
+    AreaChart, Area, XAxis, Tooltip as RechartsTooltip, CartesianGrid
 } from "recharts";
-import { DollarSign, Package, TrendingUp, ShoppingBag, ArrowUp, ArrowDown } from "lucide-react";
+import { DollarSign, Package, TrendingUp, ShoppingBag, Calendar } from "lucide-react";
 import dayjs, { Dayjs } from "dayjs";
 import { useRevenueReport } from "../hooks/useReports";
 import { formatCurrency } from "@/utils";
@@ -12,36 +12,36 @@ import { DashboardCards, LineChartData, PieChartData, TopProduct, MetricItem } f
 
 const { RangePicker } = DatePicker;
 
-// --- 1. COMPONENT: PIE CHART (Góc trái trên) ---
+// --- 1. COMPONENT: PIE CHART SECTION (Góc trái trên) ---
 const PieChartSection = ({ data }: { data: PieChartData }) => {
     const COLORS = ['#14b8a6', '#3b82f6', '#ec4899', '#f59e0b', '#8b5cf6']; // Teal, Blue, Pink, Amber, Violet
 
-    if (!data?.items || data.items.length === 0)
-        return <div className="bg-white rounded-2xl p-6 h-64 flex items-center justify-center border border-zinc-100 text-gray-400">Chưa có dữ liệu</div>;
+    // Tính tổng để hiển thị ở giữa
+    const totalValue = data?.total || 0;
 
     return (
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-zinc-100">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-100">
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-neutral-800 text-xl font-bold font-['Roboto']">Doanh số theo Hàng hóa</h2>
-                <div className="px-4 py-1 border-2 border-teal-600 rounded-full text-cyan-950 font-bold text-sm bg-teal-50">
+                <h2 className="text-xl font-bold text-neutral-800">Doanh số theo Hàng hóa</h2>
+                <div className="px-4 py-1 border-2 border-teal-600 rounded-full text-cyan-950 font-bold text-sm">
                     {dayjs().format('DD/MM/YYYY')}
                 </div>
             </div>
 
-            <div className="flex flex-col lg:flex-row items-center gap-8">
-                {/* Vòng tròn biểu đồ */}
-                <div className="relative w-64 h-64 flex-shrink-0">
+            <div className="flex items-center gap-4">
+                {/* Chart Donut */}
+                <div className="relative w-48 h-48 flex-shrink-0 flex items-center justify-center">
                     <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                             <Pie
                                 data={data.items as any[]}
-                                innerRadius={80}
-                                outerRadius={100}
-                                paddingAngle={5}
+                                innerRadius={65}
+                                outerRadius={85}
+                                paddingAngle={4}
                                 dataKey="value"
                                 startAngle={90}
                                 endAngle={-270}
-                                cornerRadius={10}
+                                cornerRadius={6}
                             >
                                 {data.items.map((entry, index) => (
                                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="none" />
@@ -49,199 +49,195 @@ const PieChartSection = ({ data }: { data: PieChartData }) => {
                             </Pie>
                         </PieChart>
                     </ResponsiveContainer>
-                    {/* Text ở giữa */}
-                    <div className="absolute inset-0 flex flex-col items-center justify-center font-['Roboto'] pointer-events-none">
-                        <span className="text-neutral-500 text-sm">Total Value</span>
-                        <span className="text-cyan-950 text-2xl font-bold">
-                            {(data.total / 1000000).toFixed(1)}Tr
-                        </span>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
+                        <p className="text-neutral-500 text-sm">Total Value</p>
+                        <p className="text-2xl font-bold text-cyan-950">
+                            {totalValue >= 1000000 ? `${(totalValue / 1000000).toFixed(1)}Tr` : `${(totalValue / 1000).toFixed(0)}K`}
+                        </p>
                     </div>
                 </div>
 
-                {/* Legend (Danh sách bên phải) */}
-                <div className="flex-1 w-full space-y-2 text-sm font-['Roboto']">
-                    <div className="flex justify-between items-center p-1 border-b border-gray-100 pb-2 mb-2">
-                        <span className="text-neutral-500 font-medium">Label</span>
-                        <div className="flex gap-4">
-                            <span className="text-neutral-500 w-20 text-right font-medium">Value</span>
-                            <span className="text-neutral-500 w-12 text-right font-medium">%</span>
-                        </div>
+                {/* Legend List */}
+                <div className="flex-1 space-y-2 text-sm">
+                    <div className="grid grid-cols-12 text-neutral-500 font-medium pb-2 border-b border-gray-100">
+                        <span className="col-span-6">Nhãn</span>
+                        <span className="col-span-4 text-right">Giá trị</span>
+                        <span className="col-span-2 text-right">%</span>
                     </div>
 
-                    {data.items.slice(0, 5).map((item, index) => (
-                        <div key={item.productId} className="flex justify-between items-center py-1">
-                            <div className="flex items-center gap-2 overflow-hidden">
-                                <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
-                                <span className="truncate text-cyan-950 font-medium" title={item.name}>{item.name}</span>
-                            </div>
-                            <div className="flex gap-4 flex-shrink-0">
-                                <span className="font-bold text-cyan-950 w-20 text-right">
+                    <div className="max-h-[180px] overflow-y-auto custom-scrollbar pr-1">
+                        {data.items.map((item, index) => (
+                            <div key={index} className="grid grid-cols-12 items-center py-1.5 border-b border-gray-50 last:border-0">
+                                <div className="col-span-6 flex items-center gap-2 overflow-hidden">
+                                    <i className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: COLORS[index % COLORS.length] }}></i>
+                                    <span className="truncate text-neutral-700 font-medium" title={item.name}>{item.name}</span>
+                                </div>
+                                <div className="col-span-4 text-right font-bold text-cyan-950">
                                     {item.value >= 1000000 ? `${(item.value / 1000000).toFixed(1)}Tr` : `${(item.value / 1000).toFixed(0)}K`}
-                                </span>
-                                <span className="font-bold text-gray-500 w-12 text-right">{item.percent.toFixed(1)}%</span>
+                                </div>
+                                <div className="col-span-2 text-right text-neutral-500">{item.percent.toFixed(1)}%</div>
                             </div>
-                        </div>
-                    ))}
+                        ))}
+                    </div>
                 </div>
             </div>
         </div>
     );
 };
 
-// --- 2. COMPONENT: SUMMARY CARDS (Góc trái dưới - 2x2 Grid) ---
-const SummarySection = ({ cards }: { cards: DashboardCards }) => {
-    // Helper để render thẻ card
-    const renderCard = (
-        title: string,
-        metric: MetricItem,
-        icon: React.ReactNode,
-        iconBg: string,
-        textColor: string
-    ) => {
+// --- 2. COMPONENT: SUMMARY CARDS (Góc trái dưới) ---
+const SummaryGrid = ({ cards }: { cards: DashboardCards }) => {
+    const renderCard = (title: string, metric: MetricItem, icon: React.ReactNode, bgIcon: string) => {
         const value = metric.value ?? metric.count ?? metric.total ?? 0;
         const growth = metric.growthPercent;
 
         return (
-            <div className="bg-white p-6 rounded-[20px] shadow-sm border border-zinc-100 flex flex-col justify-between h-full">
-                <div className="flex justify-between items-center mb-4">
-                    <span className="text-cyan-900 font-medium text-lg">{title}</span>
-                    <div className={`w-10 h-10 ${iconBg} rounded-full flex items-center justify-center`}>
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-100 flex flex-col justify-between">
+                <div className="flex justify-between items-start mb-4">
+                    <span className="text-cyan-900 font-medium">{title}</span>
+                    <div className={`p-2 ${bgIcon} rounded-full`}>
                         {icon}
                     </div>
                 </div>
                 <div>
-                    <div className={`text-cyan-950 text-2xl font-bold mb-2`}>
+                    <div className="text-2xl font-bold text-cyan-950 mb-1">
                         {metric.count || metric.total ? value : formatCurrency(value)}
                     </div>
                     {growth != null ? (
-                        <div className={`text-sm font-medium flex items-center gap-1 ${growth >= 0 ? 'text-green-700' : 'text-red-500'}`}>
-                            {growth >= 0 ? '+' : ''}{growth.toFixed(1)}%
-                            <span className="text-gray-400 font-normal ml-1">so với kỳ trước</span>
+                        <div className={`text-sm font-medium ${growth >= 0 ? 'text-green-700' : 'text-red-500'}`}>
+                            {growth >= 0 ? '+' : ''}{growth.toFixed(1)}% so với hôm trước
                         </div>
-                    ) : (
-                        <div className="text-gray-400 text-sm">-</div>
-                    )}
+                    ) : <div className="text-gray-400 text-sm">-</div>}
                 </div>
             </div>
         );
     };
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
-            {renderCard("Lợi nhuận", cards.profit, <DollarSign size={20} className="text-teal-600" />, "bg-teal-100", "text-cyan-950")}
-            {renderCard("Số Đơn Hàng", cards.orders, <ShoppingBag size={20} className="text-teal-600" />, "bg-emerald-100", "text-cyan-950")}
-            {renderCard("Tiền nhập hàng", cards.purchaseSpend, <TrendingUp size={20} className="text-red-500" />, "bg-red-50", "text-gray-400")}
-            {renderCard("SP bán ra", cards.itemsSold, <Package size={20} className="text-teal-600" />, "bg-emerald-100", "text-cyan-950")}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {renderCard("Lợi nhuận", cards.profit, <TrendingUp size={20} className="text-teal-600" />, "bg-teal-100")}
+            {renderCard("Sản phẩm bán được", cards.itemsSold, <Package size={20} className="text-teal-600" />, "bg-emerald-100")}
+            {renderCard("Số đơn hàng", cards.orders, <ShoppingBag size={20} className="text-blue-600" />, "bg-blue-100")}
+            {renderCard("Tiền nhập hàng", cards.purchaseSpend, <DollarSign size={20} className="text-orange-600" />, "bg-orange-100")}
         </div>
     );
 };
 
-// --- 3. COMPONENT: RIGHT COLUMN (Chart & Top Products) ---
-const RightColumn = ({
-    chartData,
-    topProducts,
-    dateRange,
-    onDateChange
+// --- 3. COMPONENT: RIGHT COLUMN CONTENT (Chart & Top List) ---
+const RightColumnSection = ({
+    chartData, topProducts, dateRange, onDateChange
 }: {
-    chartData: LineChartData,
-    topProducts: TopProduct[],
-    dateRange: any,
-    onDateChange: (dates: any) => void
+    chartData: LineChartData, topProducts: TopProduct[], dateRange: any, onDateChange: any
 }) => {
 
-    // Transform data cho BarChart
-    const barsData = useMemo(() => {
+    // Transform Data cho Recharts
+    const data = useMemo(() => {
         if (!chartData?.labels) return [];
         return chartData.labels.map((label, index) => {
-            // Tính tổng doanh thu của tất cả dataset tại ngày đó
-            const totalRevenue = chartData.datasets.reduce((acc, ds) => acc + (ds.values[index] || 0), 0);
-            return { time: label, value: totalRevenue };
+            const item: any = { time: label };
+            let total = 0;
+            chartData.datasets.forEach(ds => {
+                item[ds.name] = ds.values[index] || 0;
+                total += ds.values[index] || 0;
+            });
+            item['total'] = total;
+            return item;
         });
     }, [chartData]);
 
-    const totalRevenuePeriod = barsData.reduce((acc, item) => acc + item.value, 0);
+    // Tính tổng doanh thu trong kỳ
+    const totalRevenue = data.reduce((acc, cur) => acc + cur.total, 0);
 
     return (
-        <div className="bg-[#eaf4f4] rounded-[20px] p-6 h-full border border-teal-200 flex flex-col">
-            {/* Filters Row */}
-            <div className="flex flex-wrap gap-4 mb-8">
-                <div className="bg-white border-2 border-teal-600 rounded-full px-4 py-1 text-sm font-bold text-cyan-950 flex items-center">
+        <div className="bg-teal-600/10 p-6 rounded-[20px] space-y-6 h-full flex flex-col">
+
+            {/* Filters Toolbar */}
+            <div className="flex flex-wrap gap-4">
+                <button className="px-4 py-2 bg-white border-2 border-teal-600 rounded-full font-bold text-cyan-950 text-sm shadow-sm transition hover:bg-teal-50">
                     Tất cả Sản phẩm
-                </div>
-                <div className="bg-white rounded-full overflow-hidden border-2 border-teal-600">
+                </button>
+                <div className="bg-white border-2 border-teal-600 rounded-full px-4 py-1 shadow-sm ml-auto flex items-center">
                     <RangePicker
                         value={dateRange}
                         onChange={onDateChange}
                         bordered={false}
-                        suffixIcon={null}
+                        suffixIcon={<Calendar size={16} className="text-teal-600" />}
                         allowClear={false}
-                        className="py-1"
+                        className="w-[240px]"
                         format="DD/MM/YYYY"
                     />
                 </div>
             </div>
 
-            {/* Bar Chart Section */}
-            <div className="bg-white rounded-xl p-6 mb-8 border border-zinc-100 shadow-sm">
+            {/* Chart Container */}
+            <div className="bg-white p-8 rounded-xl border border-zinc-100 shadow-sm">
                 <div className="mb-6">
-                    <div className="text-cyan-950 text-3xl font-bold">{formatCurrency(totalRevenuePeriod)}</div>
-                    <div className="text-gray-500 text-sm">Doanh thu theo thời gian</div>
+                    <h3 className="text-3xl font-bold text-cyan-950">{formatCurrency(totalRevenue)}</h3>
+                    <p className="text-neutral-500">Doanh thu theo thời gian</p>
                 </div>
 
-                <div className="h-64 w-full">
+                <div className="w-full h-64">
                     <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={barsData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+                        <AreaChart data={data} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
+                            <defs>
+                                <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#14b8a6" stopOpacity={0.2} />
+                                    <stop offset="95%" stopColor="#14b8a6" stopOpacity={0} />
+                                </linearGradient>
+                            </defs>
+                            <CartesianGrid vertical={false} stroke="#f3f4f6" />
                             <XAxis
                                 dataKey="time"
-                                tickLine={false}
                                 axisLine={false}
-                                tick={{ fontSize: 11, fill: '#9ca3af' }}
+                                tickLine={false}
+                                tick={{ fill: '#9ca3af', fontSize: 12 }}
                                 tickFormatter={(val) => dayjs(val).format('DD/MM')}
                                 dy={10}
                             />
                             <RechartsTooltip
-                                cursor={{ fill: '#f4f4f5' }}
-                                contentStyle={{ borderRadius: 8, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                                formatter={(val: any) => [formatCurrency(val), 'Doanh thu']}
+                                contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                                formatter={(val: any) => formatCurrency(Number(val))}
                             />
-                            <Bar
-                                dataKey="value"
-                                fill="#14b8a6"
-                                radius={[4, 4, 0, 0]}
-                                barSize={30}
+                            <Area
+                                type="monotone"
+                                dataKey="total"
+                                stroke="#14b8a6"
+                                strokeWidth={3}
+                                fillOpacity={1}
+                                fill="url(#colorTotal)"
                             />
-                        </BarChart>
+                        </AreaChart>
                     </ResponsiveContainer>
                 </div>
             </div>
 
             {/* Top Products List */}
-            <div className="flex-1">
-                <h3 className="text-cyan-950 text-2xl font-bold mb-4">Các sản phẩm bán chạy:</h3>
-                <div className="bg-white rounded-xl p-2 space-y-1 shadow-sm overflow-y-auto max-h-[400px] custom-scrollbar">
-                    {topProducts.length === 0 && <div className="p-4 text-center text-gray-400">Không có dữ liệu</div>}
+            <div className="bg-white p-6 rounded-xl flex-1 border border-zinc-100 shadow-sm overflow-hidden flex flex-col">
+                <h3 className="text-xl font-bold text-cyan-950 mb-6 flex-shrink-0">Các sản phẩm bán chạy:</h3>
+
+                <div className="overflow-y-auto custom-scrollbar flex-1 pr-2 space-y-4">
+                    {topProducts.length === 0 && <div className="text-center text-gray-400 py-4">Chưa có dữ liệu</div>}
 
                     {topProducts.map((p, idx) => (
-                        <div key={p.productId} className={`flex items-center gap-4 p-4 ${idx !== topProducts.length - 1 ? 'border-b border-gray-100' : ''}`}>
-                            <div className="w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100 border border-gray-200">
-                                {p.imageUrl ? (
-                                    <img src={p.imageUrl} alt="" className="w-full h-full object-cover" />
-                                ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-gray-300">Img</div>
-                                )}
-                            </div>
+                        <div key={idx} className="flex items-center gap-4 pb-4 border-b border-gray-100 last:border-0 last:pb-0">
+                            <img
+                                className="w-16 h-16 rounded-lg bg-gray-100 object-cover border border-gray-200"
+                                src={p.imageUrl || "https://placehold.co/80x80?text=No+Img"}
+                                alt="product"
+                            />
                             <div className="flex-1 min-w-0">
-                                <div className="text-lg font-medium text-cyan-950 truncate" title={p.name}>{p.name}</div>
-                                <div className="text-gray-400 text-sm font-roboto">{p.sku}</div>
+                                <p className="font-medium text-lg text-cyan-950 truncate" title={p.name}>{p.name}</p>
+                                <p className="text-neutral-500 text-sm uppercase">{p.sku}</p>
                             </div>
                             <div className="text-right flex-shrink-0">
-                                <div className="text-teal-600 font-bold text-lg">{formatCurrency(p.revenue)}</div>
-                                <div className="text-xs text-gray-500">{p.percent.toFixed(2)}%</div>
+                                <p className="text-teal-600 font-bold text-xl">{formatCurrency(p.revenue)}</p>
+                                <p className="text-neutral-400 text-sm">{p.percent.toFixed(2)}%</p>
                             </div>
                         </div>
                     ))}
                 </div>
             </div>
+
         </div>
     );
 };
@@ -262,38 +258,37 @@ export const RevenueReportView = () => {
     const { data, isLoading, isError } = useRevenueReport(queryParams);
     const handleDateChange = (dates: any) => setDateRange(dates as RangeValue);
 
-    if (isError) return <div className="p-10 text-center text-red-500">Lỗi tải dữ liệu. Vui lòng thử lại.</div>;
+    if (isError) return <div className="p-10 text-center text-red-500">Lỗi tải dữ liệu. Vui lòng đăng nhập lại.</div>;
     if (isLoading) return <div className="h-screen flex items-center justify-center"><Spin size="large" /></div>;
 
     return (
         <div className="p-8 bg-[#f8fafc] min-h-screen font-['Inter']">
+
             {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start mb-8">
-                <div>
-                    <h1 className="text-cyan-950 text-4xl font-bold leading-9">Thống kê Doanh thu</h1>
-                </div>
-                <div className="text-cyan-950 text-lg opacity-70 mt-2 md:mt-0">
+            <div className="flex justify-between items-center mb-8">
+                <h1 className="text-4xl font-bold text-cyan-950">Thống kê về Doanh thu</h1>
+                <p className="text-cyan-950 text-lg opacity-70 hidden md:block">
                     Thời gian đồng bộ gần nhất: {data?.meta?.lastDataAt ? dayjs(data.meta.lastDataAt).format('DD/MM/YYYY hh:mm A') : '...'}
-                </div>
+                </p>
             </div>
 
-            {/* Main Grid */}
-            <div className="grid grid-cols-12 gap-8">
+            {/* Grid Layout (5 - 7) */}
+            <div className="grid grid-cols-12 gap-8 h-[calc(100vh-140px)]">
 
-                {/* LEFT COLUMN (6/12) */}
-                <div className="col-span-12 xl:col-span-6 flex flex-col gap-8">
-                    {/* Pie Chart */}
+                {/* LEFT COLUMN (Chiếm 5 phần) */}
+                <div className="col-span-12 xl:col-span-5 space-y-6 flex flex-col h-full overflow-y-auto custom-scrollbar pr-2">
+                    {/* 1. Pie Chart */}
                     <PieChartSection data={data?.pie || { total: 0, items: [] }} />
 
-                    {/* Summary Cards */}
+                    {/* 2. Cards Grid */}
                     <div className="flex-1">
-                        {data?.cards && <SummarySection cards={data.cards} />}
+                        {data?.cards && <SummaryGrid cards={data.cards} />}
                     </div>
                 </div>
 
-                {/* RIGHT COLUMN (6/12) */}
-                <div className="col-span-12 xl:col-span-6">
-                    <RightColumn
+                {/* RIGHT COLUMN (Chiếm 7 phần) */}
+                <div className="col-span-12 xl:col-span-7 h-full">
+                    <RightColumnSection
                         chartData={data?.line || { labels: [], datasets: [] }}
                         topProducts={data?.top || []}
                         dateRange={dateRange}
