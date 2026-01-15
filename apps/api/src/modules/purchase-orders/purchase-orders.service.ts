@@ -18,6 +18,7 @@ import { ProductsService } from '@/modules/products/products.service';
 import { UserRole } from '@/modules/users/enums';
 import { TenantService } from '@/tenants/tenant.service';
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   InternalServerErrorException,
@@ -33,7 +34,7 @@ export class PurchaseOrdersService {
     private readonly tenantService: TenantService,
     private readonly productsService: ProductsService,
     private readonly inventoriesService: InventoriesService,
-  ) { }
+  ) {}
 
   async findPurchaseOrderByField(
     repo: Repository<PurchaseOrder>,
@@ -64,11 +65,13 @@ export class PurchaseOrdersService {
     return dataSource.transaction(async (manager) => {
       const { supplierId, createPurchaseOrderDetailDtos, note } =
         createPurchaseOrderDto;
+
       const purchaseOrderRepo = manager.getRepository(PurchaseOrder);
       const purchaseOrderDetailRepo =
         manager.getRepository(PurchaseOrderDetail);
       const supplierRepo = manager.getRepository(Supplier);
       const employeeRepo = manager.getRepository(Employee);
+      const productRepo = manager.getRepository(Product);
 
       const findSupplier = await supplierRepo.findOne({
         where: {
@@ -97,7 +100,6 @@ export class PurchaseOrdersService {
         },
         ...(note?.trim() && { note }),
         totalAmount: 0,
-
         status: PurchaseStatus.COMPLETED,
         purchaseDate: new Date(),
       });
@@ -105,8 +107,57 @@ export class PurchaseOrdersService {
       await purchaseOrderRepo.save(newPurchaseOrder);
 
       for (const createPurchaseOrderDetailDto of createPurchaseOrderDetailDtos) {
-        const { createProductDto, quantity, unitPrice } =
+        const { createProductDto, quantity, unitPrice, productId } =
           createPurchaseOrderDetailDto;
+
+        const isNewProduct =
+          createProductDto !== undefined &&
+          Object.keys(createProductDto).length > 0;
+
+        const isOldProduct = productId !== undefined && productId.trim() !== '';
+
+        if (!(isNewProduct && isOldProduct)) {
+          throw new BadRequestException(
+            'Vui lòng cung cấp thông tin về sản phẩm.',
+          );
+        }
+
+        if (isNewProduct && isOldProduct) {
+          throw new BadRequestException(
+            'Chỉ có thể hoặc tạo sản phẩm mới hoặc cung cấp mã định danh sản phẩm cũ.',
+          );
+        }
+
+        let product: Product | null = null;
+
+        if (isOldProduct) {
+          product = await productRepo.findOne({
+            where: {
+              id: productId,
+            },
+          });
+
+          if (!product) {
+            throw new NotFoundException('Không tìm thấy thông tin sản phẩm.');
+          }
+        } else if (isNewProduct) {
+          product = await this.productsService.createProduct(
+            createProductDto,
+            manager,
+            employee,
+            supplierId,
+          );
+
+          if (!product) {
+            throw new InternalServerErrorException(
+              'Đã xảy ra lỗi khi tạo sản phẩm mới.',
+            );
+          }
+        }
+
+        if (!product) {
+          throw new InternalServerErrorException('Đã xảy ra lỗi từ hệ thống.');
+        }
 
         const subTotal = new Decimal(unitPrice).mul(quantity).toFixed(2);
 
@@ -114,23 +165,10 @@ export class PurchaseOrdersService {
           .add(subTotal)
           .toNumber();
 
-        const newProduct = await this.productsService.createProduct(
-          createProductDto,
-          manager,
-          employee,
-          supplierId,
-        );
-
-        if (!newProduct) {
-          throw new InternalServerErrorException(
-            'Đã xảy ra lỗi khi tạo sản phẩm mới.',
-          );
-        }
-
         const newPurchaseOrderDetail = purchaseOrderDetailRepo.create({
           purchaseOrder: newPurchaseOrder,
           subTotal: new Decimal(subTotal).toNumber(),
-          product: newProduct,
+          product,
           quantity,
           unitPrice,
         });

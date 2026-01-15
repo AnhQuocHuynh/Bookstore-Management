@@ -50,4 +50,3 @@ export class GetEmployeesDashboardQueryDto {
   @Min(1, { message: 'limit phải >= 1' })
   limit?: number;
 }
-

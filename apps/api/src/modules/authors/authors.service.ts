@@ -66,7 +66,7 @@ export class AuthorsService {
   ) {
     const bookStoreId = this.getBookStoreId(userSession);
     const { email, phone } = createAuthorDto;
-    
+
     const dataSource = await this.tenantService.getTenantConnection({
       bookStoreId,
     });
@@ -104,10 +104,7 @@ export class AuthorsService {
   }
 
   // 2. Lấy danh sách tác giả (Có tìm kiếm)
-  async getAuthors(
-    userSession: TUserSession,
-    query: GetAuthorsQueryDto,
-  ) {
+  async getAuthors(userSession: TUserSession, query: GetAuthorsQueryDto) {
     const bookStoreId = this.getBookStoreId(userSession);
     const { keyword } = query;
 
@@ -122,8 +119,9 @@ export class AuthorsService {
       const searchTerm = `%${keyword.trim()}%`;
       qb.andWhere(
         new Brackets((qb) => {
-          qb.where('author.fullName ILIKE :keyword', { keyword: searchTerm })
-            .orWhere('author.penName ILIKE :keyword', { keyword: searchTerm });
+          qb.where('author.fullName ILIKE :keyword', {
+            keyword: searchTerm,
+          }).orWhere('author.penName ILIKE :keyword', { keyword: searchTerm });
         }),
       );
     }
@@ -149,14 +147,28 @@ export class AuthorsService {
 
     // Kiểm tra trùng Email
     if (updateAuthorDto.email && updateAuthorDto.email !== author.email) {
-      const existingEmail = await this.findAuthorByField('email', updateAuthorDto.email, authorRepo);
-      if (existingEmail) throw new ConflictException(`Email ${updateAuthorDto.email} đã được sử dụng.`);
+      const existingEmail = await this.findAuthorByField(
+        'email',
+        updateAuthorDto.email,
+        authorRepo,
+      );
+      if (existingEmail)
+        throw new ConflictException(
+          `Email ${updateAuthorDto.email} đã được sử dụng.`,
+        );
     }
 
     // Kiểm tra trùng SĐT
     if (updateAuthorDto.phone && updateAuthorDto.phone !== author.phone) {
-      const existingPhone = await this.findAuthorByField('phone', updateAuthorDto.phone, authorRepo);
-      if (existingPhone) throw new ConflictException(`Số điện thoại ${updateAuthorDto.phone} đã được sử dụng.`);
+      const existingPhone = await this.findAuthorByField(
+        'phone',
+        updateAuthorDto.phone,
+        authorRepo,
+      );
+      if (existingPhone)
+        throw new ConflictException(
+          `Số điện thoại ${updateAuthorDto.phone} đã được sử dụng.`,
+        );
     }
 
     assignDefined(author, updateAuthorDto);

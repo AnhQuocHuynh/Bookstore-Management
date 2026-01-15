@@ -115,12 +115,15 @@ export class GetStockDashboardQueryDto {
   productId?: string;
 
   @ApiPropertyOptional({
-    description: 'Khoảng thời gian group cho biểu đồ bán hàng: day | week | month',
+    description:
+      'Khoảng thời gian group cho biểu đồ bán hàng: day | week | month',
     enum: PeriodType,
     example: PeriodType.DAY,
   })
   @IsOptional()
-  @IsEnum(PeriodType, { message: 'Khoảng thời gian group bán hàng không hợp lệ' })
+  @IsEnum(PeriodType, {
+    message: 'Khoảng thời gian group bán hàng không hợp lệ',
+  })
   salesPeriod?: PeriodType;
 
   @ApiPropertyOptional({
@@ -144,12 +147,15 @@ export class GetStockDashboardQueryDto {
   salesTo?: Date;
 
   @ApiPropertyOptional({
-    description: 'Khoảng thời gian group cho biểu đồ nhập hàng: day | week | month',
+    description:
+      'Khoảng thời gian group cho biểu đồ nhập hàng: day | week | month',
     enum: PeriodType,
     example: PeriodType.MONTH,
   })
   @IsOptional()
-  @IsEnum(PeriodType, { message: 'Khoảng thời gian group nhập hàng không hợp lệ' })
+  @IsEnum(PeriodType, {
+    message: 'Khoảng thời gian group nhập hàng không hợp lệ',
+  })
   importPeriod?: PeriodType;
 
   @ApiPropertyOptional({

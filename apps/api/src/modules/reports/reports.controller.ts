@@ -159,17 +159,40 @@ export class ReportsController {
           lastDataAt: '2025-12-18T07:25:00.000Z',
         },
         cards: {
-          revenue: { value: 3625000, currency: 'VND', growthPercent: 4.8, growthAbs: 175000 },
-          profit: { value: 1200000, currency: 'VND', growthPercent: 5.2, growthAbs: 60000, note: 'Lợi nhuận = Doanh thu - Giá vốn' },
+          revenue: {
+            value: 3625000,
+            currency: 'VND',
+            growthPercent: 4.8,
+            growthAbs: 175000,
+          },
+          profit: {
+            value: 1200000,
+            currency: 'VND',
+            growthPercent: 5.2,
+            growthAbs: 60000,
+            note: 'Lợi nhuận = Doanh thu - Giá vốn',
+          },
           orders: { count: 76, growthPercent: 2.5, growthAbs: 2 },
           itemsSold: { total: 276, growthPercent: 3.1, growthAbs: 8 },
-          purchaseSpend: { total: 2000000, currency: 'VND', growthPercent: 4.5, growthAbs: 90000 },
+          purchaseSpend: {
+            total: 2000000,
+            currency: 'VND',
+            growthPercent: 4.5,
+            growthAbs: 90000,
+          },
           serviceFee: { total: 0, currency: 'VND' },
         },
         pie: {
           total: 3600000,
           items: [
-            { productId: 'uuid1', name: 'Tập 100 trang', sku: '7K9P-2WXM', imageUrl: 'https://...', value: 1200000, percent: 33.3 },
+            {
+              productId: 'uuid1',
+              name: 'Tập 100 trang',
+              sku: '7K9P-2WXM',
+              imageUrl: 'https://...',
+              value: 1200000,
+              percent: 33.3,
+            },
           ],
         },
         line: {
@@ -180,7 +203,14 @@ export class ReportsController {
           ],
         },
         top: [
-          { productId: 'uuid1', name: 'Tập 100 trang', sku: '7K9P-2WXM', imageUrl: 'https://...', revenue: 1200000, percent: 33.1 },
+          {
+            productId: 'uuid1',
+            name: 'Tập 100 trang',
+            sku: '7K9P-2WXM',
+            imageUrl: 'https://...',
+            revenue: 1200000,
+            percent: 33.1,
+          },
         ],
       },
     },
@@ -218,7 +248,13 @@ export class ReportsController {
         pie: {
           total: 729,
           items: [
-            { employeeId: 'uuid1', employeeName: 'Nhân viên A', avatarUrl: 'https://...', value: 138, percent: 18.9 },
+            {
+              employeeId: 'uuid1',
+              employeeName: 'Nhân viên A',
+              avatarUrl: 'https://...',
+              value: 138,
+              percent: 18.9,
+            },
           ],
         },
         bar: {
@@ -230,7 +266,14 @@ export class ReportsController {
           page: 1,
           limit: 20,
           items: [
-            { transactionId: 'uuid1', occurredAt: '2025-12-18T09:03:35.000Z', employeeId: 'uuid1', employeeName: 'Nhân viên A', totalAmount: 217500, currency: 'VND' },
+            {
+              transactionId: 'uuid1',
+              occurredAt: '2025-12-18T09:03:35.000Z',
+              employeeId: 'uuid1',
+              employeeName: 'Nhân viên A',
+              totalAmount: 217500,
+              currency: 'VND',
+            },
           ],
         },
       },

@@ -486,7 +486,7 @@ export class ReportsService {
 
     const pieResults = await pieQuery.getRawMany();
     const validPieResults = pieResults.filter((r) => r.productId && r.name);
-    
+
     const pieTotal = validPieResults.reduce(
       (sum, r) => sum + parseFloat(r.revenue || '0'),
       0,
@@ -509,12 +509,7 @@ export class ReportsService {
       .leftJoin('t.details', 'td')
       .leftJoin('td.product', 'p')
       .leftJoin('p.categories', 'c')
-      .select([
-        't.id',
-        't.totalAmount',
-        't.finalAmount',
-        't.createdAt',
-      ])
+      .select(['t.id', 't.totalAmount', 't.finalAmount', 't.createdAt'])
       .addSelect([
         'td.id',
         'td.quantity',
@@ -522,16 +517,8 @@ export class ReportsService {
         'td.totalPrice',
         'td.createdAt',
       ])
-      .addSelect([
-        'p.id',
-        'p.name',
-        'p.imageUrl',
-        'p.type',
-      ])
-      .addSelect([
-        'c.id',
-        'c.name',
-      ])
+      .addSelect(['p.id', 'p.name', 'p.imageUrl', 'p.type'])
+      .addSelect(['c.id', 'c.name'])
       .where('t.isCompleted = :completed', { completed: true })
       .andWhere('t.createdAt BETWEEN :start AND :end', {
         start: startDate,
@@ -541,7 +528,7 @@ export class ReportsService {
 
     const { raw } = await queryBuilder.getRawAndEntities();
     const transactionMap = new Map<string, any>();
-    
+
     raw.forEach((row: any) => {
       const txId = row.t_id;
       if (!transactionMap.has(txId)) {
@@ -553,7 +540,7 @@ export class ReportsService {
           details: [],
         });
       }
-      
+
       const tx = transactionMap.get(txId);
       if (row.td_id && !tx.details.find((d: any) => d.id === row.td_id)) {
         tx.details.push({
@@ -575,7 +562,10 @@ export class ReportsService {
 
       if (row.p_id && row.c_id) {
         const detail = tx.details.find((d: any) => d.product?.id === row.p_id);
-        if (detail?.product && !detail.product.categories.find((c: any) => c.id === row.c_id)) {
+        if (
+          detail?.product &&
+          !detail.product.categories.find((c: any) => c.id === row.c_id)
+        ) {
           detail.product.categories.push({
             id: row.c_id,
             name: row.c_name,
@@ -615,12 +605,17 @@ export class ReportsService {
         const categoryName = category?.name || 'Khác';
         const categoryId = category?.id || null;
 
-        if (categoryIds && categoryIds.length > 0 && categoryId && !categoryIds.includes(categoryId)) {
+        if (
+          categoryIds &&
+          categoryIds.length > 0 &&
+          categoryId &&
+          !categoryIds.includes(categoryId)
+        ) {
           return;
         }
 
         const detailRevenue = td.product
-          ? (tx.finalAmount * (td.totalPrice / (tx.totalAmount || 1)))
+          ? tx.finalAmount * (td.totalPrice / (tx.totalAmount || 1))
           : 0;
 
         if (!lineDatasetsMap[categoryName]) {
@@ -634,10 +629,12 @@ export class ReportsService {
     });
 
     lineLabels.sort();
-    let lineDatasets = Object.entries(lineDatasetsMap).map(([name, valuesMap]) => ({
-      name,
-      values: lineLabels.map((label) => valuesMap[label] || 0),
-    }));
+    let lineDatasets = Object.entries(lineDatasetsMap).map(
+      ([name, valuesMap]) => ({
+        name,
+        values: lineLabels.map((label) => valuesMap[label] || 0),
+      }),
+    );
 
     if (lineDatasets.length === 0 || lineLabels.length === 0) {
       const fallbackLineQuery = transactionRepo
@@ -830,13 +827,7 @@ export class ReportsService {
         end: endDate,
       })
       .andWhere('e.id IS NOT NULL')
-      .select([
-        't.id',
-        't.createdAt',
-        't.finalAmount',
-        'e.id',
-        'e.fullName',
-      ])
+      .select(['t.id', 't.createdAt', 't.finalAmount', 'e.id', 'e.fullName'])
       .orderBy('t.createdAt', 'DESC')
       .skip(skip)
       .take(limit);
@@ -883,10 +874,7 @@ export class ReportsService {
     };
   }
 
-  async getStockDashboard(
-    bookStoreId: string,
-    dto: GetStockDashboardQueryDto,
-  ) {
+  async getStockDashboard(bookStoreId: string, dto: GetStockDashboardQueryDto) {
     const dataSource = await this.tenantService.getTenantConnection({
       bookStoreId,
     });
@@ -912,7 +900,8 @@ export class ReportsService {
     const inventoryRepo = dataSource.getRepository(Inventory);
     const inventoryLogRepo = dataSource.getRepository(InventoryLog);
     const transactionDetailRepo = dataSource.getRepository(TransactionDetail);
-    const purchaseOrderDetailRepo = dataSource.getRepository(PurchaseOrderDetail);
+    const purchaseOrderDetailRepo =
+      dataSource.getRepository(PurchaseOrderDetail);
 
     const queryBuilder = productRepo
       .createQueryBuilder('p')
@@ -930,10 +919,9 @@ export class ReportsService {
     }
 
     if (search) {
-      queryBuilder.andWhere(
-        '(p.name ILIKE :search OR p.sku ILIKE :search)',
-        { search: `%${search}%` },
-      );
+      queryBuilder.andWhere('(p.name ILIKE :search OR p.sku ILIKE :search)', {
+        search: `%${search}%`,
+      });
     }
 
     const sortFieldMap: Record<string, string> = {
@@ -991,7 +979,7 @@ export class ReportsService {
 
         if (logs.length > 0) {
           let estimatedStock = currentStock;
-          
+
           for (let i = logs.length - 1; i >= 0; i--) {
             const log = logs[i];
             estimatedStock -= parseFloat(log.quantityChange || '0');
@@ -1092,11 +1080,13 @@ export class ReportsService {
       });
 
       if (product) {
-        const defaultSalesFrom = salesFrom || (() => {
-          const date = new Date();
-          date.setDate(date.getDate() - 7);
-          return date;
-        })();
+        const defaultSalesFrom =
+          salesFrom ||
+          (() => {
+            const date = new Date();
+            date.setDate(date.getDate() - 7);
+            return date;
+          })();
         const defaultSalesTo = salesTo || new Date();
 
         let salesDateGroupBy = '';
@@ -1142,11 +1132,13 @@ export class ReportsService {
           productName: product.name,
         };
 
-        const defaultImportFrom = importFrom || (() => {
-          const date = new Date();
-          date.setMonth(date.getMonth() - 6);
-          return date;
-        })();
+        const defaultImportFrom =
+          importFrom ||
+          (() => {
+            const date = new Date();
+            date.setMonth(date.getMonth() - 6);
+            return date;
+          })();
         const defaultImportTo = importTo || new Date();
 
         let importDateGroupBy = '';
