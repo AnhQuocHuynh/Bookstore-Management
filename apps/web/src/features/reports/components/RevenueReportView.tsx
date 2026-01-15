@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { DatePicker, Spin, Select } from "antd"; // Import thêm Select
+import { DatePicker, Spin, Select } from "antd";
 import {
     PieChart, Pie, Cell, ResponsiveContainer,
     AreaChart, Area, XAxis, Tooltip as RechartsTooltip, CartesianGrid
@@ -7,7 +7,7 @@ import {
 import { DollarSign, Package, TrendingUp, ShoppingBag, Calendar } from "lucide-react";
 import dayjs, { Dayjs } from "dayjs";
 import { useRevenueReport } from "../hooks/useReports";
-import { useCategories } from "@/features/categories/hooks/useCategories"; // Import hook category bạn đã gửi
+import { useCategories } from "@/features/categories/hooks/useCategories";
 import { formatCurrency } from "@/utils";
 import { DashboardCards, LineChartData, PieChartData, TopProduct, MetricItem } from "../types";
 
@@ -15,9 +15,39 @@ const { RangePicker } = DatePicker;
 
 // --- 1. COMPONENT: PIE CHART SECTION (Chart trên - Legend dưới) ---
 const PieChartSection = ({ data }: { data: PieChartData }) => {
-    const COLORS = ['#14b8a6', '#3b82f6', '#ec4899', '#f59e0b', '#8b5cf6', '#ef4444'];
+    const COLORS = ['#14b8a6', '#3b82f6', '#ec4899', '#f59e0b', '#8b5cf6', '#94a3b8']; // Màu cuối cùng (xám) dành cho "Còn lại"
 
     const totalValue = data?.total || 0;
+
+    // --- LOGIC MỚI: GỘP "CÒN LẠI" ---
+    const displayItems = useMemo(() => {
+        if (!data?.items) return [];
+
+        // Nếu ít hơn hoặc bằng 4 item thì hiển thị hết
+        if (data.items.length <= 4) return data.items;
+
+        // Lấy top 4
+        const top4 = data.items.slice(0, 4);
+
+        // Tính tổng phần còn lại
+        const others = data.items.slice(4);
+        const otherValue = others.reduce((acc, curr) => acc + curr.value, 0);
+        const otherPercent = others.reduce((acc, curr) => acc + curr.percent, 0);
+
+        // Trả về mảng mới gồm Top 4 + Item "Còn lại"
+        return [
+            ...top4,
+            {
+                productId: 'others',
+                name: 'Còn lại',
+                value: otherValue,
+                percent: otherPercent,
+                // Các trường optional khác có thể bỏ qua hoặc fake
+                sku: '',
+                imageUrl: ''
+            }
+        ];
+    }, [data]);
 
     return (
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-100 flex flex-col h-full">
@@ -28,7 +58,6 @@ const PieChartSection = ({ data }: { data: PieChartData }) => {
                 </div>
             </div>
 
-            {/* --- THAY ĐỔI: flex-col để xếp dọc --- */}
             <div className="flex flex-col items-center gap-6 flex-1">
 
                 {/* Chart Donut */}
@@ -36,7 +65,8 @@ const PieChartSection = ({ data }: { data: PieChartData }) => {
                     <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                             <Pie
-                                data={data.items as any[]}
+                                // Dùng displayItems đã gộp để vẽ chart
+                                data={displayItems as any[]}
                                 innerRadius={75}
                                 outerRadius={100}
                                 paddingAngle={4}
@@ -45,7 +75,7 @@ const PieChartSection = ({ data }: { data: PieChartData }) => {
                                 endAngle={-270}
                                 cornerRadius={6}
                             >
-                                {data.items.map((entry, index) => (
+                                {displayItems.map((entry, index) => (
                                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="none" />
                                 ))}
                             </Pie>
@@ -68,7 +98,8 @@ const PieChartSection = ({ data }: { data: PieChartData }) => {
                     </div>
 
                     <div className="overflow-y-auto custom-scrollbar pr-1 flex-1 min-h-[150px]">
-                        {data.items.map((item, index) => (
+                        {/* Render displayItems thay vì data.items */}
+                        {displayItems.map((item, index) => (
                             <div key={index} className="grid grid-cols-12 items-center py-2 border-b border-gray-50 last:border-0 hover:bg-gray-50 rounded px-2 transition-colors">
                                 <div className="col-span-6 flex items-center gap-2 overflow-hidden">
                                     <i className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: COLORS[index % COLORS.length] }}></i>
@@ -87,12 +118,9 @@ const PieChartSection = ({ data }: { data: PieChartData }) => {
     );
 };
 
-// --- 2. COMPONENT: SUMMARY CARDS (Fix format tiền) ---
+// --- 2. COMPONENT: SUMMARY CARDS (Giữ nguyên) ---
 const SummaryGrid = ({ cards }: { cards: DashboardCards }) => {
-
-    // Thêm tham số isCurrency để ép kiểu hiển thị
     const renderCard = (title: string, metric: MetricItem, icon: React.ReactNode, bgIcon: string, isCurrency: boolean = false) => {
-        // Lấy giá trị ưu tiên: value -> count -> total -> 0
         const value = metric.value ?? metric.count ?? metric.total ?? 0;
         const growth = metric.growthPercent;
 
@@ -100,16 +128,13 @@ const SummaryGrid = ({ cards }: { cards: DashboardCards }) => {
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-100 flex flex-col justify-between">
                 <div className="flex justify-between items-start mb-4">
                     <span className="text-cyan-900 font-medium">{title}</span>
-                    <div className={`p-2 ${bgIcon} rounded-full`}>
-                        {icon}
-                    </div>
+                    <div className={`p-2 ${bgIcon} rounded-full`}>{icon}</div>
                 </div>
                 <div>
-                    {/* FIX: Logic hiển thị giá trị */}
                     <div className="text-2xl font-bold text-cyan-950 mb-1">
                         {isCurrency
-                            ? formatCurrency(value) // Nếu cờ isCurrency=true -> Luôn format tiền
-                            : (metric.count || metric.total) ? value : formatCurrency(value) // Mặc định cũ
+                            ? formatCurrency(value)
+                            : (metric.count || metric.total) ? value : formatCurrency(value)
                         }
                     </div>
                     {growth != null ? (
@@ -127,27 +152,24 @@ const SummaryGrid = ({ cards }: { cards: DashboardCards }) => {
             {renderCard("Lợi nhuận", cards.profit, <TrendingUp size={20} className="text-teal-600" />, "bg-teal-100", true)}
             {renderCard("Sản phẩm bán được", cards.itemsSold, <Package size={20} className="text-teal-600" />, "bg-emerald-100", false)}
             {renderCard("Số đơn hàng", cards.orders, <ShoppingBag size={20} className="text-blue-600" />, "bg-blue-100", false)}
-            {/* FIX: Thêm true để ép format VND cho Purchase Spend */}
             {renderCard("Tiền nhập hàng", cards.purchaseSpend, <DollarSign size={20} className="text-orange-600" />, "bg-orange-100", true)}
         </div>
     );
 };
 
-// --- 3. COMPONENT: RIGHT COLUMN CONTENT (Thêm bộ lọc Category) ---
+// --- 3. COMPONENT: RIGHT COLUMN CONTENT (Giữ nguyên) ---
 const RightColumnSection = ({
     chartData, topProducts, dateRange, onDateChange,
-    categoryIds, onCategoryChange // Nhận props mới
+    categoryIds, onCategoryChange
 }: {
     chartData: LineChartData, topProducts: TopProduct[],
     dateRange: any, onDateChange: any,
     categoryIds: string[], onCategoryChange: (ids: string[]) => void
 }) => {
 
-    // Gọi hook lấy danh mục
     const { data: categoriesData, isLoading: isLoadingCats } = useCategories();
-    const categories = categoriesData?.data || []; // Giả sử API trả về { data: [...] }
+    const categories = categoriesData?.data || [];
 
-    // Transform Data cho Recharts
     const data = useMemo(() => {
         if (!chartData?.labels) return [];
         return chartData.labels.map((label, index) => {
@@ -167,10 +189,7 @@ const RightColumnSection = ({
     return (
         <div className="bg-teal-600/10 p-6 rounded-[20px] space-y-6 h-full flex flex-col">
 
-            {/* Filters Toolbar */}
             <div className="flex flex-wrap gap-3 items-center justify-between">
-
-                {/* SELECT CATEGORY - THAY THẾ BUTTON TĨNH */}
                 <div className="flex-1 min-w-[200px]">
                     <Select
                         mode="multiple"
@@ -181,10 +200,9 @@ const RightColumnSection = ({
                         onChange={onCategoryChange}
                         loading={isLoadingCats}
                         options={categories.map((c: any) => ({ label: c.name, value: c.id }))}
-                        className="custom-select-teal" // Bạn có thể CSS thêm nếu muốn
+                        className="custom-select-teal"
                     />
                 </div>
-
                 <div className="bg-white border border-teal-600 rounded-lg px-2 py-0.5 shadow-sm flex items-center">
                     <RangePicker
                         value={dateRange}
@@ -198,13 +216,11 @@ const RightColumnSection = ({
                 </div>
             </div>
 
-            {/* Chart Container */}
             <div className="bg-white p-6 rounded-xl border border-zinc-100 shadow-sm flex-shrink-0">
                 <div className="mb-4">
                     <h3 className="text-3xl font-bold text-cyan-950">{formatCurrency(totalRevenue)}</h3>
                     <p className="text-neutral-500">Doanh thu theo thời gian</p>
                 </div>
-
                 <div className="w-full h-56">
                     <ResponsiveContainer width="100%" height="100%">
                         <AreaChart data={data} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
@@ -240,13 +256,10 @@ const RightColumnSection = ({
                 </div>
             </div>
 
-            {/* Top Products List */}
             <div className="bg-white p-6 rounded-xl flex-1 border border-zinc-100 shadow-sm overflow-hidden flex flex-col">
                 <h3 className="text-xl font-bold text-cyan-950 mb-4 flex-shrink-0">Các sản phẩm bán chạy:</h3>
-
                 <div className="overflow-y-auto custom-scrollbar flex-1 pr-2 space-y-4">
                     {topProducts.length === 0 && <div className="text-center text-gray-400 py-4">Chưa có dữ liệu</div>}
-
                     {topProducts.map((p, idx) => (
                         <div key={idx} className="flex items-center gap-4 pb-4 border-b border-gray-100 last:border-0 last:pb-0">
                             <img
@@ -266,7 +279,6 @@ const RightColumnSection = ({
                     ))}
                 </div>
             </div>
-
         </div>
     );
 };
@@ -276,14 +288,13 @@ type RangeValue = [Dayjs | null, Dayjs | null] | null;
 
 export const RevenueReportView = () => {
     const [dateRange, setDateRange] = useState<RangeValue>([dayjs().startOf('month'), dayjs()]);
-    const [categoryIds, setCategoryIds] = useState<string[]>([]); // State quản lý danh mục
+    const [categoryIds, setCategoryIds] = useState<string[]>([]);
 
     const queryParams = {
         from: dateRange?.[0]?.format('YYYY-MM-DD'),
         to: dateRange?.[1]?.format('YYYY-MM-DD'),
         period: 'day' as const,
         topN: 6,
-        // Truyền mảng categoryIds nếu có chọn
         categoryIds: categoryIds.length > 0 ? categoryIds : undefined
     };
 
@@ -296,7 +307,6 @@ export const RevenueReportView = () => {
     return (
         <div className="p-6 bg-[#f8fafc] min-h-screen font-['Inter']">
 
-            {/* Header */}
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-3xl font-bold text-cyan-950">Thống kê Doanh thu</h1>
                 <p className="text-cyan-950 opacity-70 hidden md:block text-sm">
@@ -304,23 +314,19 @@ export const RevenueReportView = () => {
                 </p>
             </div>
 
-            {/* Grid Layout */}
             <div className="grid grid-cols-12 gap-6 h-[calc(100vh-120px)]">
 
-                {/* LEFT COLUMN (Chiếm 5 phần) */}
                 <div className="col-span-12 xl:col-span-5 space-y-6 flex flex-col h-full overflow-hidden">
-                    {/* 1. Pie Chart - Chiếm 60% chiều cao của cột trái (ước lượng) */}
+                    {/* Chart & Legend đã được update logic "Còn lại" */}
                     <div className="flex-[1.2] min-h-0">
                         <PieChartSection data={data?.pie || { total: 0, items: [] }} />
                     </div>
 
-                    {/* 2. Cards Grid - Chiếm 40% */}
                     <div className="flex-1 min-h-0">
                         {data?.cards && <SummaryGrid cards={data.cards} />}
                     </div>
                 </div>
 
-                {/* RIGHT COLUMN (Chiếm 7 phần) */}
                 <div className="col-span-12 xl:col-span-7 h-full">
                     <RightColumnSection
                         chartData={data?.line || { labels: [], datasets: [] }}
