@@ -9,7 +9,7 @@ import {
   ApiOperation,
   ApiResponse,
   ApiTags,
-  ApiParam
+  ApiParam,
 } from '@nestjs/swagger';
 // Import thêm
 import { UpdateCustomerDto } from '@/common/dtos/customers';
@@ -19,7 +19,7 @@ import { Patch, Delete, Param, ParseUUIDPipe } from '@nestjs/common';
 @ApiTags('Khách hàng')
 @ApiBearerAuth()
 export class CustomersController {
-  constructor(private readonly customersService: CustomersService) { }
+  constructor(private readonly customersService: CustomersService) {}
 
   @ApiOperation({
     summary: 'Tạo mới khách hàng',
@@ -328,12 +328,17 @@ export class CustomersController {
     @Body() updateCustomerDto: UpdateCustomerDto,
     @BookStoreId() bookStoreId: string,
   ) {
-    return this.customersService.updateCustomer(id, updateCustomerDto, bookStoreId);
+    return this.customersService.updateCustomer(
+      id,
+      updateCustomerDto,
+      bookStoreId,
+    );
   }
 
   @ApiOperation({
     summary: 'Xóa khách hàng',
-    description: 'Chỉ OWNER mới có quyền xóa khách hàng (Ví dụ logic nghiệp vụ).',
+    description:
+      'Chỉ OWNER mới có quyền xóa khách hàng (Ví dụ logic nghiệp vụ).',
   })
   @ApiParam({
     name: 'id',

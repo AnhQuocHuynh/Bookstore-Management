@@ -30,7 +30,7 @@ import { Repository } from 'typeorm';
 
 @Injectable()
 export class DisplayService {
-  constructor(private readonly tenantService: TenantService) { }
+  constructor(private readonly tenantService: TenantService) {}
 
   async findDisplayShelfByField(
     field: keyof DisplayShelf,
@@ -148,7 +148,8 @@ export class DisplayService {
       // Trường hợp 2: Đang ẩn (Inactive) -> Hồi sinh lại (Update thành Active)
       existing.status = DisplayProductStatus.ACTIVE;
       existing.quantity = quantity;
-      existing.displayOrder = createDisplayProductDto.displayOrder ?? existing.displayOrder;
+      existing.displayOrder =
+        createDisplayProductDto.displayOrder ?? existing.displayOrder;
 
       newDisplayProduct = await displayProductRepo.save(existing);
     } else {
@@ -182,11 +183,12 @@ export class DisplayService {
       {
         displayProduct: newDisplayProduct,
         // [FIX LỖI TẠI ĐÂY]: Thêm "|| undefined" để convert null -> undefined
-        shelf: (await this.findDisplayShelfByField(
-          'id',
-          displayShelfId,
-          displayShelfRepo,
-        )) || undefined,
+        shelf:
+          (await this.findDisplayShelfByField(
+            'id',
+            displayShelfId,
+            displayShelfRepo,
+          )) || undefined,
         action: DisplayLogAction.ADD,
         employee,
         note: 'Thêm mới sản phẩm vào kệ trưng bày',
@@ -247,7 +249,7 @@ export class DisplayService {
 
     // Lọc bỏ các sản phẩm Inactive khỏi danh sách chi tiết kệ
     shelf.displayProducts = shelf.displayProducts.filter(
-      (dp) => dp.status === DisplayProductStatus.ACTIVE
+      (dp) => dp.status === DisplayProductStatus.ACTIVE,
     );
 
     return shelf;
@@ -933,7 +935,9 @@ export class DisplayService {
 
     // Check item tồn tại ở kệ đích (bao gồm cả Active)
     let targetDP = targetShelf.displayProducts.find(
-      (dp) => dp.product.id === displayProduct.product.id && dp.status === DisplayProductStatus.ACTIVE,
+      (dp) =>
+        dp.product.id === displayProduct.product.id &&
+        dp.status === DisplayProductStatus.ACTIVE,
     );
 
     // Nếu chưa thấy Active, tìm thử Inactive để Revive (Hồi sinh) cho clean

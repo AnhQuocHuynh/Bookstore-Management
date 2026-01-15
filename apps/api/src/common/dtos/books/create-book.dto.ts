@@ -45,8 +45,6 @@ export class CreateBookDto {
       message: 'Đường dẫn đến ảnh bìa không hợp lệ.',
     },
   )
-
-
   @ApiPropertyOptional({
     description: 'Ngày phát hành',
     example: '2023-05-01',
