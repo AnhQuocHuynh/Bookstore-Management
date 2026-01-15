@@ -22,9 +22,18 @@ import { ProtectedRoute } from "./ProtectedRoute";
 import { PublicRoute } from "./PublicRoute";
 import { TokenProtectedRoute } from "./TokenProtectedRoute";
 import RevenuePage from "@/features/reports/pages/RevenuePage";
-import EmployeePerformancePage from "@/features/reports/pages/EmployeePerformancePage";
 import { CategoriesPage } from "@/features/categories/components/CategoriesPage";
 import { PublishersPage } from "@/features/publishers/components/PublishersPage";
+import { AuthorsPage } from "@/features/authors/components/AuthorsPage";
+import { CreatePurchaseOrderPage } from "@/features/purchase-orders/components/CreatePurchaseOrderPage";
+import { PurchaseOrderListPage } from "@/features/purchase-orders/components/PurchaseOrderListPage";
+import { DisplayPage } from "@/features/display/components/DisplayPage";
+import { ShelvesView } from "@/features/display/components/ShelvesView";
+import { DisplayProductsView } from "@/features/display/components/DisplayProductsView";
+import { DisplayLogsView } from "@/features/display/components/DisplayLogsView";
+import { RevenueReportView } from "@/features/reports/components/RevenueReportView";
+import { StockReportView } from "@/features/reports/components/StockReportView";
+import { EmployeeReportView } from "@/features/reports/components/EmployeeReportView";
 
 // Select Store Page (Semi-protected: requires token but no store)
 // const SelectStorePage = () => (
@@ -148,6 +157,14 @@ export const AppRoutes = () => {
           }
         />
         <Route
+          path="/dashboard/authors"
+          element={
+            <MainLayout>
+              <AuthorsPage />
+            </MainLayout>
+          }
+        />
+        <Route
           path="/dashboard/publishers"
           element={
             <MainLayout>
@@ -190,21 +207,51 @@ export const AppRoutes = () => {
         <Route
           path="/reports/revenue" element={
             <MainLayout>
-              <RevenuePage />
+              <RevenueReportView />
             </MainLayout>} />
+
+        <Route
+          path="/reports/stocks"
+          element={
+            <MainLayout>
+              <StockReportView />
+            </MainLayout>
+          }
+        />
+
+        <Route
+          path="/reports/employees"
+          element={
+            <MainLayout>
+              <EmployeeReportView />
+            </MainLayout>
+          }
+        />
+
       </Route>
 
-      <Route
-        path="/reports/employees"
+
+
+
+      <Route path="/purchase-orders/create"
         element={
           <MainLayout>
-            <EmployeePerformancePage />
+            <CreatePurchaseOrderPage />
           </MainLayout>
         }
       />
+      <Route path="purchase-orders/list" element={<MainLayout><PurchaseOrderListPage /></MainLayout>} />
+
+      <Route path="dashboard/products/display/list" element={<MainLayout><ShelvesView /></MainLayout>} />
+
+      <Route path="dashboard/products/display/filter" element={<MainLayout><DisplayProductsView /></MainLayout>} />
+      <Route path="dashboard/products/display/history" element={<MainLayout><DisplayLogsView /></MainLayout>} />
+
 
       {/* 404 - Redirect to login */}
       <Route path="*" element={<Navigate to="/auth/login" replace />} />
+
+
     </Routes>
   );
 };

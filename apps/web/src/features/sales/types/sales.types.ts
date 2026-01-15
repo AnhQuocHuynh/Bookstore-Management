@@ -1,5 +1,6 @@
 // src/features/sales/types/sales.types.ts
 
+// --- Common Types ---
 export interface ProductDetail {
     id: string;
     sku: string;
@@ -12,63 +13,69 @@ export interface TransactionDetail {
     id: string;
     quantity: number;
     unitPrice: number;
-    discount: number;
     totalPrice: number;
     productName: string;
     product: ProductDetail;
-    note?: string; // Giả sử có thể có ghi chú trong chi tiết
 }
 
 export interface Cashier {
     id: string;
     fullName: string;
-    employeeCode: string;
 }
 
 export interface Transaction {
     id: string;
     cashier: Cashier;
     details: TransactionDetail[];
-    totalAmount: number;     // Tổng tiền hàng
-    discountAmount: number;  // Tổng giảm giá
+    totalAmount: number;
     taxAmount: number;
-    finalAmount: number;     // Khách cần trả
-    paymentMethod: string | null; // "bank_transfer", "cash", v.v.
-    note: string;
+    finalAmount: number;
+    paymentMethod: string;
     isCompleted: boolean;
-    completedAt: string | null;
     createdAt: string;
-    updatedAt: string;
 }
 
-// Params để lọc
 export interface TransactionParams {
     from?: string;
     to?: string;
 }
 
-// Thêm các type mới cho việc tạo transaction
+// --- DTOs cho POS (Create & Calculate) ---
+
 export interface CreateTransactionDetailDto {
     productId: string;
     quantity: number;
-    unitPrice: number;
+    unitPrice?: number; // Optional, nếu không gửi backend tự lấy giá hiện tại
 }
 
+// DTO gửi đi để tính toán (Pre-check)
+export interface CalculateTransactionDto {
+    createTransactionDetailDtos: CreateTransactionDetailDto[];
+}
+
+// Kết quả trả về từ API tính toán
+export interface CalculationResponse {
+    totalAmount: number; // Tổng tiền hàng
+    taxAmount: number;   // Tổng thuế
+    finalAmount: number; // Khách cần trả
+}
+
+// DTO tạo đơn hàng chính thức
 export interface CreateTransactionDto {
     createTransactionDetailDtos: CreateTransactionDetailDto[];
+    customerId?: string; // ID khách hàng (nếu có)
+    totalAmount: number;
+    taxAmount: number;
+    finalAmount: number;
+    paidAmount: number;  // Khách đưa
+    changeAmount: number; // Tiền thừa
+    paymentMethod: "cash" | "card" | "bank_transfer" | "e_wallet";
     note?: string;
-    paidAmount: number;
-    changeAmount: number;
 }
 
 export interface TransactionResponse {
     id: string;
-    details: any[]; // Bạn có thể định nghĩa chi tiết hơn nếu cần
-    totalAmount: number;
     finalAmount: number;
-    paidAmount: number;
-    changeAmount: number;
-    note: string;
     isCompleted: boolean;
     createdAt: string;
 }

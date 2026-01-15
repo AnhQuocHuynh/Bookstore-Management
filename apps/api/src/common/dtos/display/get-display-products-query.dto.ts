@@ -1,4 +1,3 @@
-import { IsNonEmptyString } from '@/common/decorators';
 import { DisplayProductStatus } from '@/common/enums';
 import { TransformToDate } from '@/common/transformers';
 import { ApiPropertyOptional } from '@nestjs/swagger';
@@ -8,6 +7,7 @@ import {
   IsInt,
   IsOptional,
   IsPositive,
+  IsString,
   IsUUID,
 } from 'class-validator';
 
@@ -27,8 +27,8 @@ export class GetDisplayProductsQueryDto {
     example: 'Kệ 1',
   })
   @IsOptional()
-  @IsNonEmptyString({
-    message: 'Tên kệ trưng bày không hợp lệ',
+  @IsString({
+    message: 'Tên kệ trưng bày phải là chuỗi',
   })
   displayShelfName?: string;
 
@@ -43,11 +43,11 @@ export class GetDisplayProductsQueryDto {
   productId?: string;
 
   @ApiPropertyOptional({
-    description: 'Tên sản phẩm',
+    description: 'Tên sản phẩm hoặc SKU',
     example: 'Sản phẩm 1',
   })
   @IsOptional()
-  @IsNonEmptyString({
+  @IsString({
     message: 'Tên sản phẩm không hợp lệ',
   })
   productName?: string;
@@ -145,7 +145,7 @@ export class GetDisplayProductsQueryDto {
     example: 'createdAt.asc',
   })
   @IsOptional()
-  @IsNonEmptyString({
+  @IsString({
     message: 'Thứ tự sắp xếp không hợp lệ',
   })
   sort?: string;

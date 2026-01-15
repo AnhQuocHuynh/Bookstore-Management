@@ -1,7 +1,13 @@
 import { IsNonEmptyString } from '@/common/decorators';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
-import { IsBoolean, IsNumber, IsOptional, IsPositive, IsUrl } from 'class-validator';
+import {
+  IsBoolean,
+  IsNumber,
+  IsOptional,
+  IsPositive,
+  IsUrl,
+} from 'class-validator';
 
 export class UpdateProductDto {
   @ApiPropertyOptional({

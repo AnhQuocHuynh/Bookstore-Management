@@ -1,6 +1,15 @@
 import { TransformToDate } from '@/common/transformers';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsDate, IsEnum, IsInt, IsPositive, IsArray, IsString, Max } from 'class-validator';
+import {
+  IsOptional,
+  IsDate,
+  IsEnum,
+  IsInt,
+  IsPositive,
+  IsArray,
+  IsString,
+  Max,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export enum PeriodType {
@@ -41,7 +50,8 @@ export class GetRevenueDashboardQueryDto {
   period?: PeriodType;
 
   @ApiPropertyOptional({
-    description: 'Số lượng sản phẩm top cần lấy cho donut chart và top products list',
+    description:
+      'Số lượng sản phẩm top cần lấy cho donut chart và top products list',
     example: 6,
     default: 6,
     minimum: 1,
@@ -65,11 +75,11 @@ export class GetRevenueDashboardQueryDto {
   categoryIds?: string[];
 
   @ApiPropertyOptional({
-    description: 'Tìm kiếm sản phẩm theo tên hoặc SKU (cho donut chart và top products list)',
+    description:
+      'Tìm kiếm sản phẩm theo tên hoặc SKU (cho donut chart và top products list)',
     example: 'Tập 100',
   })
   @IsOptional()
   @IsString({ message: 'search phải là chuỗi' })
   search?: string;
 }
-
