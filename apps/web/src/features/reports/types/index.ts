@@ -119,3 +119,46 @@ export interface StockReportParams {
     salesPeriod?: 'day' | 'week' | 'month';
     importPeriod?: 'day' | 'week' | 'month';
 }
+
+// --- EMPLOYEE REPORT TYPES ---
+
+export interface EmployeePieItem {
+    employeeId: string;
+    employeeName: string;
+    avatarUrl?: string;
+    value: number;   // Số lượng đơn hàng
+    percent: number; // % đóng góp
+}
+
+export interface EmployeeBarData {
+    labels: string[];
+    values: number[];
+}
+
+export interface EmployeeTableItem {
+    transactionId: string;
+    occurredAt: string;
+    employeeId: string;
+    employeeName: string;
+    totalAmount: number;
+    currency: string;
+}
+
+export interface EmployeeReportResponse {
+    meta: { generatedAt: string; lastDataAt: string };
+    pie: { total: number; items: EmployeePieItem[] };
+    bar: EmployeeBarData;
+    table: {
+        total: number;
+        page: number;
+        limit: number;
+        items: EmployeeTableItem[];
+    };
+}
+
+export interface EmployeeReportParams {
+    from?: string;
+    to?: string;
+    page?: number;
+    limit?: number;
+}

@@ -33,6 +33,7 @@ import { DisplayProductsView } from "@/features/display/components/DisplayProduc
 import { DisplayLogsView } from "@/features/display/components/DisplayLogsView";
 import { RevenueReportView } from "@/features/reports/components/RevenueReportView";
 import { StockReportView } from "@/features/reports/components/StockReportView";
+import { EmployeeReportView } from "@/features/reports/components/EmployeeReportView";
 
 // Select Store Page (Semi-protected: requires token but no store)
 // const SelectStorePage = () => (
@@ -214,6 +215,15 @@ export const AppRoutes = () => {
           element={
             <MainLayout>
               <StockReportView />
+            </MainLayout>
+          }
+        />
+
+        <Route
+          path="/reports/employees"
+          element={
+            <MainLayout>
+              <EmployeeReportView />
             </MainLayout>
           }
         />

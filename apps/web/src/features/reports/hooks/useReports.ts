@@ -1,6 +1,6 @@
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { reportApi } from "../api/report.api";
-import { RevenueReportParams, StockReportParams } from "../types";
+import { EmployeeReportParams, RevenueReportParams, StockReportParams } from "../types";
 
 export const useRevenueReport = (params: RevenueReportParams) => {
     // Clean params: Loại bỏ undefined/null
@@ -29,5 +29,18 @@ export const useStockReport = (params: StockReportParams) => {
         placeholderData: keepPreviousData,
 
         staleTime: 1000 * 60 * 2,
+    });
+};
+
+export const useEmployeeReport = (params: EmployeeReportParams) => {
+    const cleanParams = Object.fromEntries(
+        Object.entries(params).filter(([_, v]) => v != null && v !== "")
+    );
+
+    return useQuery({
+        queryKey: ["employee-report", cleanParams],
+        queryFn: () => reportApi.getEmployeeDashboard(cleanParams),
+        placeholderData: keepPreviousData,
+        staleTime: 1000 * 60 * 5,
     });
 };
