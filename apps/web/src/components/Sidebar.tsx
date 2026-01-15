@@ -72,7 +72,7 @@ const menuItems: MenuItem[] = [
     icon: "pie_chart",
     children: [
       { path: "/reports/revenue", label: "Doanh thu" },
-      { path: "/reports/inventories", label: "Tồn kho" },
+      { path: "/reports/stocks", label: "Tồn kho" },
       { path: "/reports/employees", label: "Nhân viên" },
     ],
   },
@@ -87,8 +87,8 @@ const Sidebar = ({ onItemClick }: SidebarProps) => {
 
   // Toggle menu mở/đóng
   const toggleMenu = (path: string) => {
-    setOpenMenus((prev) => 
-      prev.includes(path) 
+    setOpenMenus((prev) =>
+      prev.includes(path)
         ? prev.filter((p) => p !== path) // Đóng
         : [...prev, path] // Mở (cho phép mở nhiều menu cùng lúc)
     );
@@ -98,7 +98,7 @@ const Sidebar = ({ onItemClick }: SidebarProps) => {
   const renderMenuItem = (item: MenuItem, level: number = 0) => {
     const hasChildren = item.children && item.children.length > 0;
     const isOpen = openMenus.includes(item.path);
-    
+
     // Tính toán padding dựa trên cấp độ (Level 0: 16px, Level 1: 32px, Level 2: 48px...)
     // padding-left: 1rem (16px) + level * 1rem
     const paddingLeftClass = level === 0 ? "px-4" : level === 1 ? "pl-8 pr-4" : "pl-12 pr-4";
