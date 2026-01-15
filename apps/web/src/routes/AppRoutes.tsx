@@ -173,10 +173,10 @@ export const AppRoutes = () => {
           }
         />
         <Route
-          path="/employees"
+          path="/dashboard/employees/list"
           element={
             <MainLayout>
-              <EmployeesPage />
+              <EmployeeListPage />
             </MainLayout>
           }
         />
@@ -245,6 +245,7 @@ export const AppRoutes = () => {
       <Route path="dashboard/products/display/list" element={<MainLayout><ShelvesView /></MainLayout>} />
 
       <Route path="dashboard/products/display/filter" element={<MainLayout><DisplayProductsView /></MainLayout>} />
+
       <Route path="dashboard/products/display/history" element={<MainLayout><DisplayLogsView /></MainLayout>} />
 
 

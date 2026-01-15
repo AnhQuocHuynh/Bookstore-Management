@@ -137,7 +137,7 @@ export const SalesListPage = () => {
     };
 
     return (
-        <div className="flex flex-col h-[calc(100vh-100px)] gap-4 p-2 bg-slate-50 font-['Inter'] overflow-hidden">
+        <div className="relative w-full h-full overflow-hidden flex flex-col font-['Inter']">
             <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 5px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
@@ -145,93 +145,94 @@ export const SalesListPage = () => {
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
       `}</style>
 
-            {/* Header & Filter Bar */}
-            <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-1 flex-shrink-0">
-                <div>
-                    <h1 className="text-2xl font-bold text-cyan-950">Danh sách giao dịch</h1>
-                    <p className="text-gray-500 text-sm">Quản lý lịch sử bán hàng</p>
-                </div>
+            {/* --- Header --- */}
+            <div className="flex-shrink-0 px-6 pt-3 pb-2">
+                <div className="flex flex-col gap-4">
+                    <div className="flex flex-wrap items-center justify-between gap-4">
+                        <h1 className="font-bold text-[#102e3c] text-2xl sm:text-3xl lg:text-4xl">Danh sách giao dịch</h1>
+                    </div>
 
-                {/* THANH CÔNG CỤ LỌC */}
-                <div className="flex flex-col sm:flex-row items-center gap-3 w-full xl:w-auto">
-
-                    {/* 1. Date Inputs & Picker (Nhập tay + Chọn lịch) */}
-                    <div className="flex items-center gap-2 bg-white border border-teal-600/30 rounded-md px-2 h-10 shadow-sm w-full sm:w-auto">
-                        <div className="flex items-center gap-1">
-                            <span className="text-xs text-gray-400 font-medium">Từ:</span>
-                            <Input
-                                value={fromDateInput}
-                                onChange={(e) => handleDateInputChange('from', e.target.value)}
-                                placeholder="dd/MM/yyyy"
-                                className="w-24 h-8 border-none shadow-none focus-visible:ring-0 p-0 text-sm text-center placeholder:text-gray-300"
-                                maxLength={10}
-                            />
-                        </div>
-                        <div className="w-[1px] h-4 bg-gray-200"></div>
-                        <div className="flex items-center gap-1">
-                            <span className="text-xs text-gray-400 font-medium">Đến:</span>
-                            <Input
-                                value={toDateInput}
-                                onChange={(e) => handleDateInputChange('to', e.target.value)}
-                                placeholder="dd/MM/yyyy"
-                                className="w-24 h-8 border-none shadow-none focus-visible:ring-0 p-0 text-sm text-center placeholder:text-gray-300"
-                                maxLength={10}
-                            />
-                        </div>
-
-                        {/* Nút mở lịch */}
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8 text-teal-600 hover:text-teal-700 hover:bg-teal-50 ml-1"
-                                >
-                                    <CalendarIcon className="h-4 w-4" />
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="end">
-                                <Calendar
-                                    initialFocus
-                                    mode="range"
-                                    defaultMonth={date?.from}
-                                    selected={date}
-                                    onSelect={setDate}
-                                    numberOfMonths={2}
-                                    locale={vi}
+                    {/* --- Filter Bar --- */}
+                    <div className="flex flex-wrap items-center gap-3 mt-2 bg-white p-3 rounded-xl border border-[#102e3c]/10 shadow-sm">
+                        {/* 1. Date Inputs & Picker (Nhập tay + Chọn lịch) */}
+                        <div className="flex items-center gap-2 border border-teal-600/30 rounded-md px-2 h-10">
+                            <div className="flex items-center gap-1">
+                                <span className="text-xs text-gray-400 font-medium">Từ:</span>
+                                <Input
+                                    value={fromDateInput}
+                                    onChange={(e) => handleDateInputChange('from', e.target.value)}
+                                    placeholder="dd/MM/yyyy"
+                                    className="w-24 h-8 border-none shadow-none focus-visible:ring-0 p-0 text-sm text-center placeholder:text-gray-300"
+                                    maxLength={10}
                                 />
-                            </PopoverContent>
-                        </Popover>
-                    </div>
+                            </div>
+                            <div className="w-[1px] h-4 bg-gray-200"></div>
+                            <div className="flex items-center gap-1">
+                                <span className="text-xs text-gray-400 font-medium">Đến:</span>
+                                <Input
+                                    value={toDateInput}
+                                    onChange={(e) => handleDateInputChange('to', e.target.value)}
+                                    placeholder="dd/MM/yyyy"
+                                    className="w-24 h-8 border-none shadow-none focus-visible:ring-0 p-0 text-sm text-center placeholder:text-gray-300"
+                                    maxLength={10}
+                                />
+                            </div>
 
-                    {/* 2. Search Bar */}
-                    <div className="relative flex-1 w-full sm:w-64 h-10">
-                        <div className="absolute left-0 top-0 bottom-0 w-10 flex items-center justify-center text-gray-400 pointer-events-none">
-                            <Search className="w-4 h-4" />
+                            {/* Nút mở lịch */}
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 text-teal-600 hover:text-teal-700 hover:bg-teal-50 ml-1"
+                                    >
+                                        <CalendarIcon className="h-4 w-4" />
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="end">
+                                    <Calendar
+                                        initialFocus
+                                        mode="range"
+                                        defaultMonth={date?.from}
+                                        selected={date}
+                                        onSelect={setDate}
+                                        numberOfMonths={2}
+                                        locale={vi}
+                                    />
+                                </PopoverContent>
+                            </Popover>
                         </div>
-                        <Input
-                            placeholder="Tìm theo mã đơn, nhân viên..."
-                            className="pl-10 h-full bg-white border-teal-600/30 focus-visible:ring-teal-600 text-sm"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </div>
 
-                    {/* 3. Reset Button */}
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        className="border-dashed border-gray-300 text-gray-500 hover:bg-gray-100 h-10 hidden sm:flex"
-                        onClick={handleResetFilter}
-                        title="Xóa bộ lọc"
-                    >
-                        <X className="w-4 h-4 mr-1" /> Xóa lọc
-                    </Button>
+                        {/* 2. Search Bar */}
+                        <div className="relative flex-1 w-full sm:w-64 h-10">
+                            <div className="absolute left-0 top-0 bottom-0 w-10 flex items-center justify-center text-gray-400 pointer-events-none">
+                                <Search className="w-4 h-4" />
+                            </div>
+                            <Input
+                                placeholder="Tìm theo mã đơn, nhân viên..."
+                                className="pl-10 h-full rounded-lg border-teal-600/30 hover:border-teal-600 focus:border-teal-600 focus-visible:ring-teal-600 text-sm"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+
+                        {/* 3. Reset Button */}
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="border-dashed border-gray-300 text-gray-500 hover:bg-gray-100 h-10 hidden sm:flex"
+                            onClick={handleResetFilter}
+                            title="Xóa bộ lọc"
+                        >
+                            <X className="w-4 h-4 mr-1" /> Xóa lọc
+                        </Button>
+                    </div>
                 </div>
             </div>
 
-            {/* MAIN CONTENT AREA */}
-            <div className="flex flex-row gap-4 flex-1 min-h-0 relative w-full">
+            {/* --- Main Content --- */}
+            <main className="flex-1 px-6 pb-6 overflow-hidden mt-4 relative">
+                <div className="flex flex-row gap-4 h-full min-h-0 relative w-full">
 
                 {/* --- LEFT: TRANSACTION LIST TABLE --- */}
                 <div className="flex-1 bg-white rounded-[20px] shadow-sm border border-cyan-950/20 overflow-hidden flex flex-col transition-all duration-300 ease-in-out min-w-0">
@@ -444,9 +445,10 @@ export const SalesListPage = () => {
                                 </div>
                             </div>
                         </div>
-                    )}
+                    )}  
                 </div>
             </div>
+        </main>
         </div>
     );
 };

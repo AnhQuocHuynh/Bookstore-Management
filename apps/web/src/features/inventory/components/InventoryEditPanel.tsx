@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Modal, Form, Input, InputNumber, Button, message, Spin, Switch, Tag } from "antd";
+import { Modal, Form, Input, InputNumber, Select, Button, message, Spin } from "antd";
 import { InventoryFormData } from "../types";
 import { uploadApi } from "@/api/upload";
 
@@ -21,24 +21,32 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
   const [rawFile, setRawFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
+  const [isBookType, setIsBookType] = useState<boolean>(false);
 
   useEffect(() => {
     if (isOpen && initialData) {
-      console.log("Dữ liệu nhận được:", initialData.isActive); // Debug log
-
       form.setFieldsValue({
-        sku: initialData.sku,
         name: initialData.name,
+        purchasePrice: initialData.purchasePrice,
         sellingPrice: initialData.sellingPrice,
+        stock: initialData.stock,
+        category: initialData.category,
+        supplier: initialData.supplier,
         description: initialData.description,
-        isActive: initialData.isActive, // Binding dữ liệu
+        author: initialData.author,
+        publisher: initialData.publisher,
+        releaseYear: initialData.releaseYear,
+        releaseVersion: initialData.releaseVersion,
+        language: initialData.language,
       });
       setImageUrl(initialData.image || "");
+      setIsBookType(initialData.type === "book");
       setRawFile(null);
       setIsDirty(false);
     } else if (!isOpen) {
       form.resetFields();
       setImageUrl("");
+      setIsBookType(false);
       setRawFile(null);
       setIsDirty(false);
     }
@@ -61,7 +69,8 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
     const file = e.target.files?.[0];
     if (file) {
       setRawFile(file);
-      setImageUrl(URL.createObjectURL(file));
+      const previewUrl = URL.createObjectURL(file);
+      setImageUrl(previewUrl);
       setIsDirty(true);
     }
   };
@@ -75,8 +84,8 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
       if (rawFile) {
         try {
           finalImageUrl = await uploadApi.uploadFile(rawFile);
-        } catch {
-          message.error("Upload ảnh thất bại");
+        } catch (error) {
+          message.error("Upload ảnh thất bại. Vui lòng thử lại.");
           setIsUploading(false);
           return;
         }
@@ -84,14 +93,15 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
 
       const formData = {
         ...values,
-        image: finalImageUrl
+        image: finalImageUrl,
       };
 
       onSubmit(formData as InventoryFormData);
 
       setIsDirty(false);
       setRawFile(null);
-    } catch {
+      message.success("Hàng hóa đã được cập nhật thành công");
+    } catch (error) {
       message.error("Vui lòng kiểm tra lại thông tin");
     } finally {
       setIsUploading(false);
@@ -102,10 +112,10 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
     <Modal
       open={isOpen}
       onCancel={handleClose}
-      width={900}
+      width={1200}
       centered
       footer={null}
-      destroyOnClose={true} // AntD mới có thể yêu cầu destroyOnHidden, nhưng destroyOnClose vẫn phổ biến. Nếu warning vẫn còn, hãy đổi thành destroyOnHidden={true}
+      destroyOnClose={true}
       closeIcon={<span className="text-3xl text-[#102e3c] cursor-pointer hover:opacity-70">×</span>}
       styles={{
         body: { backgroundColor: "#D4E5E4", padding: 0 },
@@ -116,106 +126,101 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
       <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "#D4E5E4", borderRadius: 12, zIndex: 0 }} />
 
       <div className="bg-[#D4E5E4] rounded-xl p-8 relative" style={{ zIndex: 1 }}>
-        <h2 className="text-center text-3xl font-bold text-[#102e3c] mb-8">Cập Nhật Sản Phẩm</h2>
+        <h2 className="text-center text-3xl font-bold text-[#102e3c] mb-8">Cập Nhật Hàng hóa</h2>
 
-        <div className="flex gap-8">
-          {/* Cột Trái: Ảnh */}
-          <div className="flex-shrink-0 w-[280px] flex flex-col items-center">
-            <div className="relative w-64 h-64 bg-white rounded-2xl border-2 border-[#102e3c] flex items-center justify-center overflow-hidden group cursor-pointer hover:border-[#1a998f] transition-colors shadow-sm">
+        <div className="flex gap-8 justify-center">
+          {/* Image Upload Area */}
+          <div className="flex-shrink-0 w-[320px] flex flex-col items-center">
+            <div className="relative w-80 h-80 bg-black rounded-2xl border-2 border-[#102e3c] flex items-center justify-center overflow-hidden group cursor-pointer hover:border-[#1a998f] transition-colors">
               {imageUrl ? (
                 <img src={imageUrl} alt="Preview" className="w-full h-full object-cover" />
               ) : (
-                <div className="text-center text-gray-400">
-                  <span className="block text-4xl mb-2">+</span>
-                  <span>Tải ảnh lên</span>
-                </div>
+                <svg className="w-20 h-20 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" /></svg>
               )}
               <input type="file" accept="image/*" onChange={handleImageChange} className="absolute inset-0 opacity-0 cursor-pointer" />
-              {isUploading && <div className="absolute inset-0 bg-black/50 flex items-center justify-center"><Spin /></div>}
+
+              {/* Loading overlay khi đang upload */}
+              {isUploading && (
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
+                  <Spin size="large" />
+                </div>
+              )}
             </div>
-            <p className="text-center text-sm text-[#102e3c] mt-3 italic">Nhấn vào ảnh để thay đổi</p>
+            <p className="text-center text-sm text-[#102e3c] mt-4">Chọn ảnh cho Hàng hóa (320 × 320)</p>
           </div>
 
-          {/* Cột Phải: Form */}
           <div className="flex-1">
-            {/* QUAN TRỌNG: Thêm prop form={form} vào đây để sửa lỗi Warning "not connected" */}
-            <Form
-              form={form}
-              layout="vertical"
-              requiredMark={false}
-              className="space-y-3"
-              onValuesChange={() => setIsDirty(true)}
-            >
-
-              <div className="grid grid-cols-3 gap-4">
-                <Form.Item name="sku" label={<span className="font-semibold text-[#102e3c]">Mã SKU</span>} className="col-span-1">
-                  <Input disabled className="bg-gray-100 border-[#102e3c] text-[#102e3c] font-medium" />
-                </Form.Item>
-                <Form.Item name="name" label={<span className="font-semibold text-[#102e3c]">Tên Sản Phẩm</span>} className="col-span-2" rules={[{ required: true }]}>
-                  <Input className="border-[#102e3c] focus:border-[#1a998f]" />
-                </Form.Item>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 items-end">
-                <Form.Item name="sellingPrice" label={<span className="font-semibold text-[#102e3c]">Giá Bán (VNĐ)</span>} rules={[{ required: true }]}>
-                  <InputNumber<number>
-                    min={0}
-                    className="w-full border-[#102e3c]"
-                    formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                    parser={(value) => {
-                      const parsed = value?.replace(/\$\s?|(,*)/g, '');
-                      return parsed ? Number(parsed) : 0;
-                    }}
-                  />
-                </Form.Item>
-
-                {/* --- FIX LỖI SWITCH KHÔNG BẬT --- */}
-                <div className="flex flex-col gap-2 mb-6">
-                  <span className="font-semibold text-[#102e3c]">Trạng thái kinh doanh:</span>
-                  <div className="flex items-center gap-3">
-                    {/* Form.Item phải bao bọc trực tiếp Switch, không được qua thẻ div trung gian */}
-                    <Form.Item name="isActive" valuePropName="checked" noStyle>
-                      <Switch />
-                    </Form.Item>
-
-                    {/* Dùng Form.Item noStyle để lắng nghe thay đổi và hiển thị Tag */}
-                    <Form.Item noStyle shouldUpdate={(prev, curr) => prev.isActive !== curr.isActive}>
-                      {({ getFieldValue }) =>
-                        getFieldValue("isActive") ? (
-                          <Tag color="success">Đang bán</Tag>
-                        ) : (
-                          <Tag color="error">Ngừng kinh doanh</Tag>
-                        )
-                      }
-                    </Form.Item>
-                  </div>
-                </div>
-                {/* --------------------------------- */}
-
-              </div>
-
-              <Form.Item name="description" label={<span className="font-semibold text-[#102e3c]">Mô Tả Chi Tiết</span>}>
-                <Input.TextArea rows={4} className="border-[#102e3c] rounded-lg" />
+            <Form form={form} layout="vertical" requiredMark={false} className="space-y-4" onValuesChange={() => setIsDirty(true)}>
+              <Form.Item name="name" label={<span className="text-lg font-semibold text-[#102e3c]">Tên Sản Phẩm:</span>} rules={[{ required: true, message: "Vui lòng nhập tên" }]}>
+                <Input className="border-0 border-b-2 border-[#102e3c] rounded-none bg-transparent text-lg px-0 focus:shadow-none hover:border-[#1a998f] focus:border-[#1a998f]" />
               </Form.Item>
 
-              <div className="bg-[#1a998f]/10 p-3 rounded-lg text-sm text-[#102e3c]">
-                <span className="font-bold">Lưu ý:</span> Để cập nhật <strong>Tồn kho</strong> hoặc <strong>Giá nhập</strong>, vui lòng sử dụng chức năng <strong>Nhập Kho</strong>.
+              <div className="grid grid-cols-2 gap-4">
+                <Form.Item name="purchasePrice" label={<span className="text-lg font-semibold text-[#102e3c]">Giá nhập:</span>} rules={[{ required: true }]}>
+                  <InputNumber min={0} controls={false} className="w-full border-0 border-b-2 border-[#102e3c] rounded-none bg-transparent text-lg px-0" />
+                </Form.Item>
+                <Form.Item name="sellingPrice" label={<span className="text-lg font-semibold text-[#102e3c]">Giá Bán:</span>} rules={[{ required: true }]}>
+                  <InputNumber min={0} controls={false} className="w-full border-0 border-b-2 border-[#102e3c] rounded-none bg-transparent text-lg px-0" />
+                </Form.Item>
               </div>
 
+              <div className="grid grid-cols-2 gap-4">
+                <Form.Item name="stock" label={<span className="text-lg font-semibold text-[#102e3c]">Tồn Kho:</span>} rules={[{ required: true }]}>
+                  <InputNumber min={0} controls={false} className="w-full border-0 border-b-2 border-[#102e3c] rounded-none bg-transparent text-lg px-0" />
+                </Form.Item>
+                <Form.Item name="category" label={<span className="text-lg font-semibold text-[#102e3c]">Loại:</span>}>
+                  <Select variant="borderless" style={{ fontSize: 18, borderBottom: "2px solid #102e3c" }} disabled>
+                    <Select.Option value="Sách">Sách</Select.Option>
+                    <Select.Option value="Văn phòng phẩm">Văn phòng phẩm</Select.Option>
+                  </Select>
+                </Form.Item>
+              </div>
+
+              <Form.Item name="supplier" label={<span className="text-lg font-semibold text-[#102e3c]">Nhà Cung Cấp:</span>}>
+                <Input variant="borderless" style={{ width: "100%", fontSize: 18, borderBottom: "2px solid #102e3c", padding: "4px 0", backgroundColor: "transparent" }} />
+              </Form.Item>
+
+              {isBookType && (
+                <>
+                  <Form.Item name="author" label={<span className="text-lg font-semibold text-[#102e3c]">Tác Giả:</span>}>
+                    <Input variant="borderless" style={{ width: "100%", fontSize: 18, borderBottom: "2px solid #102e3c", padding: "4px 0", backgroundColor: "transparent" }} />
+                  </Form.Item>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <Form.Item name="publisher" label={<span className="text-lg font-semibold text-[#102e3c]">Nhà Xuất Bản:</span>}>
+                      <Input variant="borderless" style={{ width: "100%", fontSize: 18, borderBottom: "2px solid #102e3c", padding: "4px 0", backgroundColor: "transparent" }} />
+                    </Form.Item>
+                    <Form.Item name="releaseYear" label={<span className="text-lg font-semibold text-[#102e3c]">Năm Xuất:</span>}>
+                      <Input variant="borderless" style={{ width: "100%", fontSize: 18, borderBottom: "2px solid #102e3c", padding: "4px 0", backgroundColor: "transparent" }} />
+                    </Form.Item>
+                  </div>
+
+                  <Form.Item name="releaseVersion" label={<span className="text-lg font-semibold text-[#102e3c]">Phiên Bản Phát Hành:</span>}>
+                    <Input variant="borderless" style={{ width: "100%", fontSize: 18, borderBottom: "2px solid #102e3c", padding: "4px 0", backgroundColor: "transparent" }} />
+                  </Form.Item>
+
+                  <Form.Item name="language" label={<span className="text-lg font-semibold text-[#102e3c]">Ngôn Ngữ:</span>}>
+                    <Input variant="borderless" style={{ width: "100%", fontSize: 18, borderBottom: "2px solid #102e3c", padding: "4px 0", backgroundColor: "transparent" }} />
+                  </Form.Item>
+                </>
+              )}
+
+              <Form.Item name="description" label={<span className="text-lg font-semibold text-[#102e3c]">Mô Tả:</span>}>
+                <Input.TextArea rows={3} className="border-2 border-[#102e3c] rounded-lg bg-transparent text-lg resize-none focus:border-[#1a998f] hover:border-[#1a998f]" />
+              </Form.Item>
             </Form>
           </div>
         </div>
 
-        <div className="flex justify-end mt-6 gap-3">
-          <Button onClick={onClose} className="h-10 px-6 rounded-xl border-[#102e3c] text-[#102e3c]">Hủy bỏ</Button>
+        <div className="flex justify-center mt-8">
           <Button
             type="primary"
             onClick={handleSubmit}
             loading={isUploading}
             disabled={isUploading}
-            className="h-10 px-8 rounded-xl bg-[#1a998f] font-bold border-none hover:bg-[#158f85]"
+            className="h-12 px-20 rounded-2xl bg-[#1a998f] text-2xl font-bold border-none hover:bg-[#158f85]"
           >
-            Lưu Thay Đổi
+            {isUploading ? "Đang xử lý..." : "Cập Nhật Hàng hóa"}
           </Button>
         </div>
       </div>
