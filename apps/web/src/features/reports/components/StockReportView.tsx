@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Table, Input, Select, Spin, Pagination, Empty } from "antd";
+import { Table, Input, Select, Spin, Pagination } from "antd";
 import {
     BarChart, Bar, XAxis, Tooltip as RechartsTooltip, ResponsiveContainer, CartesianGrid, Cell
 } from "recharts";
@@ -9,21 +9,21 @@ import { useStockReport } from "../hooks/useReports";
 import { useCategories } from "@/features/categories/hooks/useCategories";
 import { StockTableItem, StockChartData } from "../types";
 
-// --- HELPERS ---
+// --- HELPERS: Styles cho từng trạng thái hàng ---
 const getStatusRowClass = (status: string) => {
     switch (status) {
         case 'Lỗi tồn kho': return 'bg-red-50 text-red-600 hover:bg-red-100';
-        case 'Sắp hết hàng': return 'bg-orange-50 text-orange-700 hover:bg-orange-100 font-medium'; // Màu cam nhạt cảnh báo
-        case 'Dư hàng': return 'bg-emerald-50 text-cyan-950 hover:bg-emerald-100'; // Xanh ngọc nhạt giống mẫu
+        case 'Sắp hết hàng': return 'bg-orange-50 text-orange-700 hover:bg-orange-100 font-medium';
+        case 'Dư hàng': return 'bg-emerald-50 text-cyan-950 hover:bg-emerald-100';
         case 'Bình thường': default: return 'bg-white text-cyan-950 hover:bg-gray-50';
     }
 };
 
 // --- SUB COMPONENT: CHART CARD ---
 const ChartCard = ({
-    title, subtitle, data, barColor
+    title, data, barColor, emptyMessage
 }: {
-    title: string, subtitle: string, data?: StockChartData, barColor: string
+    title: string, data?: StockChartData, barColor: string, emptyMessage: string
 }) => {
     const chartData = data?.labels ? data.labels.map((lbl, i) => ({ name: lbl, value: data.values[i] || 0 })) : [];
 
@@ -31,11 +31,7 @@ const ChartCard = ({
         <div className="bg-white p-6 rounded-[20px] shadow-sm">
             <div className="flex justify-between items-center mb-6">
                 <h3 className="font-bold text-neutral-700 text-sm md:text-base">{title}</h3>
-                <div className="flex gap-2">
-                    <span className="text-xs font-bold border border-teal-600 px-2 py-1 rounded text-teal-600 bg-teal-50">
-                        {subtitle}
-                    </span>
-                </div>
+                {/* Đã xóa phần Badge thời gian ở đây theo yêu cầu */}
             </div>
 
             <div className="h-48 w-full">
@@ -62,9 +58,9 @@ const ChartCard = ({
                         </BarChart>
                     </ResponsiveContainer>
                 ) : (
-                    <div className="h-full flex items-center justify-center text-gray-400 text-sm flex-col">
+                    <div className="h-full flex items-center justify-center text-gray-400 text-sm flex-col text-center">
                         <Package size={32} className="mb-2 opacity-50" />
-                        Chọn sản phẩm để xem biểu đồ
+                        {emptyMessage}
                     </div>
                 )}
             </div>
@@ -82,9 +78,10 @@ export const StockReportView = () => {
     const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC'>("ASC");
     const [selectedProductId, setSelectedProductId] = useState<string | undefined>(undefined);
 
-    // Load Data
+    // Load Data Categories
     const { data: categoriesData, isLoading: catLoading } = useCategories();
 
+    // Load Report Data
     const { data, isLoading, isError } = useStockReport({
         page,
         limit: 10,
@@ -95,11 +92,12 @@ export const StockReportView = () => {
         productId: selectedProductId,
     });
 
+    // Safe Data Access
     const tableItems = data?.table?.items || [];
     const totalItems = data?.table?.total || 0;
     const lastSync = data?.meta?.lastDataAt;
 
-    // Table Columns Setup
+    // Cấu hình cột Table
     const columns = [
         {
             title: 'STT',
@@ -172,7 +170,7 @@ export const StockReportView = () => {
                 {/* --- LEFT COLUMN: TABLE (7 cols) --- */}
                 <div className="col-span-12 lg:col-span-7 bg-white rounded-[20px] shadow-sm overflow-hidden border border-gray-200 flex flex-col h-[calc(100vh-180px)]">
 
-                    {/* Custom Table Header Style */}
+                    {/* Custom Table Header CSS */}
                     <style>{`
             .custom-stock-table .ant-table-thead > tr > th {
               background: #0d9488 !important; /* Teal-600 */
@@ -185,9 +183,6 @@ export const StockReportView = () => {
             .custom-stock-table .ant-table-tbody > tr > td {
               border-bottom: 1px solid #f0f0f0;
               padding: 16px !important;
-            }
-            .custom-stock-table .ant-table-tbody > tr:last-child > td {
-              border-bottom: none;
             }
           `}</style>
 
@@ -203,7 +198,6 @@ export const StockReportView = () => {
                                     rowKey="productId"
                                     pagination={false}
                                     onChange={handleTableChange}
-                                    // --- LOGIC ROW COLORING ---
                                     rowClassName={(record) => `cursor-pointer transition-colors ${getStatusRowClass(record.status)} ${selectedProductId === record.productId ? 'ring-2 ring-inset ring-teal-500 z-10' : ''}`}
                                     onRow={(record) => ({ onClick: () => setSelectedProductId(record.productId) })}
                                 />
@@ -229,28 +223,25 @@ export const StockReportView = () => {
 
                     {/* FILTERS SECTION */}
                     <div className="flex flex-wrap gap-3 justify-end">
-                        {/* Search Input styled as rounded */}
                         <Input
                             prefix={<Search size={16} className="text-teal-700" />}
                             placeholder="Tìm SP..."
                             value={keyword}
                             onChange={e => { setKeyword(e.target.value); setPage(1); }}
-                            className="w-[150px] rounded-full border-2 border-teal-600 font-bold text-cyan-950 placeholder:text-teal-700/50 hover:border-teal-700 focus:border-teal-700 bg-white"
+                            className="w-[150px] rounded-full border-2 border-teal-600 font-bold text-cyan-950 placeholder:text-teal-700/50 bg-white"
                         />
 
-                        {/* Category Filter */}
                         <Select
                             placeholder="Lọc: Tất cả"
                             className="min-w-[160px] custom-rounded-select"
                             dropdownStyle={{ borderRadius: 12 }}
                             options={categoriesData?.data?.map((c: any) => ({ label: c.name, value: c.id }))}
-                            value={categoryIds.length > 0 ? categoryIds[0] : undefined} // Demo single select style for UI matching
+                            value={categoryIds.length > 0 ? categoryIds[0] : undefined}
                             onChange={(val) => { setCategoryIds(val ? [val] : []); setPage(1); }}
                             allowClear
                             suffixIcon={<ArrowUpDown size={14} className="text-teal-700" />}
                         />
 
-                        {/* Sort Order Button */}
                         <button
                             onClick={() => setSortOrder(prev => prev === 'ASC' ? 'DESC' : 'ASC')}
                             className="px-4 py-1.5 bg-white border-2 border-teal-600 rounded-full font-bold text-cyan-950 text-sm hover:bg-teal-50 flex items-center gap-2"
@@ -264,18 +255,22 @@ export const StockReportView = () => {
 
                         {/* Sales Chart */}
                         <ChartCard
-                            title={`Số lượng '${data?.salesChart?.productName || '...'}' bán được:`}
-                            subtitle="7 Ngày Trước"
+                            title={selectedProductId
+                                ? `Số lượng '${data?.salesChart?.productName || '...'}' bán được:`
+                                : "Số lượng Bán được"}
                             data={data?.salesChart}
-                            barColor="#0d9488" // teal-600
+                            barColor="#0d9488"
+                            emptyMessage="Chọn sản phẩm để xem biểu đồ bán hàng"
                         />
 
                         {/* Import Chart */}
                         <ChartCard
-                            title={`Số lượng '${data?.salesChart?.productName || '...'}' nhập về:`}
-                            subtitle="6 Tháng Trước"
+                            title={selectedProductId
+                                ? `Số lượng '${data?.salesChart?.productName || '...'}' nhập về:`
+                                : "Số lượng Nhập về"}
                             data={data?.importChart}
-                            barColor="#0d9488" // teal-600
+                            barColor="#0d9488"
+                            emptyMessage="Chọn sản phẩm để xem biểu đồ nhập kho"
                         />
 
                     </div>
@@ -283,24 +278,20 @@ export const StockReportView = () => {
 
             </div>
 
-            {/* CSS Override cho Select của Antd để giống nút bo tròn */}
+            {/* CSS Override cho Select của Antd */}
             <style>{`
         .custom-rounded-select .ant-select-selector {
-          border: 2px solid #0d9488 !important; /* teal-600 */
+          border: 2px solid #0d9488 !important; 
           border-radius: 9999px !important;
           background-color: white !important;
           font-weight: 700 !important;
-          color: #083344 !important; /* cyan-950 */
+          color: #083344 !important; 
           height: 38px !important;
           display: flex;
           align-items: center;
         }
-        .custom-rounded-select .ant-select-selection-placeholder {
-          color: #083344 !important;
-        }
-        .custom-rounded-select .ant-select-arrow {
-          color: #0d9488 !important;
-        }
+        .custom-rounded-select .ant-select-selection-placeholder { color: #083344 !important; }
+        .custom-rounded-select .ant-select-arrow { color: #0d9488 !important; }
       `}</style>
         </div>
     );
