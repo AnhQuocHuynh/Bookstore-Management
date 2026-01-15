@@ -42,7 +42,7 @@ const menuItems = [
     label: "Nhân viên",
     icon: "badge",
     children: [
-      { path: "/dashboard/employees/roles", label: "Thời gian biểu" },
+      { path: "/dashboard/employees/schedule", label: "Thời gian biểu" },
       { path: "/dashboard/employees/list", label: "Danh sách nhân viên" },
     ],
   },
