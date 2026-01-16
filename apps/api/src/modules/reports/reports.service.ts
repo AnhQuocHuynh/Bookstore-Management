@@ -1,28 +1,26 @@
 import {
   GetChartFinancialMetricsQueryDto,
+  GetEmployeesDashboardQueryDto,
   GetOverviewQueryDto,
   GetRevenueDashboardQueryDto,
-  GetEmployeesDashboardQueryDto,
   GetStockDashboardQueryDto,
   PeriodType,
 } from '@/common/dtos';
 import { ProductType, PurchaseStatus } from '@/common/enums';
-import { calculateGrowth, ItemsSold } from '@/common/utils';
+import { calculateGrowth } from '@/common/utils';
 import {
-  Transaction,
-  TransactionDetail,
-  PurchaseOrder,
-  PurchaseOrderDetail,
-  Product,
-  Category,
-  Employee,
   Inventory,
   InventoryLog,
+  Product,
+  PurchaseOrder,
+  PurchaseOrderDetail,
+  Transaction,
+  TransactionDetail,
 } from '@/database/tenant/entities';
 import { TenantService } from '@/tenants/tenant.service';
 import { Injectable } from '@nestjs/common';
 import { format, getISOWeek } from 'date-fns';
-import { In } from 'typeorm';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class ReportsService {
@@ -49,122 +47,54 @@ export class ReportsService {
       startDate = new Date(now.getFullYear(), now.getMonth(), 1);
     }
 
+    const timeDiff = endDate.getTime() - startDate.getTime();
+    const prevStartDate = new Date(startDate.getTime() - timeDiff);
+    const prevEndDate = new Date(endDate.getTime() - timeDiff);
+
     const transactionRepo = dataSource.getRepository(Transaction);
 
-    const transactions = await transactionRepo
-      .createQueryBuilder('t')
-      .leftJoinAndSelect('t.details', 'td')
-      .leftJoinAndSelect('td.product', 'p')
-      .where('t.isCompleted = :completed', { completed: true })
-      .andWhere('t.createdAt BETWEEN :start AND :end', {
-        start: startDate,
-        end: endDate,
-      })
-      .getMany();
+    const [currentTransactions, prevTransactions] = await Promise.all([
+      this.fetchTransactions(startDate, endDate, transactionRepo, productType),
+      this.fetchTransactions(
+        prevStartDate,
+        prevEndDate,
+        transactionRepo,
+        productType,
+      ),
+    ]);
 
-    const prevStartDate = new Date(startDate);
-    prevStartDate.setMonth(prevStartDate.getMonth() - 1);
-
-    const prevEndDate = new Date(endDate);
-    prevEndDate.setMonth(prevEndDate.getMonth() - 1);
-
-    const prevTransactions = await transactionRepo
-      .createQueryBuilder('t')
-      .leftJoinAndSelect('t.details', 'td')
-      .leftJoinAndSelect('td.product', 'p')
-      .where('t.isCompleted = :completed', { completed: true })
-      .andWhere('t.createdAt BETWEEN :start AND :end', {
-        start: prevStartDate,
-        end: prevEndDate,
-      })
-      .getMany();
-
-    const revenue = transactions.reduce((sum, t) => sum + t.finalAmount, 0);
-    const invoices = transactions.length;
-
-    const revenuePrev = prevTransactions.reduce(
-      (sum, t) => sum + t.finalAmount,
-      0,
-    );
-    const invoicesPrev = prevTransactions.length;
-
-    const itemsSold: ItemsSold = transactions.reduce<ItemsSold>(
-      (acc, t) => {
-        t.details.forEach((td) => {
-          if (productType && td.product.type !== productType) return;
-
-          acc.total += td.quantity;
-
-          switch (td.product.type) {
-            case ProductType.BOOK:
-              acc.breakdown[ProductType.BOOK] += td.quantity;
-              break;
-            case ProductType.STATIONERY:
-              acc.breakdown[ProductType.STATIONERY] += td.quantity;
-              break;
-            default:
-              acc.breakdown[ProductType.OTHER] += td.quantity;
-          }
-        });
-        return acc;
-      },
-      {
-        total: 0,
-        breakdown: {
-          [ProductType.BOOK]: 0,
-          [ProductType.STATIONERY]: 0,
-          [ProductType.OTHER]: 0,
-        },
-      },
-    );
-
-    const totalCost = transactions.reduce((sum, t) => {
-      return (
-        sum + t.details.reduce((detailSum, td) => detailSum + td.totalPrice, 0)
-      );
-    }, 0);
-
-    const totalCostPrev = prevTransactions.reduce((sum, t) => {
-      return (
-        sum + t.details.reduce((detailSum, td) => detailSum + td.totalPrice, 0)
-      );
-    }, 0);
-
-    const breakdownExpenses = {
-      purchase_cost: totalCost,
-      service_fee: 0,
-    };
-
-    const profit = revenue - totalCost;
-    const profitPrev = revenuePrev - totalCostPrev;
-
-    const revenueGrowth = calculateGrowth(revenue, revenuePrev);
-    const profitGrowth = calculateGrowth(profit, profitPrev);
-    const invoicesGrowth = calculateGrowth(invoices, invoicesPrev);
+    const current = this.calculateMetrics(currentTransactions);
+    const previous = this.calculateMetrics(prevTransactions);
 
     return {
       timestamp: new Date(),
+      range: {
+        current: { start: startDate, end: endDate },
+        previous: { start: prevStartDate, end: prevEndDate },
+      },
       overview: {
         profit: {
-          value: profit,
+          value: current.profit,
+          growth_percent: this.getGrowth(current.profit, previous.profit),
           currency: 'VND',
-          growth_percent: profitGrowth,
-          note: 'Lợi nhuận = Doanh thu - Giá vốn',
         },
         revenue: {
-          value: revenue,
+          value: current.revenue,
+          growth_percent: this.getGrowth(current.revenue, previous.revenue),
           currency: 'VND',
-          growth_percent: revenueGrowth,
         },
-        transactions: {
-          count: invoices,
-          growth_percent: invoicesGrowth,
-        },
-        items_sold: itemsSold,
-        expenses: {
-          total: totalCost,
+        purchase_cost: {
+          value: current.cost,
+          growth_percent: this.getGrowth(current.cost, previous.cost),
           currency: 'VND',
-          breakdown: breakdownExpenses,
+        },
+        service_fee: {
+          value: current.serviceFee,
+          growth_percent: this.getGrowth(
+            current.serviceFee,
+            previous.serviceFee,
+          ),
+          currency: 'VND',
         },
       },
     };
@@ -1190,4 +1120,53 @@ export class ReportsService {
 
     return response;
   }
+
+  private fetchTransactions = async (
+    start: Date,
+    end: Date,
+    repo: Repository<Transaction>,
+    productType?: ProductType,
+  ) => {
+    const query = repo
+      .createQueryBuilder('t')
+      .leftJoinAndSelect('t.details', 'td')
+      .leftJoinAndSelect('td.product', 'p')
+      .where('t.isCompleted = :completed', { completed: true })
+      .andWhere('t.createdAt BETWEEN :start AND :end', { start, end });
+
+    if (productType) {
+      query.andWhere('p.type = :productType', { productType });
+    }
+
+    return query.getMany();
+  };
+
+  private calculateMetrics = (transactions: Transaction[]) => {
+    const revenue = transactions.reduce(
+      (sum, t) => sum + (t.finalAmount || 0),
+      0,
+    );
+
+    const cost = transactions.reduce((sum, t) => {
+      return (
+        sum + t.details.reduce((dSum, td) => dSum + (td.totalPrice || 0), 0)
+      );
+    }, 0);
+
+    // const serviceFee = transactions.reduce(
+    //   (sum, t) => sum + (t.serviceFee || 0),
+    //   0,
+    // );
+
+    const serviceFee = transactions.reduce((sum, t) => sum + 0, 0);
+
+    const profit = revenue - cost - serviceFee;
+
+    return { revenue, cost, serviceFee, profit, count: transactions.length };
+  };
+
+  private getGrowth = (curr: number, prev: number) => {
+    if (prev === 0) return curr > 0 ? 100 : 0;
+    return parseFloat((((curr - prev) / prev) * 100).toFixed(2));
+  };
 }
