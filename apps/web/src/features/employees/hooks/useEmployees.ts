@@ -33,7 +33,6 @@ export const useCreateEmployee = () => {
 // --- Hook Cập nhật ---
 export const useUpdateEmployee = () => {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: unknown }) => employeesApi.update(id, data),
     onSuccess: () => {
@@ -42,13 +41,22 @@ export const useUpdateEmployee = () => {
     },
     onError: (error: any) => {
       const status = error?.response?.status;
-      if (status === 409) message.error("Email hoặc SĐT trùng với nhân viên khác");
-      else if (status === 403) message.error("Bạn không có quyền thực hiện");
-      else message.error("Lỗi khi cập nhật");
+      const serverMessage = error?.response?.data?.message; // Lấy message từ backend trả về
+
+      if (status === 409) {
+        // SỬA: Ưu tiên hiển thị message từ backend nếu có (vì backend đã check cụ thể email hay phone)
+        // Nếu không có message từ server mới hiển thị text mặc định
+        message.error(serverMessage || "Email hoặc SĐT trùng với nhân viên khác");
+      }
+      else if (status === 403) {
+        message.error("Bạn không có quyền thực hiện (Yêu cầu OWNER)");
+      }
+      else {
+        message.error(serverMessage || "Lỗi khi cập nhật");
+      }
     },
   });
 };
-
 // --- Hook Xóa ---
 export const useDeleteEmployee = () => {
   const queryClient = useQueryClient();

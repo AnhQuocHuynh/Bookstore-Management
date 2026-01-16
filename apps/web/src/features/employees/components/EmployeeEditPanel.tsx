@@ -87,8 +87,14 @@ export const EmployeeEditPanel: React.FC<EmployeeEditPanelProps> = ({
                 email: values.email,
                 phoneNumber: values.phoneNumber,
                 address: values.address,
-                birthDate: values.birthDate ? values.birthDate.format("YYYY-MM-DD") : undefined,
+                // SỬA: Backend yêu cầu ISO 8601. 
+                // Nếu Backend dùng NestJS/Java strict, dùng .toISOString().
+                // Nếu Backend linh động xử lý ngày, giữ format YYYY-MM-DD cũng được nhưng cần thống nhất.
+                // Dưới đây là cách convert sang ISO chuẩn (đặt giờ về 00:00:00 UTC để tránh lệch ngày):
+                birthDate: values.birthDate ? values.birthDate.toISOString() : undefined,
+
                 avatarUrl: finalAvatarUrl || undefined,
+                // Đảm bảo KHÔNG gửi role hay isActive (Code cũ đã làm đúng việc này)
             };
 
             onSubmit(formData);
