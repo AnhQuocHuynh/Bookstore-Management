@@ -6,8 +6,32 @@ import {
   EmployeeResponse,
   ShiftParams,
   WeekSchedule,
+  EmployeeRole,
+  Shift,
 } from '../types';
 import { SAMPLE_EMPLOYEES, SAMPLE_SHIFTS } from '../constants/sampleEmployees';
+
+// ==========================================
+// IN-MEMORY SHIFT STORE (for mock fallback)
+// ==========================================
+
+// Store for dynamically added shifts (when API fails)
+let dynamicShifts: Shift[] = [];
+
+// Track deleted shift IDs (to filter out from SAMPLE_SHIFTS)
+let deletedShiftIds: Set<string> = new Set();
+
+// ==========================================
+// INVITE EMPLOYEE DTO (Match Backend)
+// ==========================================
+
+export interface InviteEmployeeData {
+  fullName: string;
+  phoneNumber: string;
+  role: EmployeeRole;
+  employeeEmail: string;
+  birthDate: string; // ISO date string
+}
 
 // ==========================================
 // EMPLOYEE API WITH MOCK FALLBACK
@@ -23,8 +47,14 @@ export const employeesApi = {
       const response = await apiClient.get('/api/v1/employee', { params });
       
       // Transform API response to match our interface
+      const transformedData = (response.data.data || []).map((emp: any) => ({
+        ...emp,
+        staffId: emp.staffId || emp.username || `EMP-${emp.id.slice(0, 6)}`,
+        employeeCode: emp.employeeCode || emp.staffId || emp.username || `EMP-${emp.id.slice(0, 6)}`,
+      }));
+      
       return {
-        data: response.data.data || [],
+        data: transformedData,
         total: response.data.total || 0,
         page: response.data.page || 1,
         limit: response.data.limit || 10,
@@ -90,7 +120,25 @@ export const employeesApi = {
   },
 
   /**
-   * Create new employee
+   * Invite new employee (Owner creates account, sends email)
+   * Backend: POST /users/employees
+   */
+  inviteEmployee: async (data: InviteEmployeeData): Promise<{ message: string }> => {
+    try {
+      const response = await apiClient.post<{ message: string }>('/users/employees', data);
+      return response.data;
+    } catch (error: any) {
+      console.warn('API call failed, simulating invite:', error.message);
+      
+      // FALLBACK: Return success message
+      return {
+        message: 'Tài khoản nhân viên đã được tạo. Một email chứa thông tin đăng nhập đã được gửi.',
+      };
+    }
+  },
+
+  /**
+   * Create new employee (Legacy - for full profile)
    * Falls back to mock creation if API fails
    */
   create: async (data: EmployeeFormData): Promise<Employee> => {
@@ -181,18 +229,33 @@ export const employeesApi = {
     } catch (error: any) {
       console.warn('API call failed, using mock schedule:', error.message);
       
-      // FALLBACK: Return mock schedule
-      let shifts = [...SAMPLE_SHIFTS];
+      // FALLBACK: Merge SAMPLE_SHIFTS with dynamically added shifts, excluding deleted ones
+      let shifts = [
+        ...SAMPLE_SHIFTS.filter((s) => !deletedShiftIds.has(s.id)),
+        ...dynamicShifts,
+      ];
       
       // Filter by employee if specified
       if (params.employeeId) {
         shifts = shifts.filter((shift) => shift.employeeId === params.employeeId);
       }
       
-      // Filter by date range
-      shifts = shifts.filter(
-        (shift) => shift.date >= params.weekStart && shift.date <= params.weekEnd
-      );
+      // Filter by date range (normalize dates to YYYY-MM-DD format for comparison)
+      shifts = shifts.filter((shift) => {
+        const shiftDate = shift.date.split('T')[0]; // Extract date part if timestamp
+        return shiftDate >= params.weekStart && shiftDate <= params.weekEnd;
+      });
+      
+      // Debug logging
+      console.log('[getWeekSchedule]', {
+        sampleShiftsCount: SAMPLE_SHIFTS.length,
+        dynamicShiftsCount: dynamicShifts.length,
+        deletedIds: Array.from(deletedShiftIds),
+        filteredShiftsCount: shifts.length,
+        weekStart: params.weekStart,
+        weekEnd: params.weekEnd,
+        shifts: shifts.map(s => ({ id: s.id, date: s.date, employeeName: s.employeeName })),
+      });
       
       return {
         weekStart: params.weekStart,
@@ -212,11 +275,87 @@ export const employeesApi = {
       return response.data.data;
     } catch (error: any) {
       console.warn('API call failed, simulating shift save:', error.message);
-      // FALLBACK: Just return the data as if saved
-      return {
-        id: `temp-shift-${Date.now()}`,
-        ...data,
+      // FALLBACK: Add to in-memory store
+      const newShift: Shift = {
+        id: `shift-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        employeeId: data.employeeId,
+        employeeName: data.employeeName || 'Unknown',
+        date: data.date,
+        shiftType: data.shiftType,
+        startTime: data.startTime,
+        endTime: data.endTime,
+        notes: data.notes,
       };
+      dynamicShifts.push(newShift);
+      console.log('[saveShift] Added shift to mock store:', {
+        shift: newShift,
+        totalDynamicShifts: dynamicShifts.length,
+        allDynamicShifts: dynamicShifts.map(s => ({ id: s.id, date: s.date, employeeName: s.employeeName })),
+      });
+      return newShift;
+    }
+  },
+
+  /**
+   * Update shift
+   * Falls back to mock update if API fails
+   */
+  updateShift: async (id: string, data: any): Promise<any> => {
+    try {
+      const response = await apiClient.put(`/api/v1/employee/schedule/${id}`, data);
+      return response.data.data;
+    } catch (error: any) {
+      console.warn('API call failed, simulating shift update:', error.message);
+      // FALLBACK: Update in-memory store
+      const shiftIndex = dynamicShifts.findIndex((s) => s.id === id);
+      if (shiftIndex !== -1) {
+        dynamicShifts[shiftIndex] = {
+          ...dynamicShifts[shiftIndex],
+          ...data,
+          id, // Preserve ID
+        };
+        console.log('Updated shift in mock store:', dynamicShifts[shiftIndex]);
+        return dynamicShifts[shiftIndex];
+      }
+      // If not found in dynamic, check if it's a SAMPLE_SHIFT
+      // Create a new entry in dynamicShifts with same ID (effectively replacing the SAMPLE one)
+      // Mark the SAMPLE one as deleted first
+      deletedShiftIds.add(id);
+      const updatedShift: Shift = {
+        id, // Keep same ID
+        employeeId: data.employeeId,
+        employeeName: data.employeeName || 'Unknown',
+        date: data.date,
+        shiftType: data.shiftType,
+        startTime: data.startTime,
+        endTime: data.endTime,
+        notes: data.notes,
+      };
+      dynamicShifts.push(updatedShift);
+      console.log('Updated SAMPLE shift by marking as deleted and adding new:', updatedShift);
+      return updatedShift;
+    }
+  },
+
+  /**
+   * Delete shift
+   * Falls back to mock deletion if API fails
+   */
+  deleteShift: async (id: string): Promise<void> => {
+    try {
+      await apiClient.delete(`/api/v1/employee/schedule/${id}`);
+    } catch (error: any) {
+      console.warn('API call failed, simulating shift deletion:', error.message);
+      // FALLBACK: Remove from in-memory store or mark as deleted
+      const shiftIndex = dynamicShifts.findIndex((s) => s.id === id);
+      if (shiftIndex !== -1) {
+        dynamicShifts.splice(shiftIndex, 1);
+        console.log('Deleted shift from dynamic store:', id);
+      } else {
+        // If not in dynamic, it's from SAMPLE_SHIFTS - mark as deleted
+        deletedShiftIds.add(id);
+        console.log('Marked SAMPLE shift as deleted:', id);
+      }
     }
   },
 };

@@ -2,9 +2,16 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, Table, Spin, Select } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { Search, UserPlus, X, Mail, Phone, MapPin, Calendar, CreditCard, Users } from 'lucide-react';
+import { Search, UserPlus, Mail, Phone, MapPin, Calendar, CreditCard, Users } from 'lucide-react';
 import { useEmployees, useDeleteEmployee } from '../hooks/useEmployees';
 import {
   Employee,
@@ -45,11 +52,7 @@ export const EmployeeListPage = () => {
   // ==========================================
 
   const handleRowClick = (record: Employee) => {
-    if (selectedEmployee?.id === record.id) {
-      setSelectedEmployee(null);
-    } else {
-      setSelectedEmployee(record);
-    }
+    setSelectedEmployee(record);
   };
 
   const handleAdd = () => {
@@ -140,12 +143,12 @@ export const EmployeeListPage = () => {
       render: (role: EmployeeRole) => (
         <Badge
           className={`
-            ${role === EmployeeRole.OWNER ? 'bg-gradient-to-r from-purple-500 to-pink-500' : ''}
-            ${role === EmployeeRole.MANAGER ? 'bg-gradient-to-r from-blue-500 to-cyan-500' : ''}
-            ${role === EmployeeRole.CASHIER ? 'bg-gradient-to-r from-green-500 to-emerald-500' : ''}
-            ${role === EmployeeRole.WAREHOUSE ? 'bg-gradient-to-r from-orange-500 to-amber-500' : ''}
-            ${role === EmployeeRole.SALES ? 'bg-gradient-to-r from-teal-500 to-green-500' : ''}
-            text-white border-none
+            ${role === EmployeeRole.OWNER ? '!bg-gradient-to-r !from-purple-500 !to-pink-500 !text-white' : ''}
+            ${role === EmployeeRole.MANAGER ? '!bg-gradient-to-r !from-blue-500 !to-cyan-500 !text-white' : ''}
+            ${role === EmployeeRole.CASHIER ? '!bg-gradient-to-r !from-green-500 !to-emerald-500 !text-white' : ''}
+            ${role === EmployeeRole.WAREHOUSE ? '!bg-gradient-to-r !from-orange-500 !to-amber-500 !text-white' : ''}
+            ${role === EmployeeRole.SALES ? '!bg-gradient-to-r !from-pink-500 !to-rose-500 !text-white' : ''}
+            !border-none !font-semibold
           `}
         >
           {ROLE_LABELS[role]}
@@ -159,11 +162,11 @@ export const EmployeeListPage = () => {
       width: 140,
       render: (status: EmployeeStatus) => (
         <Badge
-          variant={status === EmployeeStatus.ACTIVE ? 'default' : 'outline'}
           className={`
-            ${status === EmployeeStatus.ACTIVE ? 'bg-green-500 hover:bg-green-600' : ''}
-            ${status === EmployeeStatus.INACTIVE ? 'bg-gray-400 text-white border-none' : ''}
-            ${status === EmployeeStatus.ON_LEAVE ? 'bg-yellow-500 text-white border-none' : ''}
+            ${status === EmployeeStatus.ACTIVE ? '!bg-green-500 hover:!bg-green-600 !text-white' : ''}
+            ${status === EmployeeStatus.INACTIVE ? '!bg-gray-400 hover:!bg-gray-500 !text-white' : ''}
+            ${status === EmployeeStatus.ON_LEAVE ? '!bg-yellow-500 hover:!bg-yellow-600 !text-white' : ''}
+            !border-none !font-semibold
           `}
         >
           {STATUS_LABELS[status]}
@@ -178,24 +181,22 @@ export const EmployeeListPage = () => {
         <div className="flex gap-2">
           <Button
             size="sm"
-            variant="ghost"
-            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
             onClick={(e) => {
               e.stopPropagation();
               handleEdit(record);
             }}
+            className="h-8 px-3 rounded-lg !bg-blue-50 hover:!bg-blue-100 !text-blue-700 hover:!text-blue-800 !font-medium !shadow-none !border-none"
           >
             Sửa
           </Button>
           <Button
             size="sm"
-            variant="ghost"
-            className="text-red-600 hover:text-red-700 hover:bg-red-50"
             onClick={(e) => {
               e.stopPropagation();
               handleDelete(record.id);
             }}
             disabled={isDeleting}
+            className="h-8 px-3 rounded-lg !bg-red-50 hover:!bg-red-100 !text-red-700 hover:!text-red-800 !font-medium !shadow-none !border-none disabled:!opacity-50"
           >
             Xóa
           </Button>
@@ -223,7 +224,7 @@ export const EmployeeListPage = () => {
             </div>
             <Button
               onClick={handleAdd}
-              className="h-12 px-6 bg-gradient-to-r from-[#26A69A] to-[#4DB6AC] hover:from-[#00897B] hover:to-[#26A69A] text-white rounded-2xl shadow-lg"
+              className="h-11 px-6 rounded-xl !bg-gradient-to-r !from-emerald-500 !to-teal-600 hover:!from-emerald-600 hover:!to-teal-700 !text-white !font-bold !shadow-md hover:!shadow-lg"
             >
               <UserPlus className="w-5 h-5 mr-2" />
               Thêm nhân viên
@@ -231,15 +232,15 @@ export const EmployeeListPage = () => {
           </div>
 
           {/* FILTERS */}
-          <Card className="mb-4 shadow-md rounded-2xl border-none">
-            <div className="flex gap-4 items-center">
+          <Card className="mb-4 shadow-sm rounded-xl border-none">
+            <div className="flex gap-3 items-center">
               <div className="flex-1 relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input
                   placeholder="Tìm kiếm theo tên, mã NV, email..."
                   value={keyword}
                   onChange={(e) => setKeyword(e.target.value)}
-                  className="h-12 pl-12 rounded-2xl border-gray-300 focus:border-[#26A69A]"
+                  className="h-11 pl-10 rounded-xl border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
                 />
               </div>
               <Select
@@ -247,8 +248,8 @@ export const EmployeeListPage = () => {
                 value={roleFilter}
                 onChange={setRoleFilter}
                 allowClear
-                className="w-48 h-12"
-                size="large"
+                className="w-40"
+                size="middle"
               >
                 {Object.entries(ROLE_LABELS).map(([key, label]) => (
                   <Select.Option key={key} value={key}>
@@ -261,8 +262,8 @@ export const EmployeeListPage = () => {
                 value={statusFilter}
                 onChange={setStatusFilter}
                 allowClear
-                className="w-48 h-12"
-                size="large"
+                className="w-40"
+                size="middle"
               >
                 {Object.entries(STATUS_LABELS).map(([key, label]) => (
                   <Select.Option key={key} value={key}>
@@ -274,7 +275,7 @@ export const EmployeeListPage = () => {
           </Card>
 
           {/* TABLE */}
-          <Card className="shadow-md rounded-2xl border-none overflow-hidden">
+          <Card className="shadow-sm rounded-xl border-none overflow-hidden">
             {isLoading ? (
               <div className="flex justify-center py-20">
                 <Spin size="large" />
@@ -302,86 +303,90 @@ export const EmployeeListPage = () => {
           </Card>
         </div>
 
-        {/* RIGHT — DETAIL PANEL */}
-        {selectedEmployee && (
-          <aside className="relative w-[420px] bg-white border-2 border-[#26A69A] rounded-2xl p-6 flex flex-col shadow-xl animate-in slide-in-from-right duration-300">
-            {/* Close button */}
-            <button
-              onClick={() => setSelectedEmployee(null)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 transition-colors"
-            >
-              <X className="w-6 h-6" />
-            </button>
+        {/* DETAIL SHEET */}
+        <Sheet open={!!selectedEmployee} onOpenChange={() => setSelectedEmployee(null)}>
+          <SheetContent className="w-[400px] sm:w-[480px] p-0">
+            <SheetHeader className="px-6 pt-6 pb-4 border-b">
+              <SheetTitle className="text-xl font-bold text-gray-800">
+                Thông tin nhân viên
+              </SheetTitle>
+            </SheetHeader>
+            
+            {selectedEmployee && (
+              <ScrollArea className="h-[calc(100vh-80px)]">
+                <div className="px-6 py-4">
+                  {/* Avatar */}
+                  <div className="flex flex-col items-center mb-6">
+                    {selectedEmployee.avatarUrl ? (
+                      <img
+                        src={selectedEmployee.avatarUrl}
+                        alt={selectedEmployee.fullName}
+                        className="w-32 h-32 rounded-xl object-cover border-4 border-[#26A69A] shadow-md"
+                      />
+                    ) : (
+                      <div className="w-32 h-32 rounded-xl bg-gradient-to-br from-[#26A69A] to-[#4DB6AC] flex items-center justify-center text-white text-4xl font-bold shadow-md">
+                        {selectedEmployee.fullName.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <h2 className="text-xl font-bold text-gray-800 mt-3">
+                      {selectedEmployee.fullName}
+                    </h2>
+                    <p className="text-sm text-gray-500">{selectedEmployee.staffId}</p>
+                  </div>
 
-            {/* Avatar */}
-            <div className="flex flex-col items-center mb-6">
-              {selectedEmployee.avatarUrl ? (
-                <img
-                  src={selectedEmployee.avatarUrl}
-                  alt={selectedEmployee.fullName}
-                  className="w-40 h-40 rounded-2xl object-cover border-4 border-[#26A69A] shadow-lg"
-                />
-              ) : (
-                <div className="w-40 h-40 rounded-2xl bg-gradient-to-br from-[#26A69A] to-[#4DB6AC] flex items-center justify-center text-white text-5xl font-bold shadow-lg">
-                  {selectedEmployee.fullName.charAt(0).toUpperCase()}
+                  {/* Details */}
+                  <div className="space-y-3">
+                    <DetailItem
+                      icon={<Mail className="w-4 h-4 text-[#26A69A]" />}
+                      label="Email"
+                      value={selectedEmployee.email}
+                    />
+                    <DetailItem
+                      icon={<Phone className="w-4 h-4 text-[#26A69A]" />}
+                      label="Điện thoại"
+                      value={selectedEmployee.phone}
+                    />
+                    <DetailItem
+                      icon={<MapPin className="w-4 h-4 text-[#26A69A]" />}
+                      label="Địa chỉ"
+                      value={selectedEmployee.address}
+                    />
+                    <DetailItem
+                      icon={<Calendar className="w-4 h-4 text-[#26A69A]" />}
+                      label="Ngày sinh"
+                      value={format(new Date(selectedEmployee.dateOfBirth), 'dd/MM/yyyy')}
+                    />
+                    <DetailItem
+                      icon={<CreditCard className="w-4 h-4 text-[#26A69A]" />}
+                      label="CMND/CCCD"
+                      value={selectedEmployee.identityCard}
+                    />
+                    <DetailItem
+                      icon={<Calendar className="w-4 h-4 text-[#26A69A]" />}
+                      label="Ngày vào làm"
+                      value={format(new Date(selectedEmployee.startDate), 'dd/MM/yyyy')}
+                    />
+                    {selectedEmployee.emergencyContact && (
+                      <>
+                        <hr className="my-3" />
+                        <DetailItem
+                          icon={<Users className="w-4 h-4 text-[#26A69A]" />}
+                          label="Liên hệ khẩn cấp"
+                          value={`${selectedEmployee.emergencyContact.name} (${selectedEmployee.emergencyContact.relationship})`}
+                        />
+                        <DetailItem
+                          icon={<Phone className="w-4 h-4 text-[#26A69A]" />}
+                          label="SĐT khẩn cấp"
+                          value={selectedEmployee.emergencyContact.phone}
+                        />
+                      </>
+                    )}
+                  </div>
                 </div>
-              )}
-              <h2 className="text-2xl font-bold text-gray-800 mt-4">
-                {selectedEmployee.fullName}
-              </h2>
-              <p className="text-sm text-gray-500">{selectedEmployee.staffId}</p>
-            </div>
-
-            {/* Details */}
-            <div className="space-y-4">
-              <DetailItem
-                icon={<Mail className="w-5 h-5 text-[#26A69A]" />}
-                label="Email"
-                value={selectedEmployee.email}
-              />
-              <DetailItem
-                icon={<Phone className="w-5 h-5 text-[#26A69A]" />}
-                label="Điện thoại"
-                value={selectedEmployee.phone}
-              />
-              <DetailItem
-                icon={<MapPin className="w-5 h-5 text-[#26A69A]" />}
-                label="Địa chỉ"
-                value={selectedEmployee.address}
-              />
-              <DetailItem
-                icon={<Calendar className="w-5 h-5 text-[#26A69A]" />}
-                label="Ngày sinh"
-                value={format(new Date(selectedEmployee.dateOfBirth), 'dd/MM/yyyy')}
-              />
-              <DetailItem
-                icon={<CreditCard className="w-5 h-5 text-[#26A69A]" />}
-                label="CMND/CCCD"
-                value={selectedEmployee.identityCard}
-              />
-              <DetailItem
-                icon={<Calendar className="w-5 h-5 text-[#26A69A]" />}
-                label="Ngày vào làm"
-                value={format(new Date(selectedEmployee.startDate), 'dd/MM/yyyy')}
-              />
-              {selectedEmployee.emergencyContact && (
-                <>
-                  <hr className="my-4" />
-                  <DetailItem
-                    icon={<Users className="w-5 h-5 text-[#26A69A]" />}
-                    label="Liên hệ khẩn cấp"
-                    value={`${selectedEmployee.emergencyContact.name} (${selectedEmployee.emergencyContact.relationship})`}
-                  />
-                  <DetailItem
-                    icon={<Phone className="w-5 h-5 text-[#26A69A]" />}
-                    label="SĐT khẩn cấp"
-                    value={selectedEmployee.emergencyContact.phone}
-                  />
-                </>
-              )}
-            </div>
-          </aside>
-        )}
+              </ScrollArea>
+            )}
+          </SheetContent>
+        </Sheet>
       </div>
 
       {/* MODAL */}
@@ -407,11 +412,11 @@ const DetailItem = ({
   label: string;
   value: string;
 }) => (
-  <div className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors">
+  <div className="flex items-start gap-2 p-2.5 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
     <div className="mt-0.5">{icon}</div>
     <div className="flex-1">
-      <p className="text-xs text-gray-500 mb-1">{label}</p>
-      <p className="text-sm font-medium text-gray-800">{value}</p>
+      <p className="text-xs text-gray-500 mb-0.5">{label}</p>
+      <p className="text-sm font-medium text-gray-800 break-words">{value}</p>
     </div>
   </div>
 );

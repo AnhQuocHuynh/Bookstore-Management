@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { employeesApi } from '../api/employees';
+import { employeesApi, InviteEmployeeData } from '../api/employees';
 import {
   Employee,
   EmployeeFormData,
@@ -67,7 +67,25 @@ export const useWeekSchedule = (params: ShiftParams) => {
 // ==========================================
 
 /**
- * Hook to create a new employee
+ * Hook to invite a new employee (Owner sends invitation email)
+ */
+export const useInviteEmployee = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<{ message: string }, Error, InviteEmployeeData>({
+    mutationFn: (data) => employeesApi.inviteEmployee(data),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: employeeKeys.lists() });
+      toast.success(response.message || 'Đã gửi lời mời thành công!');
+    },
+    onError: (error) => {
+      toast.error(`Lỗi khi mời nhân viên: ${error.message}`);
+    },
+  });
+};
+
+/**
+ * Hook to create a new employee (Legacy - for full profile)
  */
 export const useCreateEmployee = () => {
   const queryClient = useQueryClient();
@@ -128,17 +146,64 @@ export const useDeleteEmployee = () => {
 /**
  * Hook to save shift
  */
-export const useSaveShift = () => {
+export const useSaveShift = (options?: { showToast?: boolean }) => {
   const queryClient = useQueryClient();
+  const showToast = options?.showToast !== false; // Default to true for backward compatibility
 
   return useMutation<any, Error, any>({
     mutationFn: (data) => employeesApi.saveShift(data),
     onSuccess: () => {
+      // Invalidate and refetch all schedule queries to ensure data is fresh
       queryClient.invalidateQueries({ queryKey: employeeKeys.schedules() });
-      toast.success('Lưu ca làm việc thành công!');
+      queryClient.refetchQueries({ queryKey: employeeKeys.schedules() });
+      if (showToast) {
+        toast.success('Lưu ca làm việc thành công!');
+      }
     },
     onError: (error) => {
-      toast.error(`Lỗi khi lưu ca làm việc: ${error.message}`);
+      if (showToast) {
+        toast.error(`Lỗi khi lưu ca làm việc: ${error.message}`);
+      }
+    },
+  });
+};
+
+/**
+ * Hook to update shift
+ */
+export const useUpdateShift = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<any, Error, { id: string; data: any }>({
+    mutationFn: ({ id, data }) => employeesApi.updateShift(id, data),
+    onSuccess: () => {
+      // Invalidate and refetch all schedule queries to ensure data is fresh
+      queryClient.invalidateQueries({ queryKey: employeeKeys.schedules() });
+      queryClient.refetchQueries({ queryKey: employeeKeys.schedules() });
+      toast.success('Cập nhật ca làm việc thành công!');
+    },
+    onError: (error) => {
+      toast.error(`Lỗi khi cập nhật ca làm việc: ${error.message}`);
+    },
+  });
+};
+
+/**
+ * Hook to delete shift
+ */
+export const useDeleteShift = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, string>({
+    mutationFn: (id) => employeesApi.deleteShift(id),
+    onSuccess: () => {
+      // Invalidate and refetch all schedule queries to ensure data is fresh
+      queryClient.invalidateQueries({ queryKey: employeeKeys.schedules() });
+      queryClient.refetchQueries({ queryKey: employeeKeys.schedules() });
+      toast.success('Xóa ca làm việc thành công!');
+    },
+    onError: (error) => {
+      toast.error(`Lỗi khi xóa ca làm việc: ${error.message}`);
     },
   });
 };

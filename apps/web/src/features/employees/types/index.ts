@@ -163,10 +163,18 @@ export const SHIFT_LABELS: Record<ShiftType, string> = {
 };
 
 export const SHIFT_COLORS: Record<ShiftType, string> = {
-  [ShiftType.MORNING]: 'from-amber-400 to-orange-500',
-  [ShiftType.AFTERNOON]: 'from-blue-400 to-cyan-500',
-  [ShiftType.EVENING]: 'from-purple-400 to-indigo-500',
-  [ShiftType.FULL_DAY]: 'from-emerald-400 to-teal-500',
+  [ShiftType.MORNING]: '!bg-sky-500',
+  [ShiftType.AFTERNOON]: '!bg-orange-500',
+  [ShiftType.EVENING]: '!bg-indigo-500',
+  [ShiftType.FULL_DAY]: '!bg-emerald-500',
+};
+
+// Text colors for bright, modern look
+export const SHIFT_TEXT_COLORS: Record<ShiftType, string> = {
+  [ShiftType.MORNING]: '!text-amber-500',
+  [ShiftType.AFTERNOON]: '!text-sky-500',
+  [ShiftType.EVENING]: '!text-indigo-500',
+  [ShiftType.FULL_DAY]: '!text-emerald-500',
 };
 
 export const GENDER_LABELS: Record<Gender, string> = {
