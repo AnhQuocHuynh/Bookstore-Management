@@ -11,6 +11,7 @@ import { UsersPage } from "../features/users/components/UsersPage";
 import { UserEditPage } from "../features/users/components/UserEditPage";
 import { CreateSalesPage } from "../features/sales/components/pages/CreateSalesPage";
 import { SalesListPage } from "../features/sales/components/pages/SalesListPage";
+import { EmployeeListPage } from "@/features/employees/components/EmployeeListPage";
 
 import SelectStorePage from "@/features/auth/pages/SelectStorePage";
 import VerifyEmailPage from "@/features/auth/pages/VerifyEmailPage";
@@ -173,10 +174,10 @@ export const AppRoutes = () => {
           }
         />
         <Route
-          path="/employees"
+          path="/dashboard/employees/list"
           element={
             <MainLayout>
-              <EmployeesPage />
+              <EmployeeListPage />
             </MainLayout>
           }
         />
@@ -245,6 +246,7 @@ export const AppRoutes = () => {
       <Route path="dashboard/products/display/list" element={<MainLayout><ShelvesView /></MainLayout>} />
 
       <Route path="dashboard/products/display/filter" element={<MainLayout><DisplayProductsView /></MainLayout>} />
+
       <Route path="dashboard/products/display/history" element={<MainLayout><DisplayLogsView /></MainLayout>} />
 
 

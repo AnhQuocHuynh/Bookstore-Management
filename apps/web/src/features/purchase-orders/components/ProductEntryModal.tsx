@@ -3,18 +3,18 @@ import { Modal, Form, Input, InputNumber, Select, Radio, DatePicker, Row, Col, D
 import { PurchaseOrderItemForm } from "../types";
 import dayjs from "dayjs";
 import { Upload as UploadIcon, Trash2 } from "lucide-react";
-
-// Import API
+// Import Hooks/API
 import { useCategories } from "@/features/categories/hooks/useCategories";
 import { useAuthors } from "@/features/authors/hooks/useAuthors";
 import { usePublishers } from "@/features/publishers/hooks/usePublishers";
 import { uploadApi } from "@/api/upload";
+import { apiClient } from "@/lib/axios"; // Sử dụng trực tiếp client để gọi check SKU
 
 interface ProductEntryModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSubmit: (item: PurchaseOrderItemForm) => void;
-    initialValues?: PurchaseOrderItemForm | null; // Thêm prop này để nhận dữ liệu sửa
+    initialValues?: PurchaseOrderItemForm | null;
 }
 
 export const ProductEntryModal: React.FC<ProductEntryModalProps> = ({
@@ -24,12 +24,17 @@ export const ProductEntryModal: React.FC<ProductEntryModalProps> = ({
     initialValues,
 }) => {
     const [form] = Form.useForm();
-
     const type = Form.useWatch("type", form);
     const imageUrl = Form.useWatch("imageUrl", form);
+
+    // States
     const [isUploading, setIsUploading] = useState(false);
 
-    // --- DATA ---
+    // State quản lý lỗi SKU
+    const [skuError, setSkuError] = useState<string | null>(null);
+    const [isValidatingSku, setIsValidatingSku] = useState(false);
+
+    // --- DATA SOURCES ---
     const { data: categoriesData } = useCategories();
     const { data: authorsData } = useAuthors();
     const { data: publishersData } = usePublishers();
@@ -38,25 +43,64 @@ export const ProductEntryModal: React.FC<ProductEntryModalProps> = ({
     const authors = Array.isArray(authorsData) ? authorsData : (Array.isArray(authorsData?.data) ? authorsData.data : []);
     const publishers = Array.isArray(publishersData) ? publishersData : (Array.isArray(publishersData?.data) ? publishersData.data : []);
 
-    // --- EFFECT: FILL DATA KHI MỞ MODAL ---
+    // --- EFFECT: INIT DATA ---
     useEffect(() => {
         if (isOpen) {
+            setSkuError(null); // Reset lỗi khi mở modal
             if (initialValues) {
-                // TRƯỜNG HỢP SỬA: Fill dữ liệu
+                // Trường hợp SỬA item trong danh sách tạm (Local)
                 form.setFieldsValue({
                     ...initialValues,
-                    // Convert string date về Dayjs object cho DatePicker
                     publicationDate: initialValues.publicationDate ? dayjs(initialValues.publicationDate) : undefined,
                 });
             } else {
-                // TRƯỜNG HỢP THÊM MỚI: Reset form
+                // Trường hợp THÊM MỚI
                 form.resetFields();
                 form.setFieldsValue({ type: 'book', quantity: 1, taxRate: 0 });
             }
         }
     }, [isOpen, initialValues, form]);
 
-    // --- HANDLERS ---
+    // --- HANDLER: CHECK SKU EXISTENCE ---
+    const handleCheckSku = async (e: React.FocusEvent<HTMLInputElement>) => {
+        const sku = e.target.value?.trim();
+
+        // Nếu đang sửa item cũ và SKU không đổi thì không cần check lại server (để tránh tự báo lỗi chính nó)
+        if (initialValues && initialValues.sku === sku) {
+            return;
+        }
+
+        if (!sku) {
+            setSkuError(null);
+            return;
+        }
+
+        try {
+            setIsValidatingSku(true);
+            // Gọi API GET /products để check xem SKU đã có chưa
+            // Backend cho phép lọc: GET /api/v1/products?sku={sku}
+            const response = await apiClient.get('/products', {
+                params: { sku: sku }
+            });
+
+            const products = response.data?.data || response.data || [];
+
+            // Nếu mảng trả về > 0 phần tử, nghĩa là SKU đã tồn tại
+            if (Array.isArray(products) && products.length > 0) {
+                setSkuError("Mã SKU này đã tồn tại trong hệ thống. Vui lòng nhập mã khác.");
+                form.setFields([{ name: 'sku', errors: ["Mã SKU này đã tồn tại"] }]);
+            } else {
+                setSkuError(null);
+                form.setFields([{ name: 'sku', errors: [] }]);
+            }
+        } catch (error) {
+            console.error("Check SKU error", error);
+        } finally {
+            setIsValidatingSku(false);
+        }
+    };
+
+    // --- UPLOAD IMAGE ---
     const handleUploadImage = async (file: File) => {
         try {
             setIsUploading(true);
@@ -75,12 +119,21 @@ export const ProductEntryModal: React.FC<ProductEntryModalProps> = ({
         form.setFieldsValue({ imageUrl: null });
     };
 
+    // --- SUBMIT ---
     const handleOk = async () => {
         try {
+            // 1. Chặn nếu đang có lỗi SKU
+            if (skuError) {
+                message.error("Mã SKU không hợp lệ. Vui lòng kiểm tra lại.");
+                return;
+            }
+
             const values = await form.validateFields();
 
             const formattedValues = {
                 ...values,
+                sku: values.sku.trim(),
+                name: values.name.trim(),
                 publicationDate: values.publicationDate ? dayjs(values.publicationDate).format("YYYY-MM-DD") : undefined,
             };
 
@@ -96,12 +149,14 @@ export const ProductEntryModal: React.FC<ProductEntryModalProps> = ({
             open={isOpen}
             onCancel={onClose}
             onOk={handleOk}
-            title={initialValues ? "Cập Nhật Thông Tin Sản Phẩm" : "Thêm Sản Phẩm Vào Đơn Nhập"} // Đổi tiêu đề dynamic
+            title={initialValues ? "Cập Nhật Thông Tin Sản Phẩm (Tạm tính)" : "Thêm Sản Phẩm Mới Vào Đơn"}
             width={900}
             okText={initialValues ? "Cập nhật" : "Thêm vào danh sách"}
             cancelText="Hủy"
             style={{ top: 20 }}
             destroyOnClose={true}
+            // Disable nút OK nếu đang validate hoặc có lỗi SKU
+            okButtonProps={{ disabled: isValidatingSku || !!skuError }}
         >
             <Form form={form} layout="vertical" initialValues={{ type: 'book' }}>
 
@@ -110,19 +165,30 @@ export const ProductEntryModal: React.FC<ProductEntryModalProps> = ({
                     <Row gutter={16}>
                         <Col span={24}>
                             <Form.Item name="type" label="Loại sản phẩm">
-                                <Radio.Group optionType="button" buttonStyle="solid" disabled={!!initialValues}>
-                                    {/* Có thể disable đổi loại khi đang sửa để tránh lỗi logic */}
+                                <Radio.Group optionType="button" buttonStyle="solid">
                                     <Radio.Button value="book">Sách</Radio.Button>
                                     <Radio.Button value="stationery">Văn phòng phẩm</Radio.Button>
                                 </Radio.Group>
                             </Form.Item>
                         </Col>
+
                         <Col span={12}>
-                            <Form.Item name="sku" label="Mã SKU (Barcode)" rules={[{ required: true, message: "Bắt buộc nhập SKU" }]}>
-                                {/* Nếu muốn chặn sửa SKU khi edit thì thêm prop disabled={!!initialValues} */}
-                                <Input placeholder="VD: BOOK-001" disabled={!!initialValues} />
+                            <Form.Item
+                                name="sku"
+                                label="Mã SKU (Barcode)"
+                                validateStatus={skuError ? "error" : isValidatingSku ? "validating" : ""}
+                                help={skuError || (isValidatingSku ? "Đang kiểm tra..." : null)}
+                                hasFeedback
+                                rules={[{ required: true, message: "Bắt buộc nhập SKU" }]}
+                            >
+                                <Input
+                                    placeholder="VD: BOOK-001"
+                                    onBlur={handleCheckSku} // Gọi check khi rời khỏi ô nhập
+                                    onChange={() => setSkuError(null)} // Reset lỗi khi người dùng sửa lại
+                                />
                             </Form.Item>
                         </Col>
+
                         <Col span={12}>
                             <Form.Item name="name" label="Tên sản phẩm" rules={[{ required: true, message: "Bắt buộc nhập tên" }]}>
                                 <Input placeholder="VD: Nhà Giả Kim" />
@@ -156,7 +222,11 @@ export const ProductEntryModal: React.FC<ProductEntryModalProps> = ({
                 <Row gutter={16}>
                     <Col span={12}>
                         <Form.Item name="categoryIds" label="Danh mục" rules={[{ required: true, message: "Chọn ít nhất 1 danh mục" }]}>
-                            <Select mode="multiple" placeholder="Chọn danh mục" options={categories.map((c: any) => ({ label: c.name, value: c.id }))} />
+                            <Select
+                                mode="multiple"
+                                placeholder="Chọn danh mục"
+                                options={categories.map((c: any) => ({ label: c.name, value: c.id }))}
+                            />
                         </Form.Item>
                         <Form.Item name="taxRate" label="Thuế suất (VD: 0.08 = 8%)">
                             <InputNumber className="w-full" step={0.01} max={1} min={0} placeholder="0.08" />
@@ -179,16 +249,16 @@ export const ProductEntryModal: React.FC<ProductEntryModalProps> = ({
                                 </div>
                                 <div className="flex flex-col gap-2">
                                     <Upload beforeUpload={handleUploadImage} showUploadList={false} accept="image/*">
-                                        <Button icon={<UploadIcon size={16} />} loading={isUploading}>{isUploading ? "Đang tải lên..." : "Tải ảnh lên"}</Button>
+                                        <Button icon={<UploadIcon size={16} />} loading={isUploading}>{isUploading ? "Đang tải..." : "Tải ảnh lên"}</Button>
                                     </Upload>
-                                    <span className="text-xs text-gray-500">JPG, PNG, WEBP. Max 5MB.</span>
+                                    <span className="text-xs text-gray-500">Max 5MB.</span>
                                 </div>
                             </div>
                         </Form.Item>
                     </Col>
                 </Row>
 
-                {/* --- 4. Sách --- */}
+                {/* --- 4. Sách (Chỉ hiện khi type = book) --- */}
                 {type === 'book' && (
                     <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 mt-2">
                         <h4 className="text-blue-800 font-bold mb-3">Thông tin Sách</h4>
@@ -199,29 +269,47 @@ export const ProductEntryModal: React.FC<ProductEntryModalProps> = ({
                                 </Form.Item>
                             </Col>
                             <Col span={12}>
-                                <Form.Item name="language" label="Ngôn ngữ"><Input placeholder="VD: Tiếng Việt" /></Form.Item>
+                                <Form.Item name="language" label="Ngôn ngữ">
+                                    <Input placeholder="VD: Tiếng Việt" />
+                                </Form.Item>
                             </Col>
                             <Col span={12}>
                                 <Form.Item name="authorId" label="Tác giả" rules={[{ required: true, message: "Chọn tác giả" }]}>
-                                    <Select showSearch optionFilterProp="label" placeholder="Chọn tác giả" options={authors.map((a: any) => ({ label: a.fullName, value: a.id }))} />
+                                    <Select
+                                        showSearch
+                                        optionFilterProp="label"
+                                        placeholder="Chọn tác giả"
+                                        options={authors.map((a: any) => ({ label: a.fullName, value: a.id }))}
+                                    />
                                 </Form.Item>
                             </Col>
                             <Col span={12}>
                                 <Form.Item name="publisherId" label="Nhà xuất bản" rules={[{ required: true, message: "Chọn NXB" }]}>
-                                    <Select showSearch optionFilterProp="label" placeholder="Chọn NXB" options={publishers.map((p: any) => ({ label: p.name, value: p.id }))} />
+                                    <Select
+                                        showSearch
+                                        optionFilterProp="label"
+                                        placeholder="Chọn NXB"
+                                        options={publishers.map((p: any) => ({ label: p.name, value: p.id }))}
+                                    />
                                 </Form.Item>
                             </Col>
                             <Col span={12}>
-                                <Form.Item name="publicationDate" label="Ngày xuất bản"><DatePicker className="w-full" format="DD/MM/YYYY" placeholder="Chọn ngày" /></Form.Item>
+                                <Form.Item name="publicationDate" label="Ngày xuất bản">
+                                    <DatePicker className="w-full" format="DD/MM/YYYY" placeholder="Chọn ngày" />
+                                </Form.Item>
                             </Col>
                             <Col span={12}>
-                                <Form.Item name="edition" label="Tái bản"><Input placeholder="VD: Tái bản lần 1" /></Form.Item>
+                                <Form.Item name="edition" label="Tái bản">
+                                    <Input placeholder="VD: Tái bản lần 1" />
+                                </Form.Item>
                             </Col>
                         </Row>
                     </div>
                 )}
 
-                <Form.Item name="description" label="Mô tả" className="mt-4"><Input.TextArea rows={2} /></Form.Item>
+                <Form.Item name="description" label="Mô tả" className="mt-4">
+                    <Input.TextArea rows={2} />
+                </Form.Item>
             </Form>
         </Modal>
     );
