@@ -39,7 +39,7 @@ export class ProductsService {
     private readonly supplierService: SupplierService,
     private readonly categoriesService: CategoriesService,
     private readonly inventoriesService: InventoriesService,
-  ) {}
+  ) { }
 
   async findProductByField(
     field: keyof Product,
@@ -71,48 +71,40 @@ export class ProductsService {
     const { createInventoryDto, createBookDto, type, categoryIds, ...res } =
       createProductDto;
 
+    // 1. Kiểm tra nhà cung cấp
     const supplier = await this.supplierService.findSupplierByField(
       'id',
       supplierId,
       supplierRepo,
     );
-
     if (!supplier)
       throw new NotFoundException(
         `Không tìm thấy nhà cung cấp với mã ${supplierId}.`,
       );
 
-    let newProduct = await productRepo.findOne({
-      where: [{ sku: res.sku }, { name: res.name }],
+    // 2. [FIXED] Chỉ kiểm tra trùng SKU. Nếu trùng -> Báo lỗi Conflict ngay lập tức.
+    // Bỏ qua kiểm tra Name.
+    const existingProduct = await productRepo.findOne({
+      where: { sku: res.sku },
     });
 
-    if (newProduct) {
-      await productRepo.update(
-        {
-          id: newProduct.id,
-        },
-        {
-          price: res.price,
-          ...(res?.description?.trim() && {
-            description: res.description.trim(),
-          }),
-          type,
-          supplier,
-          categories: [],
-          ...(res?.taxRate && { taxRate: res.taxRate }),
-        },
+    if (existingProduct) {
+      throw new ConflictException(
+        `Sản phẩm với mã SKU '${res.sku}' đã tồn tại trong hệ thống. Vui lòng kiểm tra lại.`,
       );
-    } else {
-      newProduct = productRepo.create({
-        ...res,
-        type,
-        supplier,
-        categories: [],
-      });
-
-      await productRepo.save(newProduct);
     }
 
+    // 3. [FIXED] Luôn luôn tạo mới (Create), không còn logic Update
+    const newProduct = productRepo.create({
+      ...res,
+      type,
+      supplier,
+      categories: [],
+    });
+
+    await productRepo.save(newProduct);
+
+    // 4. Các logic phụ trợ giữ nguyên (Gán danh mục, tạo sách, tạo kho...)
     await this.categoriesService.assignCategoriesToProduct(
       categoryIds,
       newProduct,

@@ -1,6 +1,8 @@
 import React from "react";
-import { Tag } from "antd";
+import { Tag, Spin } from "antd";
 import { SupplierTableRow } from "../types";
+import { useInventory } from "@/features/inventory/hooks/useInventory";
+import { formatCurrency } from "@/utils";
 
 interface SupplierDetailPanelProps {
   selectedItem: SupplierTableRow | null;
@@ -23,6 +25,13 @@ const InfoRow: React.FC<InfoRowProps> = ({ label, value }) => (
 export const SupplierDetailPanel: React.FC<SupplierDetailPanelProps> = ({
   selectedItem,
 }) => {
+  // Fetch products from this supplier
+  const { data: productsData, isLoading: productsLoading } = useInventory({
+    supplierName: selectedItem?.name,
+  });
+
+  const products = Array.isArray(productsData?.data) ? productsData?.data : [];
+
   if (!selectedItem) return null;
 
   return (
@@ -70,6 +79,66 @@ export const SupplierDetailPanel: React.FC<SupplierDetailPanelProps> = ({
               <p className="text-sm text-[#102e3c] bg-gray-50 p-3 rounded-md leading-relaxed whitespace-pre-wrap">
                 {selectedItem.note}
               </p>
+            </div>
+          )}
+
+          {/* Products Section */}
+          <div className="my-4 border-t border-dashed border-gray-300"></div>
+          <h4 className="text-[#1a998f] font-bold mb-3">Sản phẩm ({products.length})</h4>
+          
+          {productsLoading ? (
+            <div className="flex justify-center py-4">
+              <Spin size="small" />
+            </div>
+          ) : products.length > 0 ? (
+            <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+              {products.map((product: any) => (
+                <div 
+                  key={product.id} 
+                  className="bg-gray-50 p-3 rounded-lg border border-gray-200 hover:border-teal-500 transition-colors"
+                >
+                  <div className="flex items-start gap-3">
+                    {product.imageUrl ? (
+                      <img 
+                        src={product.imageUrl} 
+                        alt={product.name} 
+                        className="w-12 h-12 object-cover rounded border border-gray-300"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 bg-gray-300 rounded border border-gray-300 flex items-center justify-center">
+                        <span className="text-xs text-gray-500">N/A</span>
+                      </div>
+                    )}
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-[#102e3c] text-sm truncate" title={product.name}>
+                        {product.name}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-0.5">
+                        SKU: <span className="font-medium">{product.sku}</span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-xs text-teal-600 font-bold">
+                          {formatCurrency(product.price)}
+                        </span>
+                        {product.inventory && (
+                          <span className="text-xs text-gray-500">
+                            • Kho: <span className={product.inventory.stockQuantity <= 10 ? "text-red-500 font-bold" : "font-semibold"}>{product.inventory.stockQuantity}</span>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <Tag color={product.isActive ? 'success' : 'default'} className="text-xs">
+                      {product.isActive ? 'Đang bán' : 'Ngừng'}
+                    </Tag>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-4 text-gray-400 text-sm bg-gray-50 rounded-lg">
+              Chưa có sản phẩm nào từ nhà cung cấp này
             </div>
           )}
         </div>

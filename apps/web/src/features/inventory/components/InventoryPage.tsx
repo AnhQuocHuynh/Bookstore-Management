@@ -1,9 +1,7 @@
 import React, { useState, useMemo } from "react";
-import { message, Select, Input, Modal } from "antd";
-import { Search, X } from "lucide-react";
+import { message, Select, Input, Modal, Button } from "antd";
+import { Search, X, Plus } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
-
-import { ActionButton } from "./ActionButton";
 import { InventoryTable, TableHeader } from "./InventoryTable";
 import { InventoryDetailPanel } from "./InventoryDetailPanel";
 import { SorterButton } from "./SorterButton";
@@ -26,9 +24,8 @@ export const InventoryPage = () => {
   // --- States ---
   const [keyword, setKeyword] = useState("");
   const debouncedKeyword = useDebounce(keyword, 500);
-  const [selectedCategory, setSelectedCategory] = useState<string | undefined>(undefined);
+  const [activeCategory, setActiveCategory] = useState<"Sách" | "Văn phòng phẩm">("Sách");
   const [selectedSupplier, setSelectedSupplier] = useState<string | undefined>(undefined);
-  const [selectedType, setSelectedType] = useState<string | undefined>(undefined);
   const [sortBy, setSortBy] = useState<string>("createdAt");
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
@@ -37,20 +34,20 @@ export const InventoryPage = () => {
   const [isEditPanelOpen, setIsEditPanelOpen] = useState(false);
 
   // --- Fetching ---
-  const { data: categoriesData } = useCategories();
-  const categories = categoriesData?.data?.data || [];
-
   const { data: suppliersData } = useSuppliersList();
   const suppliers = Array.isArray(suppliersData?.data) ? suppliersData?.data : [];
 
+  // Map category to type
+  const typeFilter = activeCategory === "Sách" ? "book" : "stationery";
+
   const { data: productsData, isLoading, isError } = useInventory({
     keyword: debouncedKeyword,
-    categoryName: selectedCategory,
+    categoryName: undefined,
     supplierName: selectedSupplier,
-    type: selectedType,
+    type: typeFilter,
     sortBy,
     sortOrder,
-    isActive: undefined, // Lấy tất cả (cả true và false) để hiển thị
+    isActive: undefined,
   });
 
   // --- Mutations ---
@@ -75,6 +72,7 @@ export const InventoryPage = () => {
 
       supplier: item.supplier?.name || "--",
       category: item.categories?.[0]?.name || "--",
+      type: item.type,
 
       description: item.description || "",
       // Fix lỗi: Giờ InventoryTableRow đã có isActive
@@ -96,6 +94,7 @@ export const InventoryPage = () => {
     sku: selectedItem.sku,
     name: selectedItem.name,
     image: selectedItem.image,
+    purchasePrice: selectedItem.purchasePrice,
     sellingPrice: selectedItem.sellingPrice,
     isActive: selectedItem.isActive ?? true,
     description: selectedItem.description,
@@ -103,7 +102,13 @@ export const InventoryPage = () => {
     // Các trường optional
     stock: selectedItem.stock,
     category: selectedItem.category,
+    type: selectedItem.type,
     supplier: selectedItem.supplier,
+    author: selectedItem.author,
+    publisher: selectedItem.publisher,
+    releaseYear: selectedItem.releaseYear,
+    releaseVersion: selectedItem.releaseVersion,
+    language: selectedItem.language,
   } : undefined;
 
   // --- Handlers ---
@@ -186,29 +191,51 @@ export const InventoryPage = () => {
             <div className="flex items-center gap-2.5 flex-wrap">
               <SorterButton onSortChange={handleSortChange} currentSort={sortBy} currentSortOrder={sortOrder} />
 
-              <ActionButton
-                label="Xóa"
-                variant="outlined"
-                onClick={handleDelete}
-              />
+              <Button 
+                onClick={handleDelete} 
+                danger 
+                disabled={!selectedItem} 
+                className="h-10 rounded-xl font-semibold"
+              >
+                Xóa
+              </Button>
 
-              <ActionButton
-                label="Sửa"
-                variant="outlined"
-                onClick={() => selectedItem ? setIsEditPanelOpen(true) : message.warning("Vui lòng chọn sản phẩm")}
-              />
-
-              <ActionButton
-                label="Tạo Mới"
-                variant="filled"
-                onClick={() => setIsAddPanelOpen(true)}
-              />
+              <Button 
+                onClick={() => selectedItem ? setIsEditPanelOpen(true) : message.warning("Vui lòng chọn sản phẩm")} 
+                disabled={!selectedItem} 
+                className="h-10 rounded-xl font-semibold border-teal-600 text-teal-700"
+              >
+                Sửa
+              </Button>
             </div>
           </div>
 
           {/* --- Filter Bar --- */}
           <div className="flex flex-wrap items-center gap-3 mt-2 bg-white p-3 rounded-xl border border-[#102e3c]/10 shadow-sm">
-            <div className="relative w-full sm:w-64">
+            <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-lg">
+              <button
+                onClick={() => setActiveCategory("Sách")}
+                className={`px-6 py-2 rounded-md font-semibold transition-all ${
+                  activeCategory === "Sách"
+                    ? "bg-[#1a998f] text-white"
+                    : "bg-transparent text-[#102e3c] hover:bg-gray-200"
+                }`}
+              >
+                Sách
+              </button>
+              <button
+                onClick={() => setActiveCategory("Văn phòng phẩm")}
+                className={`px-6 py-2 rounded-md font-semibold transition-all ${
+                  activeCategory === "Văn phòng phẩm"
+                    ? "bg-[#1a998f] text-white"
+                    : "bg-transparent text-[#102e3c] hover:bg-gray-200"
+                }`}
+              >
+                Văn phòng phẩm
+              </button>
+            </div>
+
+            <div className="relative w-full sm:flex-1 min-w-[200px]">
               <Input
                 placeholder="Tìm tên, SKU..."
                 prefix={<Search size={16} className="text-gray-400" />}
@@ -216,16 +243,6 @@ export const InventoryPage = () => {
                 onChange={(e) => setKeyword(e.target.value)}
               />
             </div>
-
-            <Select placeholder="Loại" allowClear className="min-w-[150px]" onChange={setSelectedType} style={{ height: 38 }}>
-              <Option value="book">Sách</Option>
-              <Option value="stationery">Văn phòng phẩm</Option>
-              <Option value="other">Khác</Option>
-            </Select>
-
-            <Select placeholder="Danh mục" allowClear showSearch className="min-w-[180px]" onChange={setSelectedCategory} style={{ height: 38 }} loading={!categoriesData}>
-              {categories.map((cat: any) => <Option key={cat.id} value={cat.name}>{cat.name}</Option>)}
-            </Select>
 
             <Select placeholder="Nhà cung cấp" allowClear showSearch className="min-w-[200px]" onChange={setSelectedSupplier} style={{ height: 38 }} loading={!suppliersData}>
               {suppliers.map((sup: any) => <Option key={sup.id} value={sup.name}>{sup.name}</Option>)}
@@ -271,13 +288,6 @@ export const InventoryPage = () => {
       </main>
 
       {/* --- Modals --- */}
-      <InventoryAddPanel
-        isOpen={isAddPanelOpen}
-        category={null}
-        onClose={() => setIsAddPanelOpen(false)}
-        onSubmit={(data) => console.log("Create:", data)}
-      />
-
       <InventoryEditPanel
         isOpen={isEditPanelOpen}
         onClose={() => setIsEditPanelOpen(false)}

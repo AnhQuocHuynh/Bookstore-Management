@@ -34,7 +34,7 @@ export class PurchaseOrdersService {
     private readonly tenantService: TenantService,
     private readonly productsService: ProductsService,
     private readonly inventoriesService: InventoriesService,
-  ) {}
+  ) { }
 
   async findPurchaseOrderByField(
     repo: Repository<PurchaseOrder>,
@@ -116,7 +116,7 @@ export class PurchaseOrdersService {
 
         const isOldProduct = productId !== undefined && productId.trim() !== '';
 
-        if (!(isNewProduct && isOldProduct)) {
+        if (!(isNewProduct || isOldProduct)) {
           throw new BadRequestException(
             'Vui lòng cung cấp thông tin về sản phẩm.',
           );
