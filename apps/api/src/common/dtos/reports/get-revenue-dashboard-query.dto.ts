@@ -10,7 +10,7 @@ import {
   IsString,
   Max,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 
 export enum PeriodType {
   DAY = 'day',
@@ -70,6 +70,13 @@ export class GetRevenueDashboardQueryDto {
     example: ['uuid1', 'uuid2'],
   })
   @IsOptional()
+  // 👇 Đã thêm Transform để xử lý single string thành array
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      return [value];
+    }
+    return value;
+  })
   @IsArray({ message: 'categoryIds phải là mảng' })
   @IsString({ each: true, message: 'Mỗi categoryId phải là chuỗi' })
   categoryIds?: string[];
