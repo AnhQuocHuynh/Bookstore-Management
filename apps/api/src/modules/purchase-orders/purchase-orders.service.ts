@@ -34,7 +34,7 @@ export class PurchaseOrdersService {
     private readonly tenantService: TenantService,
     private readonly productsService: ProductsService,
     private readonly inventoriesService: InventoriesService,
-  ) { }
+  ) {}
 
   async findPurchaseOrderByField(
     repo: Repository<PurchaseOrder>,

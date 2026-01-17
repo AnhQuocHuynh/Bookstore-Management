@@ -17,7 +17,7 @@ import { Repository } from 'typeorm';
 
 @Injectable()
 export class CategoriesService {
-  constructor(private readonly tenantsService: TenantService) { }
+  constructor(private readonly tenantsService: TenantService) {}
 
   async getCategories(
     userSession: TUserSession,
@@ -130,7 +130,6 @@ export class CategoriesService {
       where: {
         id,
       },
-
     });
 
     if (!category) {

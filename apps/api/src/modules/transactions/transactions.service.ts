@@ -503,6 +503,7 @@ export class TransactionsService {
     let qb = transactionRepo
       .createQueryBuilder('transaction')
       .leftJoinAndSelect('transaction.cashier', 'cashier')
+      .leftJoinAndSelect('transaction.customer', 'customer')
       .leftJoinAndSelect('transaction.details', 'details')
       .leftJoinAndSelect('details.product', 'product')
       .leftJoinAndSelect('transaction.returnOrders', 'returnOrders');
@@ -596,6 +597,7 @@ export class TransactionsService {
             book: true,
           },
         },
+        customer: true,
       },
     });
 
