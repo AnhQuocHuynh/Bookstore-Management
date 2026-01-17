@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -7,9 +7,25 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { useState } from "react";
 
 export default function UserMenu() {
-  const { user } = useAuthStore();
+  const { user, logoutAsync } = useAuthStore();
+  const navigate = useNavigate();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      await logoutAsync();
+      // Reload trang để đảm bảo cookie được xóa và state được clear hoàn toàn
+      window.location.href = "/auth/login";
+    } catch (error) {
+      console.error("Logout error:", error);
+      // Vẫn reload về login ngay cả khi có lỗi
+      window.location.href = "/auth/login";
+    }
+  };
 
   return (
     <DropdownMenu>
@@ -37,7 +53,13 @@ export default function UserMenu() {
 
         <DropdownMenuItem>Cài đặt</DropdownMenuItem>
 
-        <DropdownMenuItem className="text-red-600">Đăng xuất</DropdownMenuItem>
+        <DropdownMenuItem
+          className="text-red-600"
+          onClick={handleLogout}
+          disabled={isLoggingOut}
+        >
+          {isLoggingOut ? "Đang đăng xuất..." : "Đăng xuất"}
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

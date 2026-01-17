@@ -495,7 +495,11 @@ export class AuthService {
     };
   }
 
-  async signOut(userSession: TUserSession, refreshToken: string) {
+  async signOut(
+    userSession: TUserSession,
+    refreshToken: string,
+    response: Response,
+  ) {
     const { userId, bookStoreId, role } = userSession;
 
     const user = await this.mainUserService.findUserByField('id', userId);
@@ -507,6 +511,23 @@ export class AuthService {
     }
 
     await this.revokeRefreshToken(userId, role, refreshToken, bookStoreId);
+
+    // Xóa cookie refreshToken và storeCode
+    // Phải match với options khi set cookie (path, domain, secure, sameSite)
+    const isProd = this.configService.get<string>('node_env') === 'production';
+    response.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: 'strict',
+      path: '/',
+    });
+    response.clearCookie('storeCode', {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: 'strict',
+      path: '/',
+    });
+
     return {
       message: 'Đăng xuất tài khoản thành công.',
     };
