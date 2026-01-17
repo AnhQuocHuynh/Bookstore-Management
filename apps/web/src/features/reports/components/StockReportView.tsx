@@ -1,15 +1,14 @@
 import React, { useState } from "react";
-import { Table, Input, Select, Spin, Pagination } from "antd";
+import { Table, Input, Select, Spin, Pagination, Segmented } from "antd"; // Import Segmented
 import {
     BarChart, Bar, XAxis, Tooltip as RechartsTooltip, ResponsiveContainer, CartesianGrid, Cell
 } from "recharts";
-import { Search, AlertCircle, CheckCircle, Package, TrendingDown, ArrowUpDown } from "lucide-react";
+import { Search, AlertCircle, CheckCircle, Package, TrendingDown, ArrowUpDown, Filter } from "lucide-react";
 import dayjs from "dayjs";
-// SỬA: Import hook nội bộ, bỏ useCategories
 import { useStockReport, useReportCategories } from "../hooks/useReports";
 import { StockTableItem, StockChartData } from "../types";
 
-// --- HELPERS ---
+// ... (Giữ nguyên Helpers: getStatusRowClass)
 const getStatusRowClass = (status: string) => {
     switch (status) {
         case 'Lỗi tồn kho': return 'bg-red-50 text-red-600 hover:bg-red-100';
@@ -19,7 +18,7 @@ const getStatusRowClass = (status: string) => {
     }
 };
 
-// --- SUB COMPONENT: CHART CARD ---
+// ... (Giữ nguyên component ChartCard)
 const ChartCard = ({
     title, data, barColor, emptyMessage
 }: {
@@ -32,7 +31,7 @@ const ChartCard = ({
             <div className="flex justify-between items-center mb-6">
                 <h3 className="font-bold text-neutral-700 text-sm md:text-base">{title}</h3>
             </div>
-            <div className="h-48 w-full">
+            <div className="h-48 w-full" style={{ minHeight: '192px' }}>
                 {chartData.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={chartData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
@@ -66,43 +65,49 @@ const ChartCard = ({
     );
 };
 
-// --- MAIN COMPONENT ---
 export const StockReportView = () => {
-    // State
+    // State cơ bản
     const [page, setPage] = useState(1);
+    const [limit, setLimit] = useState(10); // Thêm state limit
     const [keyword, setKeyword] = useState("");
     const [categoryIds, setCategoryIds] = useState<string[]>([]);
     const [sortBy, setSortBy] = useState("stockQuantity");
     const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC'>("ASC");
     const [selectedProductId, setSelectedProductId] = useState<string | undefined>(undefined);
 
-    // SỬA: Load Data Categories từ hook nội bộ
+    // State mới
+    const [productType, setProductType] = useState<string | undefined>(undefined);
+    const [chartPeriod, setChartPeriod] = useState<string>('month'); // Chung cho cả nhập/xuất
+
     const { data: categories = [], isLoading: catLoading } = useReportCategories();
 
     // Load Report Data
     const { data, isLoading, isError } = useStockReport({
         page,
-        limit: 10,
+        limit,
         search: keyword || undefined,
         categoryIds: categoryIds.length > 0 ? categoryIds : undefined,
         sortBy,
         sortOrder,
+        productType, // Thêm productType
         productId: selectedProductId,
+        // Thêm params cho chart
+        salesPeriod: chartPeriod as any,
+        importPeriod: chartPeriod as any
     });
 
-    // Safe Data Access
     const tableItems = data?.table?.items || [];
     const totalItems = data?.table?.total || 0;
     const lastSync = data?.meta?.lastDataAt;
 
-    // Cấu hình cột Table
+    // Columns... (Giữ nguyên)
     const columns = [
         {
             title: 'STT',
             dataIndex: 'index',
             width: 60,
             align: 'center' as const,
-            render: (_: any, __: any, index: number) => (page - 1) * 10 + index + 1,
+            render: (_: any, __: any, index: number) => (page - 1) * limit + index + 1,
         },
         {
             title: 'Mã SP',
@@ -160,15 +165,12 @@ export const StockReportView = () => {
                 </div>
             </div>
 
-            {/* GRID LAYOUT */}
             <div className="grid grid-cols-12 gap-6">
-
                 {/* --- LEFT COLUMN: TABLE (7 cols) --- */}
                 <div className="col-span-12 lg:col-span-7 bg-white rounded-[20px] shadow-sm overflow-hidden border border-gray-200 flex flex-col h-[calc(100vh-180px)]">
-                    {/* Custom Table Header CSS */}
                     <style>{`
             .custom-stock-table .ant-table-thead > tr > th {
-              background: #0d9488 !important; /* Teal-600 */
+              background: #0d9488 !important;
               color: white !important;
               text-align: center !important;
               font-weight: 700 !important;
@@ -180,6 +182,32 @@ export const StockReportView = () => {
               padding: 16px !important;
             }
           `}</style>
+
+                    {/* TABLE FILTER BAR */}
+                    <div className="p-3 border-b border-gray-100 bg-gray-50 flex gap-2 flex-wrap">
+                        <Select
+                            placeholder="Loại SP"
+                            className="w-[120px]"
+                            value={productType}
+                            onChange={(val) => { setProductType(val); setPage(1); }}
+                            allowClear
+                            options={[
+                                { label: 'Sách', value: 'book' },
+                                { label: 'Văn phòng phẩm', value: 'stationery' },
+                            ]}
+                        />
+                        <Select
+                            placeholder="Hiển thị"
+                            className="w-[100px]"
+                            value={limit}
+                            onChange={(val) => { setLimit(val); setPage(1); }}
+                            options={[
+                                { label: '10 dòng', value: 10 },
+                                { label: '20 dòng', value: 20 },
+                                { label: '50 dòng', value: 50 },
+                            ]}
+                        />
+                    </div>
 
                     <div className="flex-1 overflow-hidden">
                         {isLoading && !data ? (
@@ -200,12 +228,11 @@ export const StockReportView = () => {
                         )}
                     </div>
 
-                    {/* Footer Pagination */}
                     <div className="p-4 border-t border-gray-200 bg-white flex justify-end">
                         <Pagination
                             current={page}
                             total={totalItems}
-                            pageSize={10}
+                            pageSize={limit} // Dùng state limit
                             onChange={setPage}
                             size="small"
                             showTotal={(total) => `Tổng ${total} SP`}
@@ -216,7 +243,7 @@ export const StockReportView = () => {
                 {/* --- RIGHT COLUMN: FILTERS & CHARTS (5 cols) --- */}
                 <div className="col-span-12 lg:col-span-5 flex flex-col gap-6">
                     {/* FILTERS SECTION */}
-                    <div className="flex flex-wrap gap-3 justify-end">
+                    <div className="flex flex-wrap gap-3 justify-end items-center">
                         <Input
                             prefix={<Search size={16} className="text-teal-700" />}
                             placeholder="Tìm SP..."
@@ -228,8 +255,7 @@ export const StockReportView = () => {
                         <Select
                             placeholder="Lọc: Tất cả"
                             className="min-w-[160px] custom-rounded-select"
-                            dropdownStyle={{ borderRadius: 12 }}
-                            // SỬA: Map data từ hook nội bộ
+                            styles={{ popup: { borderRadius: 12 } }}
                             options={categories.map((c: any) => ({ label: c.name, value: c.id }))}
                             value={categoryIds.length > 0 ? categoryIds[0] : undefined}
                             onChange={(val) => { setCategoryIds(val ? [val] : []); setPage(1); }}
@@ -241,35 +267,48 @@ export const StockReportView = () => {
                             onClick={() => setSortOrder(prev => prev === 'ASC' ? 'DESC' : 'ASC')}
                             className="px-4 py-1.5 bg-white border-2 border-teal-600 rounded-full font-bold text-cyan-950 text-sm hover:bg-teal-50 flex items-center gap-2"
                         >
-                            {sortOrder === 'ASC' ? 'Tăng dần' : 'Giảm dần'}
+                            {sortOrder === 'ASC' ? 'Tăng' : 'Giảm'}
                         </button>
                     </div>
 
-                    {/* CHARTS CONTAINER (Slate BG) */}
-                    <div className="bg-slate-100 p-6 rounded-[20px] space-y-6 flex-1 border border-slate-200">
-                        {/* Sales Chart */}
-                        <ChartCard
-                            title={selectedProductId
-                                ? `Số lượng '${data?.salesChart?.productName || '...'}' bán được:`
-                                : "Số lượng Bán được"}
-                            data={data?.salesChart}
-                            barColor="#0d9488"
-                            emptyMessage="Chọn sản phẩm để xem biểu đồ bán hàng"
-                        />
-                        {/* Import Chart */}
-                        <ChartCard
-                            title={selectedProductId
-                                ? `Số lượng '${data?.salesChart?.productName || '...'}' nhập vào:`
-                                : "Số lượng Nhập vào"}
-                            data={data?.importChart}
-                            barColor="#0d9488"
-                            emptyMessage="Chọn sản phẩm để xem biểu đồ nhập kho"
-                        />
+                    {/* CHARTS CONTAINER */}
+                    <div className="bg-slate-100 p-6 rounded-[20px] space-y-6 flex-1 border border-slate-200 flex flex-col">
+                        {/* Chart Control: Period Selector */}
+                        <div className="flex justify-end">
+                            <Segmented
+                                options={[
+                                    { label: 'Ngày', value: 'day' },
+                                    { label: 'Tuần', value: 'week' },
+                                    { label: 'Tháng', value: 'month' },
+                                ]}
+                                value={chartPeriod}
+                                onChange={(val) => setChartPeriod(val as string)}
+                                size="small"
+                            />
+                        </div>
+
+                        <div className="space-y-6 flex-1 overflow-y-auto custom-scrollbar pr-2">
+                            <ChartCard
+                                title={selectedProductId
+                                    ? `Bán hàng (${chartPeriod === 'day' ? '7 ngày' : chartPeriod === 'week' ? '4 tuần' : '12 tháng'}):`
+                                    : "Số lượng Bán được"}
+                                data={data?.salesChart}
+                                barColor="#0d9488"
+                                emptyMessage="Chọn sản phẩm để xem biểu đồ"
+                            />
+                            <ChartCard
+                                title={selectedProductId
+                                    ? `Nhập hàng (${chartPeriod === 'day' ? '7 ngày' : chartPeriod === 'week' ? '4 tuần' : '12 tháng'}):`
+                                    : "Số lượng Nhập vào"}
+                                data={data?.importChart}
+                                barColor="#0d9488"
+                                emptyMessage="Chọn sản phẩm để xem biểu đồ"
+                            />
+                        </div>
                     </div>
                 </div>
             </div>
-
-            {/* CSS Override cho Select của Antd */}
+            {/* Styles */}
             <style>{`
         .custom-rounded-select .ant-select-selector {
           border: 2px solid #0d9488 !important;

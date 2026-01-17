@@ -1,20 +1,20 @@
 import React, { useState, useMemo } from "react";
-import { DatePicker, Spin, Select } from "antd";
+import { DatePicker, Spin, Select, Segmented, InputNumber, Input } from "antd"; // Thêm Segmented, InputNumber
 import {
     PieChart, Pie, Cell, ResponsiveContainer,
     AreaChart, Area, XAxis, Tooltip as RechartsTooltip, CartesianGrid
 } from "recharts";
-import { DollarSign, Package, TrendingUp, ShoppingBag, Calendar } from "lucide-react";
+import { DollarSign, Package, TrendingUp, ShoppingBag, Calendar, Search } from "lucide-react";
 import dayjs, { Dayjs } from "dayjs";
-// SỬA: Import hook nội bộ, bỏ useCategories từ module khác
 import { useRevenueReport, useReportCategories } from "../hooks/useReports";
 import { formatCurrency } from "@/utils";
 import { DashboardCards, LineChartData, PieChartData, TopProduct, MetricItem } from "../types";
 
 const { RangePicker } = DatePicker;
 
-// --- 1. COMPONENT: PIE CHART SECTION ---
+// ... (Giữ nguyên component PieChartSection)
 const PieChartSection = ({ data }: { data: PieChartData }) => {
+    // Code PieChartSection giữ nguyên như cũ...
     const COLORS = ['#14b8a6', '#3b82f6', '#ec4899', '#f59e0b', '#8b5cf6', '#94a3b8'];
     const totalValue = data?.total || 0;
 
@@ -49,7 +49,7 @@ const PieChartSection = ({ data }: { data: PieChartData }) => {
                 </div>
             </div>
 
-            <div className="flex flex-col items-center gap-6 flex-1">
+            <div className="flex flex-col items-center gap-6 flex-1 min-h-0">
                 {/* Chart Donut */}
                 <div className="relative w-56 h-56 flex-shrink-0 flex items-center justify-center">
                     <ResponsiveContainer width="100%" height="100%">
@@ -105,8 +105,9 @@ const PieChartSection = ({ data }: { data: PieChartData }) => {
     );
 };
 
-// --- 2. COMPONENT: SUMMARY CARDS ---
+// ... (Giữ nguyên component SummaryGrid)
 const SummaryGrid = ({ cards }: { cards: DashboardCards }) => {
+    // ... Code SummaryGrid giữ nguyên
     const renderCard = (title: string, metric: MetricItem, icon: React.ReactNode, bgIcon: string, isCurrency: boolean = false) => {
         const value = metric.value ?? metric.count ?? metric.total ?? 0;
         const growth = metric.growthPercent;
@@ -144,16 +145,23 @@ const SummaryGrid = ({ cards }: { cards: DashboardCards }) => {
     );
 };
 
-// --- 3. COMPONENT: RIGHT COLUMN SECTION ---
+// --- COMPONENT: RIGHT COLUMN ---
 const RightColumnSection = ({
-    chartData, topProducts, dateRange, onDateChange,
-    categoryIds, onCategoryChange
+    chartData, topProducts,
+    // Props mới
+    dateRange, onDateChange,
+    categoryIds, onCategoryChange,
+    period, onPeriodChange,
+    search, onSearchChange,
+    topN, onTopNChange
 }: {
     chartData: LineChartData, topProducts: TopProduct[],
     dateRange: any, onDateChange: any,
-    categoryIds: string[], onCategoryChange: (ids: string[]) => void
+    categoryIds: string[], onCategoryChange: (ids: string[]) => void,
+    period: string, onPeriodChange: (val: string) => void,
+    search: string, onSearchChange: (val: string) => void,
+    topN: number, onTopNChange: (val: number | null) => void
 }) => {
-    // SỬA: Sử dụng hook nội bộ, data trả về đã là mảng ReportCategory[]
     const { data: categories = [], isLoading: isLoadingCats } = useReportCategories();
 
     const data = useMemo(() => {
@@ -174,26 +182,61 @@ const RightColumnSection = ({
 
     return (
         <div className="bg-teal-600/10 p-6 rounded-[20px] space-y-6 h-full flex flex-col">
-            <div className="flex flex-wrap gap-3 items-center justify-between">
-                <div className="flex-1 min-w-[200px]">
+            {/* FILTER BAR 1: Danh mục & Tìm kiếm & TopN */}
+            <div className="flex flex-wrap gap-3 items-center">
+                <div className="flex-1 min-w-[150px]">
+                    <Input
+                        prefix={<Search size={14} className="text-gray-400" />}
+                        placeholder="Tìm sản phẩm..."
+                        value={search}
+                        onChange={(e) => onSearchChange(e.target.value)}
+                        className="rounded-lg border-teal-600/30 hover:border-teal-600 focus:border-teal-600"
+                    />
+                </div>
+                <div className="flex-[2] min-w-[200px]">
                     <Select
                         mode="multiple"
-                        placeholder="Lọc theo Danh mục"
+                        placeholder="Lọc Danh mục"
                         style={{ width: '100%' }}
                         maxTagCount="responsive"
                         value={categoryIds}
                         onChange={onCategoryChange}
                         loading={isLoadingCats}
-                        // SỬA: Map data trực tiếp từ hook nội bộ
                         options={categories.map((c: any) => ({ label: c.name, value: c.id }))}
+                        styles={{ popup: { borderRadius: 12 } }}
                         className="custom-select-teal"
                     />
                 </div>
+                <div className="w-[100px]" title="Số lượng Top sản phẩm hiển thị">
+                    <InputNumber
+                        addonBefore="Top"
+                        min={3} max={50}
+                        value={topN}
+                        onChange={onTopNChange}
+                        className="w-full"
+                    />
+                </div>
+            </div>
+
+            {/* FILTER BAR 2: Thời gian & Chu kỳ */}
+            <div className="flex flex-wrap gap-3 items-center justify-between">
+                {/* Segmented Control cho Period */}
+                <Segmented
+                    options={[
+                        { label: 'Ngày', value: 'day' },
+                        { label: 'Tuần', value: 'week' },
+                        { label: 'Tháng', value: 'month' },
+                    ]}
+                    value={period}
+                    onChange={(val) => onPeriodChange(val as string)}
+                    className="bg-white text-teal-900 font-medium border border-teal-100 shadow-sm"
+                />
+
                 <div className="bg-white border border-teal-600 rounded-lg px-2 py-0.5 shadow-sm flex items-center">
                     <RangePicker
                         value={dateRange}
                         onChange={onDateChange}
-                        bordered={false}
+                        variant="borderless"
                         suffixIcon={<Calendar size={16} className="text-teal-600" />}
                         allowClear={false}
                         className="w-[230px]"
@@ -202,10 +245,17 @@ const RightColumnSection = ({
                 </div>
             </div>
 
+            {/* CHART AREA */}
             <div className="bg-white p-6 rounded-xl border border-zinc-100 shadow-sm flex-shrink-0">
-                <div className="mb-4">
-                    <h3 className="text-3xl font-bold text-cyan-950">{formatCurrency(totalRevenue)}</h3>
-                    <p className="text-neutral-500">Doanh thu theo thời gian</p>
+                <div className="mb-4 flex justify-between items-end">
+                    <div>
+                        <h3 className="text-3xl font-bold text-cyan-950">{formatCurrency(totalRevenue)}</h3>
+                        <p className="text-neutral-500">Doanh thu theo thời gian</p>
+                    </div>
+                    {/* Tag hiển thị chu kỳ đang xem */}
+                    <span className="text-xs bg-teal-50 text-teal-700 px-2 py-1 rounded border border-teal-100">
+                        Theo {period === 'day' ? 'Ngày' : period === 'week' ? 'Tuần' : 'Tháng'}
+                    </span>
                 </div>
                 <div className="w-full h-56">
                     <ResponsiveContainer width="100%" height="100%">
@@ -222,12 +272,17 @@ const RightColumnSection = ({
                                 axisLine={false}
                                 tickLine={false}
                                 tick={{ fill: '#9ca3af', fontSize: 11 }}
-                                tickFormatter={(val) => dayjs(val).format('DD/MM')}
+                                // Format ngày tùy theo period
+                                tickFormatter={(val) => {
+                                    if (period === 'month') return dayjs(val).format('MM/YY');
+                                    return dayjs(val).format('DD/MM');
+                                }}
                                 dy={10}
                             />
                             <RechartsTooltip
                                 contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
                                 formatter={(val: any) => formatCurrency(Number(val))}
+                                labelFormatter={(val) => dayjs(val).format('DD/MM/YYYY')}
                             />
                             <Area
                                 type="monotone"
@@ -242,8 +297,11 @@ const RightColumnSection = ({
                 </div>
             </div>
 
+            {/* TOP LIST */}
             <div className="bg-white p-6 rounded-xl flex-1 border border-zinc-100 shadow-sm overflow-hidden flex flex-col">
-                <h3 className="text-xl font-bold text-cyan-950 mb-4 flex-shrink-0">Các sản phẩm bán chạy:</h3>
+                <h3 className="text-xl font-bold text-cyan-950 mb-4 flex-shrink-0">
+                    Top {topN} sản phẩm bán chạy:
+                </h3>
                 <div className="overflow-y-auto custom-scrollbar flex-1 pr-2 space-y-4">
                     {topProducts.length === 0 && <div className="text-center text-gray-400 py-4">Chưa có dữ liệu</div>}
                     {topProducts.map((p, idx) => (
@@ -276,16 +334,21 @@ export const RevenueReportView = () => {
     const [dateRange, setDateRange] = useState<RangeValue>([dayjs().startOf('month'), dayjs()]);
     const [categoryIds, setCategoryIds] = useState<string[]>([]);
 
+    // --- States Mới ---
+    const [period, setPeriod] = useState<string>('day');
+    const [search, setSearch] = useState<string>('');
+    const [topN, setTopN] = useState<number>(6);
+
     const queryParams = {
         from: dateRange?.[0]?.format('YYYY-MM-DD'),
         to: dateRange?.[1]?.format('YYYY-MM-DD'),
-        period: 'day' as const,
-        topN: 6,
-        categoryIds: categoryIds.length > 0 ? categoryIds : undefined
+        period: period as 'day' | 'week' | 'month',
+        topN: topN,
+        categoryIds: categoryIds.length > 0 ? categoryIds : undefined,
+        search: search || undefined
     };
 
     const { data, isLoading, isError } = useRevenueReport(queryParams);
-
     const handleDateChange = (dates: any) => setDateRange(dates as RangeValue);
 
     if (isError) return <div className="p-10 text-center text-red-500">Lỗi tải dữ liệu. Vui lòng đăng nhập lại.</div>;
@@ -313,10 +376,12 @@ export const RevenueReportView = () => {
                     <RightColumnSection
                         chartData={data?.line || { labels: [], datasets: [] }}
                         topProducts={data?.top || []}
-                        dateRange={dateRange}
-                        onDateChange={handleDateChange}
-                        categoryIds={categoryIds}
-                        onCategoryChange={setCategoryIds}
+                        // Pass props
+                        dateRange={dateRange} onDateChange={handleDateChange}
+                        categoryIds={categoryIds} onCategoryChange={setCategoryIds}
+                        period={period} onPeriodChange={setPeriod}
+                        search={search} onSearchChange={setSearch}
+                        topN={topN} onTopNChange={(val) => val && setTopN(val)}
                     />
                 </div>
             </div>
