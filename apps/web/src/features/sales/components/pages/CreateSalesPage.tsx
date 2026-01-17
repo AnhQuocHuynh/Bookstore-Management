@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { ProductListSection } from "@/features/sales/components/pos/ProductListSection";
 import { CustomerSection } from "@/features/sales/components/pos/CustomerSection";
@@ -6,44 +6,84 @@ import { PaymentSection } from "@/features/sales/components/pos/PaymentSection";
 import { ScannerModal } from "@/features/sales/components/pos/ScannerModal";
 import { CartItem, PaymentMethod } from "@/features/sales/types/pos.types";
 import { ProductResponse } from "@/features/products/api/products.api";
+import { Customer } from "@/features/sales/hooks/use-search-customers";
 
-import { useAuthStore } from "@/stores/useAuthStore"; // [Import Store]
-import { useCreateTransaction } from "@/features/sales/hooks/useCreateTransaction"; // [Import Hook]
-import { CreateTransactionDto } from "@/features/sales/types/sales.types"; // [Import Type]
-
-// --- MOCK DATA FOR SIMULATION (Nếu cần) ---
-const MOCK_PRODUCTS: any[] = [
-    { id: "1", code: "7K9P-2WXM", name: "Tập 100 trang", price: 20000, image: "https://placehold.co/60x60" },
-];
+import { useAuthStore } from "@/stores/useAuthStore";
+import { useCreateTransaction } from "@/features/sales/hooks/useCreateTransaction";
+import { useCalculateTransaction } from "@/features/sales/hooks/use-calculate-transaction";
+import { CreateTransactionDto, CalculateTransactionDto } from "@/features/sales/types/sales.types";
+import { useDebounce } from "@/hooks/use-debounce";
 
 export const CreateSalesPage = () => {
     // --- State ---
     const [cart, setCart] = useState<CartItem[]>([]);
-    const [customerName, setCustomerName] = useState("");
-    const [customerPhone, setCustomerPhone] = useState("");
-    const [isLoyalty, setIsLoyalty] = useState(false);
+    const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
     const [amountGiven, setAmountGiven] = useState<number>(0);
     const [isPrintInvoice, setIsPrintInvoice] = useState(true);
     const [isScanning, setIsScanning] = useState(false);
     const [currentTime, setCurrentTime] = useState(new Date());
 
-    // --- Auth Store & API Hook ---
-    const { user } = useAuthStore(); // Lấy thông tin user hiện tại
-    const { mutate: createTransaction, isPending: isPaying } = useCreateTransaction();
+    const [backendTotals, setBackendTotals] = useState({
+        totalAmount: 0,
+        taxAmount: 0,
+        finalAmount: 0
+    });
 
-    // --- Effects ---
+    // --- Hooks ---
+    const { user } = useAuthStore();
+    const { mutate: createTransaction, isPending: isPaying } = useCreateTransaction();
+    const { mutate: calculateTransaction, isPending: isCalculating } = useCalculateTransaction();
+
+    const debouncedCart = useDebounce(cart, 500);
+
+    // --- Clock ---
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date()), 1000);
         return () => clearInterval(timer);
     }, []);
 
-    // --- Computed ---
-    const totalAmount = useMemo(() => {
-        return cart.reduce((total, item) => total + item.price * item.quantity, 0);
-    }, [cart]);
+    // --- Calculation Logic (FIXED) ---
+    useEffect(() => {
+        // Nếu giỏ hàng rỗng, ta KHÔNG làm gì cả (việc reset đã được xử lý ở event handler)
+        // Điều này giúp tránh vòng lặp render trong useEffect
+        if (debouncedCart.length === 0) return;
 
-    const changeAmount = amountGiven - totalAmount;
+        const payload: CalculateTransactionDto = {
+            createTransactionDetailDtos: debouncedCart.map(item => ({
+                productId: item.id,
+                quantity: item.quantity,
+                unitPrice: item.price
+            }))
+        };
+
+        calculateTransaction(payload, {
+            onSuccess: (data) => {
+                setBackendTotals({
+                    totalAmount: data.totalAmount,
+                    taxAmount: data.taxAmount,
+                    finalAmount: data.finalAmount
+                });
+            },
+            onError: (error: any) => {
+                if (error?.response?.status === 403) {
+                    toast.error("Không có quyền tính toán đơn hàng (Chỉ Employee).");
+                } else {
+                    toast.error("Lỗi đồng bộ giá với hệ thống");
+                }
+            }
+        });
+    }, [debouncedCart, calculateTransaction]);
+
+    // Derived State
+    const changeAmount = amountGiven - backendTotals.finalAmount;
+
+    // --- Helpers ---
+    const resetOrder = () => {
+        setCart([]);
+        setAmountGiven(0);
+        setBackendTotals({ totalAmount: 0, taxAmount: 0, finalAmount: 0 });
+    };
 
     // --- Handlers ---
     const handleAddToCart = (product: ProductResponse) => {
@@ -54,110 +94,93 @@ export const CreateSalesPage = () => {
                     item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
                 );
             }
-            return [
-                ...prev,
-                {
-                    id: product.id,
-                    code: product.sku,
-                    name: product.name,
-                    price: product.price,
-                    image: product.imageUrl || "https://placehold.co/60x60?text=NoImage",
-                    quantity: 1,
-                },
-            ];
+            return [...prev, {
+                id: product.id,
+                code: product.sku,
+                name: product.name,
+                price: product.price,
+                image: product.imageUrl || "",
+                quantity: 1,
+            }];
         });
         toast.success(`Đã thêm: ${product.name}`);
     };
 
     const handleUpdateQuantity = (id: string, delta: number) => {
-        setCart((prev) =>
-            prev.map((item) => {
-                if (item.id === id) {
-                    const newQty = Math.max(1, item.quantity + delta);
-                    return { ...item, quantity: newQty };
-                }
-                return item;
-            })
-        );
+        setCart((prev) => prev.map((item) => {
+            if (item.id === id) {
+                const newQty = Math.max(1, item.quantity + delta);
+                return { ...item, quantity: newQty };
+            }
+            return item;
+        }));
     };
 
+    // FIX LỖI: Reset totals ngay khi xóa sản phẩm cuối cùng
     const handleRemoveItem = (id: string) => {
-        setCart((prev) => prev.filter((item) => item.id !== id));
+        setCart((prev) => {
+            const newCart = prev.filter((item) => item.id !== id);
+
+            // Nếu giỏ hàng trở nên rỗng sau khi xóa
+            if (newCart.length === 0) {
+                // Reset ngay lập tức để UI cập nhật về 0
+                setBackendTotals({ totalAmount: 0, taxAmount: 0, finalAmount: 0 });
+            }
+            return newCart;
+        });
     };
 
-    const handleScanSuccess = (code: string) => {
-        // Logic khi quét mã thật: Gọi API lấy product theo mã code
-        // Ở đây giả lập lấy sản phẩm đầu tiên
-        // Trong thực tế: const product = await productsApi.getByCode(code);
-        const mockProduct: ProductResponse = {
-            id: "1", sku: "7K9P-2WXM", name: "Tập 100 trang", price: 20000,
-            description: "", type: "stationery", isActive: true
-        };
-        handleAddToCart(mockProduct);
-        // Không đóng modal để quét tiếp, hoặc đóng tùy yêu cầu
-        // setIsScanning(false);
-    };
     const handlePayment = () => {
-        // 1. Kiểm tra giỏ hàng rỗng
-        if (cart.length === 0) {
-            toast.error("Giỏ hàng đang trống");
-            return;
+        if (cart.length === 0) return toast.error("Giỏ hàng trống");
+        if (user?.role !== "EMPLOYEE") return toast.error("Chỉ nhân viên mới được thanh toán");
+        if (amountGiven < backendTotals.finalAmount) return toast.error("Khách đưa chưa đủ tiền");
+
+        let finalPaymentMethod: "cash" | "card" | "bank_transfer" | "e_wallet" = "cash";
+        if (paymentMethod === "qr") {
+            finalPaymentMethod = "bank_transfer";
+        } else {
+            finalPaymentMethod = paymentMethod as any;
         }
 
-        // 2. Kiểm tra quyền EMPLOYEE
-        // Lưu ý: Role trong store của bạn đang lưu là "EMPLOYEE", "OWNER", hoặc "ADMIN"
-        if (user?.role !== "EMPLOYEE") {
-            toast.error("Chỉ tài khoản Nhân viên mới được phép thực hiện thanh toán.");
-            return;
-        }
-
-        // 3. Kiểm tra số tiền khách đưa
-        if (amountGiven < totalAmount) {
-            toast.error("Số tiền khách đưa không đủ.");
-            return;
-        }
-
-        // 4. Chuẩn bị Payload
         const payload: CreateTransactionDto = {
             createTransactionDetailDtos: cart.map((item) => ({
                 productId: item.id,
                 quantity: item.quantity,
                 unitPrice: item.price,
             })),
-            note: customerName
-                ? `${customerName} - ${customerPhone}`
-                : "Khách lẻ", // Logic note tùy chỉnh
+            totalAmount: backendTotals.totalAmount,
+            taxAmount: backendTotals.taxAmount,
+            finalAmount: backendTotals.finalAmount,
             paidAmount: amountGiven,
-            changeAmount: changeAmount, // Đã được tính toán ở useMemo changeAmount = amountGiven - totalAmount
+            changeAmount: changeAmount,
+            paymentMethod: finalPaymentMethod,
+            customerId: selectedCustomer?.id,
+            note: selectedCustomer ? `Khách hàng: ${selectedCustomer.fullName}` : "Khách lẻ",
         };
 
-        // 5. Gọi API
         createTransaction(payload, {
             onSuccess: (data) => {
-                // Xử lý sau khi thành công
-                if (isPrintInvoice) {
-                    toast.info(`Đang in hóa đơn #${data.id.substring(0, 8)}...`);
-                    // Gọi hàm in hóa đơn ở đây nếu có
-                }
-
-                // Reset form
-                setCart([]);
-                setAmountGiven(0);
-                setCustomerName("");
-                setCustomerPhone("");
+                if (isPrintInvoice) toast.info(`Đang in hóa đơn #${data.id.substring(0, 8)}...`);
+                resetOrder();
+                setSelectedCustomer(null);
             },
         });
     };
 
     return (
         <div className="flex flex-col lg:flex-row h-[calc(100vh-100px)] gap-4 p-2 bg-gray-100 font-['Inter'] relative select-none">
-            {/* Scanner Modal */}
             {isScanning && (
-                <ScannerModal onClose={() => setIsScanning(false)} onScan={handleScanSuccess} />
+                <ScannerModal onClose={() => setIsScanning(false)} onScan={(code) => toast.info(code)} />
             )}
 
             {/* LEFT SECTION */}
             <div className="flex-1 flex flex-col gap-4 h-full min-h-0">
+                <div className="flex-shrink-0">
+                    <CustomerSection
+                        selectedCustomer={selectedCustomer}
+                        onSelectCustomer={setSelectedCustomer}
+                    />
+                </div>
                 <ProductListSection
                     cart={cart}
                     onUpdateQuantity={handleUpdateQuantity}
@@ -165,29 +188,27 @@ export const CreateSalesPage = () => {
                     onAddToCart={handleAddToCart}
                     onOpenScanner={() => setIsScanning(true)}
                 />
-                <CustomerSection
-                    customerName={customerName}
-                    setCustomerName={setCustomerName}
-                    customerPhone={customerPhone}
-                    setCustomerPhone={setCustomerPhone}
-                    isLoyalty={isLoyalty}
-                    setIsLoyalty={setIsLoyalty}
-                    totalAmount={totalAmount}
-                />
             </div>
 
             {/* RIGHT SECTION */}
-            <PaymentSection
-                currentTime={currentTime}
-                paymentMethod={paymentMethod}
-                setPaymentMethod={setPaymentMethod}
-                amountGiven={amountGiven}
-                setAmountGiven={setAmountGiven}
-                changeAmount={changeAmount}
-                isPrintInvoice={isPrintInvoice}
-                setIsPrintInvoice={setIsPrintInvoice}
-                onPayment={handlePayment}
-            />
+            <div className="w-full lg:w-[420px] flex flex-col gap-4 h-full min-h-0">
+                <PaymentSection
+                    currentTime={currentTime}
+                    paymentMethod={paymentMethod}
+                    setPaymentMethod={setPaymentMethod}
+                    amountGiven={amountGiven}
+                    setAmountGiven={setAmountGiven}
+                    changeAmount={changeAmount}
+                    isPrintInvoice={isPrintInvoice}
+                    setIsPrintInvoice={setIsPrintInvoice}
+                    onPayment={handlePayment}
+                    subTotal={backendTotals.totalAmount}
+                    taxAmount={backendTotals.taxAmount}
+                    finalAmount={backendTotals.finalAmount}
+                    isCalculating={isCalculating}
+                    isPaying={isPaying}
+                />
+            </div>
         </div>
     );
 };

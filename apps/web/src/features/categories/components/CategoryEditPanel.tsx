@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Modal, Form, Input, InputNumber, Button, Switch, Tag } from "antd"; // Thêm Switch, Tag
+import { Modal, Form, Input, InputNumber, Button, Switch, Tag, App } from "antd"; // Import App để dùng message context mới
 import { CategoryFormData } from "../types";
 
 interface CategoryEditPanelProps {
@@ -18,24 +18,26 @@ export const CategoryEditPanel: React.FC<CategoryEditPanelProps> = ({
     const [form] = Form.useForm();
     const [isDirty, setIsDirty] = useState(false);
 
+    // FIX: Sửa lỗi "Instance created by useForm is not connected"
+    // Chỉ set dữ liệu khi Modal đã mở (isOpen = true) VÀ có dữ liệu
     useEffect(() => {
-        if (initialData) {
-            // Map data từ API vào Form
+        if (isOpen && initialData) {
             form.setFieldsValue({
                 ...initialData,
                 // Chuyển đổi status string -> boolean cho Switch
                 isActive: initialData.status === 'active',
             });
         }
-    }, [initialData, form]);
+    }, [isOpen, initialData, form]);
 
     const handleSubmit = async () => {
         try {
             const values = await form.validateFields();
 
-            // Chuyển đổi ngược lại: boolean (Switch) -> status string (API)
             const submitData: CategoryFormData = {
                 ...values,
+                // Ép kiểu taxRate để đảm bảo Backend nhận được số (tránh lỗi 500 do sai type)
+                taxRate: Number(values.taxRate),
                 status: values.isActive ? 'active' : 'inactive',
             };
 
@@ -54,7 +56,8 @@ export const CategoryEditPanel: React.FC<CategoryEditPanelProps> = ({
             Modal.confirm({
                 title: "Hủy thay đổi?",
                 content: "Các thay đổi chưa lưu sẽ bị mất.",
-                okText: "Đóng",
+                okText: "Đồng ý",
+                cancelText: "Không", // Thêm text hủy
                 onOk: onClose,
             });
         } else {
@@ -67,68 +70,86 @@ export const CategoryEditPanel: React.FC<CategoryEditPanelProps> = ({
             open={isOpen}
             onCancel={handleClose}
             afterClose={() => {
-                form.resetFields();
+                form.resetFields(); // Reset form khi đóng modal
                 setIsDirty(false);
             }}
-            width={600}
+            width={1200}
             centered
             footer={null}
-            destroyOnClose={true}
+            // destroyOnClose={true} // Bỏ dòng này nếu Antd báo deprecated, ta đã dùng form.resetFields() ở trên
             title={null}
-            closeIcon={<span className="text-2xl text-[#102e3c] hover:opacity-70">×</span>}
-            styles={{ body: { padding: 0 }, mask: { backgroundColor: "rgba(16, 46, 60, 0.5)" } }}
+            closeIcon={<span className="text-3xl text-[#102e3c] cursor-pointer hover:opacity-70">×</span>}
+            styles={{
+                body: { backgroundColor: "#D4E5E4", padding: 0 },
+                mask: { backgroundColor: "rgba(16, 46, 60, 0.5)" },
+            }}
         >
-            <div className="bg-[#D4E5E4] rounded-lg p-6">
-                <h2 className="text-center text-2xl font-bold text-[#102e3c] mb-6">Cập Nhật Danh Mục</h2>
+            <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "#D4E5E4", borderRadius: 12, zIndex: 0 }} />
+            <div className="bg-[#D4E5E4] rounded-xl p-8 relative" style={{ zIndex: 1 }}>
+                <h2 className="text-center text-3xl font-bold text-[#102e3c] mb-8">Cập Nhật Danh Mục</h2>
 
-                <Form form={form} layout="vertical" onValuesChange={() => setIsDirty(true)}>
-
-                    {/* Hàng 1: Tên & Trạng thái */}
-                    <div className="grid grid-cols-3 gap-4">
-                        <Form.Item name="name" label={<span className="font-semibold">Tên Danh Mục</span>} rules={[{ required: true }]} className="col-span-2">
-                            <Input className="border-[#102e3c]" />
-                        </Form.Item>
-
-                        {/* --- TOGGLE STATUS --- */}
-                        <div className="flex flex-col gap-2 pt-1">
-                            <span className="font-semibold text-[#102e3c]">Trạng thái:</span>
-                            <div className="flex items-center gap-3 h-[32px]">
-                                <Form.Item name="isActive" valuePropName="checked" noStyle>
-                                    <Switch />
+                <div className="flex justify-center">
+                    <div className="w-full max-w-3xl">
+                        <Form
+                            form={form}
+                            layout="vertical"
+                            requiredMark={false}
+                            className="space-y-4"
+                            onValuesChange={() => setIsDirty(true)}
+                        >
+                            {/* Hàng 1: Tên & Trạng thái */}
+                            <div className="grid grid-cols-3 gap-6">
+                                <Form.Item name="name" label={<span className="text-lg font-semibold text-[#102e3c]">Tên Danh Mục:</span>} rules={[{ required: true, message: "Nhập tên danh mục" }]} className="col-span-2">
+                                    <Input className="border-0 border-b-2 border-[#102e3c] rounded-none bg-transparent text-lg px-0 focus:shadow-none hover:border-[#1a998f] focus:border-[#1a998f]" />
                                 </Form.Item>
-                                <Form.Item noStyle shouldUpdate={(prev, curr) => prev.isActive !== curr.isActive}>
-                                    {({ getFieldValue }) =>
-                                        getFieldValue("isActive") ? (
-                                            <Tag color="success">Hiện</Tag>
-                                        ) : (
-                                            <Tag color="error">Ẩn</Tag>
-                                        )
-                                    }
-                                </Form.Item>
+
+                                {/* --- TOGGLE STATUS --- */}
+                                <div className="flex flex-col gap-2 pt-1">
+                                    <span className="text-lg font-semibold text-[#102e3c]">Trạng thái:</span>
+                                    <div className="flex items-center gap-3 h-[32px]">
+                                        <Form.Item name="isActive" valuePropName="checked" noStyle>
+                                            <Switch />
+                                        </Form.Item>
+                                        <Form.Item noStyle shouldUpdate={(prev, curr) => prev.isActive !== curr.isActive}>
+                                            {({ getFieldValue }) =>
+                                                getFieldValue("isActive") ? (
+                                                    <Tag color="success">Hiện</Tag>
+                                                ) : (
+                                                    <Tag color="error">Ẩn</Tag>
+                                                )
+                                            }
+                                        </Form.Item>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                        {/* --------------------- */}
+
+                            <Form.Item name="slug" label={<span className="text-lg font-semibold text-[#102e3c]">Slug (Đường dẫn tĩnh):</span>} rules={[{ required: true, message: "Nhập slug" }]}>
+                                <Input className="border-0 border-b-2 border-[#102e3c] rounded-none bg-transparent text-lg px-0 focus:shadow-none hover:border-[#1a998f] focus:border-[#1a998f]" />
+                            </Form.Item>
+
+                            <Form.Item name="taxRate" label={<span className="text-lg font-semibold text-[#102e3c]">Thuế suất (VD: 0.1 là 10%):</span>} rules={[{ required: true, message: "Nhập thuế suất" }]}>
+                                <InputNumber
+                                    className="w-full border-0 border-b-2 border-[#102e3c] rounded-none bg-transparent text-lg px-0"
+                                    step={0.01}
+                                    min={0}
+                                    max={1}
+                                    placeholder="0.05"
+                                    stringMode={false} // Đảm bảo trả về number
+                                />
+                            </Form.Item>
+
+                            <Form.Item name="description" label={<span className="text-lg font-semibold text-[#102e3c]">Mô Tả:</span>}>
+                                <Input.TextArea rows={3} className="border-2 border-[#102e3c] rounded-lg bg-transparent text-lg resize-none focus:border-[#1a998f] hover:border-[#1a998f]" />
+                            </Form.Item>
+                        </Form>
                     </div>
+                </div>
 
-                    <Form.Item name="slug" label={<span className="font-semibold">Slug (Đường dẫn tĩnh)</span>} rules={[{ required: true }]}>
-                        <Input className="border-[#102e3c]" />
-                    </Form.Item>
-
-                    <Form.Item name="taxRate" label={<span className="font-semibold">Thuế suất</span>} rules={[{ required: true }]}>
-                        <InputNumber className="w-full border-[#102e3c]" step={0.01} min={0} max={1} />
-                    </Form.Item>
-
-                    <Form.Item name="description" label={<span className="font-semibold">Mô Tả</span>}>
-                        <Input.TextArea rows={3} className="border-[#102e3c]" />
-                    </Form.Item>
-
-                    <div className="flex justify-center mt-6 gap-3">
-                        <Button onClick={onClose} className="h-10 px-6 rounded-xl border-[#102e3c]">Hủy</Button>
-                        <Button type="primary" onClick={handleSubmit} className="bg-[#1a998f] hover:bg-[#158f85] h-10 px-8 font-bold rounded-xl border-none">
-                            Cập Nhật
-                        </Button>
-                    </div>
-                </Form>
+                <div className="flex justify-center mt-8">
+                    <Button type="primary" onClick={handleSubmit} className="h-12 px-20 rounded-2xl bg-[#1a998f] text-2xl font-bold border-none hover:bg-[#158f85]">
+                        Cập Nhật
+                    </Button>
+                </div>
             </div>
         </Modal>
     );

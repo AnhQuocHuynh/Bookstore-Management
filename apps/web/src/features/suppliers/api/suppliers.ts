@@ -15,4 +15,5 @@ export const supplierApi = {
 
   // Xóa (DELETE)
   delete: (id: string) => apiClient.delete(`/suppliers/${id}`),
+
 };

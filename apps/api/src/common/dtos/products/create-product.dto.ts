@@ -13,6 +13,7 @@ import {
   IsOptional,
   IsPositive,
   IsString,
+  IsUrl,
   IsUUID,
   ValidateIf,
   ValidateNested,
@@ -106,4 +107,9 @@ export class CreateProductDto {
     message: 'Tỷ lệ phải là số dương',
   })
   readonly taxRate?: number;
+
+  @ApiPropertyOptional({ description: 'URL ảnh sản phẩm' })
+  @IsOptional()
+  @IsUrl()
+  readonly imageUrl?: string;
 }

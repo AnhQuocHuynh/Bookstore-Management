@@ -1,30 +1,46 @@
 import { Link, useLocation } from "react-router-dom";
 import { useState } from "react";
-import StoreModal from "@/components/StoreModal";
+import StoreModal from "@/components/StoreModal"; // Đảm bảo đường dẫn import đúng
 
 interface SidebarProps {
   onItemClick?: () => void;
 }
 
-const menuItems = [
+// Định nghĩa kiểu dữ liệu cho menu item để dùng đệ quy
+interface MenuItem {
+  path: string;
+  label: string;
+  icon?: string;
+  children?: MenuItem[];
+}
+
+const menuItems: MenuItem[] = [
   { path: "/dashboard", label: "Tổng quan", icon: "dashboard" },
   {
     path: "/dashboard/products",
     label: "Sản phẩm",
     icon: "menu_book",
     children: [
-      { path: "/dashboard/products/list", label: "Danh sách sản phẩm" },
       { path: "/dashboard/products/inventories", label: "Tồn kho" },
-      { path: "/dashboard/products/display", label: "Hàng trưng bày" },
+      // Mục này có children -> Cần logic đệ quy để hiển thị
+      {
+        path: "/dashboard/products/display",
+        label: "Hàng trưng bày",
+        children: [
+          { path: "/dashboard/products/display/list", label: "Danh sách kệ" },
+          { path: "/dashboard/products/display/filter", label: "Tìm kiếm SP" },
+          { path: "/dashboard/products/display/history", label: "Lịch sử" },
+        ]
+      },
     ],
   },
   {
-    path: "/dashboard/purchases",
+    path: "/purchase-orders",
     label: "Nhập hàng",
     icon: "inventory",
     children: [
-      { path: "/dashboard/purchases/create", label: "Tạo phiếu nhập" },
-      { path: "/dashboard/purchases/list", label: "Danh sách phiếu nhập" },
+      { path: "/purchase-orders/create", label: "Tạo phiếu nhập" },
+      { path: "/purchase-orders/list", label: "Danh sách phiếu nhập" },
     ],
   },
   {
@@ -46,28 +62,17 @@ const menuItems = [
       { path: "/dashboard/employees/list", label: "Danh sách nhân viên" },
     ],
   },
-  {
-    path: "/dashboard/suppliers",
-    label: "Nhà cung cấp",
-    icon: "local_shipping",
-  },
-  {
-    path: "/dashboard/categories",
-    label: "Danh mục",
-    icon: "category",
-  },
-  {
-    path: "/dashboard/publishers",
-    label: "Nhà xuất bản",
-    icon: "public",
-  },
+  { path: "/dashboard/suppliers", label: "Nhà cung cấp", icon: "local_shipping" },
+  { path: "/dashboard/categories", label: "Danh mục", icon: "category" },
+  { path: "/dashboard/publishers", label: "Nhà xuất bản", icon: "public" },
+  { path: "/dashboard/authors", label: "Tác giả", icon: "person" },
   {
     path: "/reports",
     label: "Thống kê",
     icon: "pie_chart",
     children: [
       { path: "/reports/revenue", label: "Doanh thu" },
-      { path: "/reports/inventories", label: "Tồn kho" },
+      { path: "/reports/stocks", label: "Tồn kho" },
       { path: "/reports/employees", label: "Nhân viên" },
     ],
   },
@@ -77,17 +82,75 @@ const Sidebar = ({ onItemClick }: SidebarProps) => {
   const location = useLocation();
   const [openMenus, setOpenMenus] = useState<string[]>([]);
 
+  // Kiểm tra xem path hiện tại có active không (bao gồm cả logic cho con)
   const isActive = (path: string) => location.pathname === path;
 
+  // Toggle menu mở/đóng
   const toggleMenu = (path: string) => {
-    setOpenMenus((prev) => (prev.includes(path) ? [] : [path]));
+    setOpenMenus((prev) =>
+      prev.includes(path)
+        ? prev.filter((p) => p !== path) // Đóng
+        : [...prev, path] // Mở (cho phép mở nhiều menu cùng lúc)
+    );
+  };
+
+  // --- HÀM RENDER ĐỆ QUY (QUAN TRỌNG) ---
+  const renderMenuItem = (item: MenuItem, level: number = 0) => {
+    const hasChildren = item.children && item.children.length > 0;
+    const isOpen = openMenus.includes(item.path);
+
+    // Tính toán padding dựa trên cấp độ (Level 0: 16px, Level 1: 32px, Level 2: 48px...)
+    // padding-left: 1rem (16px) + level * 1rem
+    const paddingLeftClass = level === 0 ? "px-4" : level === 1 ? "pl-8 pr-4" : "pl-12 pr-4";
+
+    if (hasChildren) {
+      return (
+        <div key={item.path} className="flex flex-col">
+          <button
+            onClick={() => toggleMenu(item.path)}
+            className={`flex w-full items-center gap-3 rounded-xl py-2.5 transition-all text-left mb-1
+              ${paddingLeftClass}
+              ${isActive(item.path) ? "bg-[#1A998F]" : "hover:bg-[#187F87]"}
+            `}
+          >
+            {item.icon && <span className="material-symbols-outlined">{item.icon}</span>}
+            <span className="text-sm font-medium flex-1">{item.label}</span>
+            <span className="material-symbols-outlined text-sm">
+              {isOpen ? "expand_less" : "expand_more"}
+            </span>
+          </button>
+
+          {/* Container chứa children với hiệu ứng đóng mở */}
+          <div
+            className={`overflow-hidden transition-all duration-300 ease-in-out
+              ${isOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"}
+            `}
+          >
+            {item.children!.map((child) => renderMenuItem(child, level + 1))}
+          </div>
+        </div>
+      );
+    }
+
+    // Render Link (Item cuối cùng không có con)
+    return (
+      <Link
+        key={item.path}
+        to={item.path}
+        onClick={onItemClick}
+        className={`flex items-center gap-3 rounded-xl py-2.5 transition-all mb-1
+          ${paddingLeftClass}
+          ${isActive(item.path) ? "bg-[#1A998F]" : "hover:bg-[#187F87]"}
+        `}
+      >
+        {item.icon && <span className="material-symbols-outlined">{item.icon}</span>}
+        <span className="text-sm font-medium">{item.label}</span>
+      </Link>
+    );
   };
 
   return (
-    <aside
-      className="flex h-full w-[230px] flex-col justify-between bg-[#102E3C] p-4 text-white
-    "
-    >
+    <aside className="flex h-full w-[230px] flex-col justify-between bg-[#102E3C] p-4 text-white overflow-y-auto custom-scrollbar">
       <div className="flex flex-col gap-4">
         <StoreModal
           store={{
@@ -99,68 +162,15 @@ const Sidebar = ({ onItemClick }: SidebarProps) => {
           onSave={(data: any) => console.log("Save store:", data)}
         />
 
-        <nav className="flex flex-col gap-2 md:pt-4">
-          {menuItems.map((item) => (
-            <div key={item.path}>
-              {item.children ? (
-                <button
-                  onClick={() => toggleMenu(item.path)}
-                  className={`flex w-full items-center gap-3 rounded-xl px-4 py-2.5 transition-all
-                    ${isActive(item.path)
-                      ? "bg-[#1A998F]"
-                      : "hover:bg-[#187F87]"
-                    }`}
-                >
-                  <span className="material-symbols-outlined">{item.icon}</span>
-                  <span className="text-sm font-medium">{item.label}</span>
-                  <span className="ml-auto material-symbols-outlined">
-                    {openMenus.includes(item.path)
-                      ? "expand_less"
-                      : "expand_more"}
-                  </span>
-                </button>
-              ) : (
-                <Link
-                  to={item.path}
-                  onClick={onItemClick}
-                  className={`flex items-center gap-3 rounded-xl px-4 py-2.5 transition-all
-                    ${isActive(item.path)
-                      ? "bg-[#1A998F]"
-                      : "hover:bg-[#187F87]"
-                    }`}
-                >
-                  <span className="material-symbols-outlined">{item.icon}</span>
-                  <span className="text-sm font-medium">{item.label}</span>
-                </Link>
-              )}
-
-              {item.children && (
-                <div
-                  className={`overflow-hidden transition-all duration-300 ${openMenus.includes(item.path) ? "max-h-60 mt-1" : "max-h-0"
-                    }`}
-                >
-                  {item.children.map((child) => (
-                    <Link
-                      key={child.path}
-                      to={child.path}
-                      onClick={onItemClick}
-                      className={`block rounded-lg px-4 py-2 text-sm hover:bg-[#1A7C7B]
-                        ${isActive(child.path) ? "bg-[#1A998F]" : ""}`}
-                    >
-                      {child.label}
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
+        <nav className="flex flex-col md:pt-4">
+          {menuItems.map((item) => renderMenuItem(item))}
         </nav>
       </div>
 
       <Link
         to="/settings"
         onClick={onItemClick}
-        className="flex items-center gap-3 rounded-xl px-4 py-2.5 transition-all hover:bg-[#187F87]"
+        className="flex items-center gap-3 rounded-xl px-4 py-2.5 transition-all hover:bg-[#187F87] mt-4"
       >
         <span className="material-symbols-outlined">settings</span>
         <span className="text-sm font-medium">Settings</span>

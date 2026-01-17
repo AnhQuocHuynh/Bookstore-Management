@@ -34,7 +34,7 @@ import { BadRequestException } from '@nestjs/common/exceptions';
 @ApiBearerAuth()
 @Roles(UserRole.OWNER)
 export class CategoriesController {
-  constructor(private readonly categoriesService: CategoriesService) { }
+  constructor(private readonly categoriesService: CategoriesService) {}
 
   @ApiOperation({
     summary: 'Tạo mới danh mục',
@@ -105,7 +105,8 @@ export class CategoriesController {
     @UserSession() userSession?: TUserSession, // 1. Thêm dấu ? để báo biến này có thể undefined
   ) {
     // 2. Dùng Optional Chaining (?.) để tránh lỗi 500 nếu userSession là null
-    const targetBookStoreId = getCategoriesQueryDto.bookStoreId || userSession?.bookStoreId;
+    const targetBookStoreId =
+      getCategoriesQueryDto.bookStoreId || userSession?.bookStoreId;
 
     if (!targetBookStoreId) {
       throw new BadRequestException(
@@ -117,11 +118,11 @@ export class CategoriesController {
     // Vì Service đang mong đợi một object TUserSession, không được truyền null xuống
     const safeUserSession = userSession
       ? { ...userSession, bookStoreId: targetBookStoreId }
-      : {
-        userId: 'guest',
-        role: UserRole.CUSTOMER,
-        bookStoreId: targetBookStoreId
-      } as TUserSession;
+      : ({
+          userId: 'guest',
+          role: UserRole.CUSTOMER,
+          bookStoreId: targetBookStoreId,
+        } as TUserSession);
 
     return this.categoriesService.getCategories(
       safeUserSession,

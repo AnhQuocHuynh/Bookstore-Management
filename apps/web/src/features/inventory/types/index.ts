@@ -45,6 +45,7 @@ export interface InventoryTableRow {
 
   category: string;
   supplier: string;
+  type: string;
   description: string;
 
   // FIX LỖI 2: Thêm trường isActive vào đây
@@ -55,6 +56,14 @@ export interface InventoryTableRow {
   releaseYear?: number;
   releaseVersion?: string;
   language?: string;
+
+  book?: {
+    author?: string;
+    publisher?: string;
+    publicationYear?: number;
+    releaseVersion?: string;
+    language?: string;
+  };
 
   createdDate: string;
   updateDate: string;
@@ -88,6 +97,7 @@ export interface InventoryFormData {
   purchasePrice?: number;
   stock?: number;
   category?: string;
+  type?: string;
   supplier?: string;
   author?: string;
   publisher?: string;

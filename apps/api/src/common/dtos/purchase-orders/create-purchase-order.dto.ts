@@ -9,6 +9,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsUUID,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 
@@ -77,6 +78,11 @@ export class CreatePurchaseOrderDto {
             costPrice: 120000,
           },
         },
+      },
+      {
+        quantity: 5,
+        unitPrice: 120000,
+        productId: 'id-1',
       },
     ],
   })

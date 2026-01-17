@@ -12,6 +12,7 @@ export { EmployeeSchedulePage } from './pages/EmployeeSchedulePage';
 // Components
 export { EmployeeModal } from './components/EmployeeModal';
 export { ShiftModal } from './components/ShiftModal';
+export { EmployeesPage } from './components/EmployeesPage';
 
 // Hooks
 export * from './hooks/useEmployees';

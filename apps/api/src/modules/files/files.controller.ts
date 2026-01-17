@@ -21,7 +21,7 @@ import { BadRequestException } from '@nestjs/common';
 @ApiTags('Upload File') // Đặt tên nhóm API cho dễ tìm
 @ApiBearerAuth()
 export class FilesController {
-  constructor(private readonly filesService: FilesService) { }
+  constructor(private readonly filesService: FilesService) {}
 
   @ApiOperation({
     summary: 'Upload file',
@@ -52,7 +52,9 @@ export class FilesController {
   @UseInterceptors(FileInterceptor('file'))
   async uploadFile(@UploadedFile() file: Express.Multer.File) {
     if (!file) {
-      throw new BadRequestException('Không tìm thấy file. Vui lòng kiểm tra key gửi lên phải là "file".');
+      throw new BadRequestException(
+        'Không tìm thấy file. Vui lòng kiểm tra key gửi lên phải là "file".',
+      );
     }
     return this.filesService.uploadFile(file);
   }
