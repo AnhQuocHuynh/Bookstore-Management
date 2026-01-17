@@ -104,8 +104,7 @@ export const EmployeeSchedulePage = () => {
                   setEditingShift(null);
                   setIsShiftModalOpen(true);
                 }}
-                type="primary"
-                className="bg-[#1a998f] hover:bg-[#158f85] h-10 px-4 rounded-xl font-bold border-none"
+                className="bg-[#1a998f] hover:bg-[#158f85] h-10 px-4 rounded-xl font-bold border-none text-white"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Thêm Ca

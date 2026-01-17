@@ -91,10 +91,10 @@ export const EmployeeDetailPanel: React.FC<EmployeeDetailPanelProps> = ({ select
                     <div className="my-4 border-t border-dashed border-gray-300"></div>
 
                     <h4 className="text-[#1a998f] font-bold mb-2">Thông tin liên hệ</h4>
-                    <InfoRow label="Số điện thoại" value={selectedItem.phoneNumber} />
+                    <InfoRow label="Số điện thoại" value={selectedItem.phone} />
                     <InfoRow label="Email" value={selectedItem.email} />
                     <InfoRow label="Địa chỉ" value={selectedItem.address || "Chưa cập nhật"} />
-                    <InfoRow label="Ngày sinh" value={selectedItem.birthDate ? formatDate(selectedItem.birthDate) : "Chưa cập nhật"} />
+                    <InfoRow label="Ngày sinh" value={selectedItem.dateOfBirth ? formatDate(selectedItem.dateOfBirth) : "Chưa cập nhật"} />
 
                     <div className="my-4 border-t border-dashed border-gray-300"></div>
                     <h4 className="text-[#1a998f] font-bold mb-2">Thông tin công việc</h4>

@@ -42,7 +42,7 @@ export const EmployeeListPage = () => {
             data = data.filter((item: Employee) =>
                 (item.fullName && item.fullName.toLowerCase().includes(lowerKeyword)) ||
                 (item.email && item.email.toLowerCase().includes(lowerKeyword)) ||
-                (item.phoneNumber && item.phoneNumber.includes(lowerKeyword)) ||
+                (item.phone && item.phone.includes(lowerKeyword)) ||
                 (item.id && item.id.includes(lowerKeyword))
             );
         }
@@ -95,14 +95,32 @@ export const EmployeeListPage = () => {
     };
 
     // --- Mapping Data for Edit Form ---
-    const selectedFormData: EmployeeFormData | undefined = selectedEmployee ? {
-        fullName: selectedEmployee.fullName,
-        email: selectedEmployee.email,
-        phoneNumber: selectedEmployee.phoneNumber,
-        address: selectedEmployee.address,
-        birthDate: selectedEmployee.birthDate,
-        avatarUrl: selectedEmployee.avatarUrl || undefined,
-    } : undefined;
+    const selectedFormData: EmployeeFormData | undefined = useMemo(() => {
+        if (!selectedEmployee) return undefined;
+        
+        // Tìm employee đầy đủ từ employeesList
+        const fullEmployee = employeesList.find(emp => emp.id === selectedEmployee.id);
+        if (!fullEmployee) return undefined;
+        
+        return {
+            staffId: fullEmployee.staffId,
+            fullName: fullEmployee.fullName,
+            email: fullEmployee.email,
+            phone: fullEmployee.phone,
+            dateOfBirth: fullEmployee.dateOfBirth,
+            gender: fullEmployee.gender,
+            address: fullEmployee.address,
+            avatarUrl: fullEmployee.avatarUrl || undefined,
+            role: fullEmployee.role,
+            status: fullEmployee.status,
+            startDate: fullEmployee.startDate,
+            salary: fullEmployee.salary,
+            identityCard: fullEmployee.identityCard,
+            emergencyContactName: fullEmployee.emergencyContact?.name,
+            emergencyContactPhone: fullEmployee.emergencyContact?.phone,
+            emergencyContactRelationship: fullEmployee.emergencyContact?.relationship,
+        };
+    }, [selectedEmployee, employeesList]);
 
     return (
         <div className="relative w-full h-full overflow-hidden flex flex-col font-['Inter']">
@@ -118,7 +136,7 @@ export const EmployeeListPage = () => {
                             <Button onClick={handleDelete} danger disabled={!selectedEmployee} className="h-10 rounded-xl font-semibold">
                                 Xóa
                             </Button>
-                            <Button onClick={() => selectedEmployee ? setIsEditOpen(true) : message.warning("Chọn nhân viên để sửa")} disabled={!selectedEmployee} className="h-10 rounded-xl font-semibold border-teal-600 text-teal-700">
+                            <Button onClick={() => selectedEmployee ? setIsEditOpen(true) : message.warning("Chọn nhân viên để sửa")} disabled={!selectedEmployee} className="bg-[#1a998f] hover:bg-[#158f85] h-10 px-4 rounded-xl font-semibold border-none text-white">
                                 Sửa
                             </Button>
                             <Button type="primary" icon={<Plus size={18} />} className="bg-[#1a998f] hover:bg-[#158f85] h-10 px-4 rounded-xl font-bold border-none">
@@ -176,6 +194,7 @@ export const EmployeeListPage = () => {
                         <button
                             onClick={() => setSelectedEmployee(null)}
                             className="absolute top-3 right-3 p-1.5 rounded-full hover:bg-gray-100 text-gray-500 hover:text-red-500 transition-colors z-50 cursor-pointer"
+                            aria-label="Đóng panel chi tiết nhân viên"
                         >
                             <X size={24} />
                         </button>

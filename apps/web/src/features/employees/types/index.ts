@@ -107,6 +107,9 @@ export interface EmployeeTableRow {
   role: string;
   status: string;
   startDate: string;
+  address: string;
+  dateOfBirth: string;
+  createdAt: string;
   avatarUrl?: string;
 }
 

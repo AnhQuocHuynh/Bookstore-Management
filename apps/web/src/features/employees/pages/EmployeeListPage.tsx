@@ -173,7 +173,7 @@ export const EmployeeListPage = () => {
       render: (_: any, record: Employee) => (
         <div className="flex gap-2">
           <Button
-            size="sm"
+            size="small"
             onClick={(e) => {
               e.stopPropagation();
               handleEdit(record);
@@ -183,7 +183,7 @@ export const EmployeeListPage = () => {
             Sửa
           </Button>
           <Button
-            size="sm"
+            size="small"
             onClick={(e) => {
               e.stopPropagation();
               handleDelete(record.id);

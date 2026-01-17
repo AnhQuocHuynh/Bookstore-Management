@@ -191,6 +191,18 @@ export const ShiftModal = ({ isOpen, onClose, defaultDate, editingShift }: Shift
     }
   }, [isOpen, editingShift, defaultDate, form]);
 
+  // Update times when shift type changes (only when not in custom time mode)
+  useEffect(() => {
+    const currentShiftType = form.watch('shiftType');
+    if (!customTime && currentShiftType) {
+      const times = SHIFT_TIMES[currentShiftType as ShiftType];
+      if (times) {
+        form.setValue('startTime', times.start);
+        form.setValue('endTime', times.end);
+      }
+    }
+  }, [form.watch('shiftType'), customTime, form]);
+
   // ==========================================
   // GROUP EMPLOYEES BY ROLE
   // ==========================================
@@ -199,7 +211,7 @@ export const ShiftModal = ({ isOpen, onClose, defaultDate, editingShift }: Shift
     if (!employeesData?.data) return [];
 
     // Group employees by role
-    const employeesByRole: Record<EmployeeRole, typeof employeesData.data> = {
+    const employeesByRole: Partial<Record<EmployeeRole, typeof employeesData.data>> = {
       [EmployeeRole.OWNER]: [],
       [EmployeeRole.MANAGER]: [],
       [EmployeeRole.CASHIER]: [],
@@ -208,8 +220,9 @@ export const ShiftModal = ({ isOpen, onClose, defaultDate, editingShift }: Shift
     };
 
     employeesData.data.forEach((emp: typeof employeesData.data[0]) => {
-      if (emp.role in employeesByRole) {
-        employeesByRole[emp.role].push(emp);
+      const role = emp.role as EmployeeRole;
+      if (role && employeesByRole[role]) {
+        employeesByRole[role]!.push(emp);
       }
     });
 
@@ -384,7 +397,7 @@ export const ShiftModal = ({ isOpen, onClose, defaultDate, editingShift }: Shift
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="flex flex-col flex-1 overflow-hidden">
             {/* FORM CONTENT */}
-            <ScrollArea className="flex-1 w-full">
+            <ScrollArea className="flex-1 w-full max-h-[60vh]">
               <div className="p-4 space-y-3">
               {/* EMPLOYEE & DATE */}
               <div className="bg-gradient-to-r from-teal-50 to-cyan-50 p-4 rounded-xl">
@@ -529,8 +542,8 @@ export const ShiftModal = ({ isOpen, onClose, defaultDate, editingShift }: Shift
                   <h3 className="text-base font-semibold text-gray-800">
                     Chi tiết ca làm
                   </h3>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-600">Tùy chỉnh giờ</span>
+                  <div className="flex items-center gap-2 ml-auto">
+                    <span className="text-sm text-gray-600 leading-6">Tùy chỉnh giờ</span>
                     <Switch
                       checked={customTime}
                       onCheckedChange={(checked: boolean) => {
@@ -564,7 +577,16 @@ export const ShiftModal = ({ isOpen, onClose, defaultDate, editingShift }: Shift
                             placeholder="Chọn ca"
                             size="large"
                             className="w-full"
-                            onChange={handleShiftTypeChange}
+                            onChange={(value) => {
+                              field.onChange(value);
+                              if (!customTime) {
+                                const times = SHIFT_TIMES[value as ShiftType];
+                                if (times) {
+                                  form.setValue('startTime', times.start);
+                                  form.setValue('endTime', times.end);
+                                }
+                              }
+                            }}
                             style={{ height: '44px' }}
                             options={Object.entries(SHIFT_LABELS).map(([key, label]) => ({
                               label,

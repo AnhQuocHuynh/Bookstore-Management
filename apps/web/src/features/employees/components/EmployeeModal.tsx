@@ -237,7 +237,7 @@ export const EmployeeModal = ({ open, onClose, employee }: EmployeeModalProps) =
               onSubmit={inviteForm.handleSubmit(handleInviteSubmit)}
               className="flex flex-col flex-1 overflow-hidden"
             >
-              <ScrollArea className="flex-1 w-full">
+              <ScrollArea className="flex-1 w-full max-h-[60vh]">
                 <div className="p-4 space-y-3">
                   {/* BASIC INFO */}
                   <div className="bg-gradient-to-r from-teal-50 to-cyan-50 p-4 rounded-xl">
@@ -443,7 +443,7 @@ export const EmployeeModal = ({ open, onClose, employee }: EmployeeModalProps) =
             onSubmit={profileForm.handleSubmit(handleProfileSubmit)}
             className="flex flex-col flex-1 overflow-hidden"
           >
-            <ScrollArea className="flex-1 w-full">
+            <ScrollArea className="flex-1 w-full max-h-[60vh]">
               <div className="p-4 space-y-3">
                 {/* BASIC INFO */}
                 <div className="bg-gradient-to-r from-teal-50 to-cyan-50 p-4 rounded-xl">
