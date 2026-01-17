@@ -8,24 +8,30 @@ const Switch = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof SwitchPrimitives.Root>
 >(({ className, ...props }, ref) => (
   <SwitchPrimitives.Root
-  className={cn(
-    "peer relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors",
-    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-    "disabled:cursor-not-allowed disabled:opacity-50",
-    "data-[state=checked]:bg-[#1a998f] data-[state=unchecked]:bg-gray-200",
-    className
-  )}
-  {...props}
-  ref={ref}
->
-  {/* Trong SwitchPrimitives.Thumb */}
-  <SwitchPrimitives.Thumb
     className={cn(
-      // Đảm bảo dùng 'h-5 w-5' và 'translate-x-5' để cân đối với w-11 của Root
-      "pointer-events-none block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0"
+      // 1. KÍCH THƯỚC & LAYOUT (Chuẩn 44x24px)
+      "peer inline-flex h-[24px] w-[44px] shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors",
+      
+      // 2. FOCUS STYLES (Accessibility)
+      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50",
+      
+      // 3. MÀU SẮC (Màu Teal chuẩn #26A69A)
+      "data-[state=checked]:bg-[#26A69A] data-[state=unchecked]:bg-gray-200",
+      className
     )}
-  />
-</SwitchPrimitives.Root>
+    {...props}
+    ref={ref}
+  >
+    <SwitchPrimitives.Thumb
+      className={cn(
+        // 4. NÚM TRÒN & HIỆU ỨNG TRƯỢT
+        "pointer-events-none block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform",
+        
+        // 5. KHOẢNG CÁCH TRƯỢT (Chính xác 20px - pixel perfect)
+        "data-[state=checked]:translate-x-2.5 data-[state=unchecked]:translate-x-0"
+      )}
+    />
+  </SwitchPrimitives.Root>
 ))
 Switch.displayName = SwitchPrimitives.Root.displayName
 
