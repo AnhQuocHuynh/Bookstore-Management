@@ -5,11 +5,11 @@ import {
 } from "recharts";
 import { Search, AlertCircle, CheckCircle, Package, TrendingDown, ArrowUpDown } from "lucide-react";
 import dayjs from "dayjs";
-import { useStockReport } from "../hooks/useReports";
-import { useCategories } from "@/features/categories/hooks/useCategories";
+// SỬA: Import hook nội bộ, bỏ useCategories
+import { useStockReport, useReportCategories } from "../hooks/useReports";
 import { StockTableItem, StockChartData } from "../types";
 
-// --- HELPERS: Styles cho từng trạng thái hàng ---
+// --- HELPERS ---
 const getStatusRowClass = (status: string) => {
     switch (status) {
         case 'Lỗi tồn kho': return 'bg-red-50 text-red-600 hover:bg-red-100';
@@ -31,9 +31,7 @@ const ChartCard = ({
         <div className="bg-white p-6 rounded-[20px] shadow-sm">
             <div className="flex justify-between items-center mb-6">
                 <h3 className="font-bold text-neutral-700 text-sm md:text-base">{title}</h3>
-                {/* Đã xóa phần Badge thời gian ở đây theo yêu cầu */}
             </div>
-
             <div className="h-48 w-full">
                 {chartData.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
@@ -78,8 +76,8 @@ export const StockReportView = () => {
     const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC'>("ASC");
     const [selectedProductId, setSelectedProductId] = useState<string | undefined>(undefined);
 
-    // Load Data Categories
-    const { data: categoriesData, isLoading: catLoading } = useCategories();
+    // SỬA: Load Data Categories từ hook nội bộ
+    const { data: categories = [], isLoading: catLoading } = useReportCategories();
 
     // Load Report Data
     const { data, isLoading, isError } = useStockReport({
@@ -136,7 +134,6 @@ export const StockReportView = () => {
                 let icon = <CheckCircle size={16} />;
                 if (status === 'Lỗi tồn kho') icon = <AlertCircle size={16} />;
                 if (status === 'Sắp hết hàng') icon = <TrendingDown size={16} />;
-
                 return <div className="flex items-center justify-center gap-1.5">{icon} <span>{status}</span></div>;
             }
         }
@@ -153,7 +150,6 @@ export const StockReportView = () => {
 
     return (
         <div className="p-6 md:p-8 bg-[#f1f5f9] min-h-screen font-['Inter']">
-
             {/* HEADER */}
             <div className="flex flex-col md:flex-row justify-between items-end mb-8 gap-4">
                 <div>
@@ -169,7 +165,6 @@ export const StockReportView = () => {
 
                 {/* --- LEFT COLUMN: TABLE (7 cols) --- */}
                 <div className="col-span-12 lg:col-span-7 bg-white rounded-[20px] shadow-sm overflow-hidden border border-gray-200 flex flex-col h-[calc(100vh-180px)]">
-
                     {/* Custom Table Header CSS */}
                     <style>{`
             .custom-stock-table .ant-table-thead > tr > th {
@@ -220,7 +215,6 @@ export const StockReportView = () => {
 
                 {/* --- RIGHT COLUMN: FILTERS & CHARTS (5 cols) --- */}
                 <div className="col-span-12 lg:col-span-5 flex flex-col gap-6">
-
                     {/* FILTERS SECTION */}
                     <div className="flex flex-wrap gap-3 justify-end">
                         <Input
@@ -235,7 +229,8 @@ export const StockReportView = () => {
                             placeholder="Lọc: Tất cả"
                             className="min-w-[160px] custom-rounded-select"
                             dropdownStyle={{ borderRadius: 12 }}
-                            options={categoriesData?.data?.map((c: any) => ({ label: c.name, value: c.id }))}
+                            // SỬA: Map data từ hook nội bộ
+                            options={categories.map((c: any) => ({ label: c.name, value: c.id }))}
                             value={categoryIds.length > 0 ? categoryIds[0] : undefined}
                             onChange={(val) => { setCategoryIds(val ? [val] : []); setPage(1); }}
                             allowClear
@@ -252,7 +247,6 @@ export const StockReportView = () => {
 
                     {/* CHARTS CONTAINER (Slate BG) */}
                     <div className="bg-slate-100 p-6 rounded-[20px] space-y-6 flex-1 border border-slate-200">
-
                         {/* Sales Chart */}
                         <ChartCard
                             title={selectedProductId
@@ -262,30 +256,27 @@ export const StockReportView = () => {
                             barColor="#0d9488"
                             emptyMessage="Chọn sản phẩm để xem biểu đồ bán hàng"
                         />
-
                         {/* Import Chart */}
                         <ChartCard
                             title={selectedProductId
-                                ? `Số lượng '${data?.salesChart?.productName || '...'}' nhập về:`
-                                : "Số lượng Nhập về"}
+                                ? `Số lượng '${data?.salesChart?.productName || '...'}' nhập vào:`
+                                : "Số lượng Nhập vào"}
                             data={data?.importChart}
                             barColor="#0d9488"
                             emptyMessage="Chọn sản phẩm để xem biểu đồ nhập kho"
                         />
-
                     </div>
                 </div>
-
             </div>
 
             {/* CSS Override cho Select của Antd */}
             <style>{`
         .custom-rounded-select .ant-select-selector {
-          border: 2px solid #0d9488 !important; 
+          border: 2px solid #0d9488 !important;
           border-radius: 9999px !important;
           background-color: white !important;
           font-weight: 700 !important;
-          color: #083344 !important; 
+          color: #083344 !important;
           height: 38px !important;
           display: flex;
           align-items: center;

@@ -44,3 +44,12 @@ export const useEmployeeReport = (params: EmployeeReportParams) => {
         staleTime: 1000 * 60 * 5,
     });
 };
+
+export const useReportCategories = () => {
+    return useQuery({
+        queryKey: ["report-categories-filter"], // Key riêng để tránh conflict cache
+        queryFn: () => reportApi.getCategories(),
+        staleTime: 1000 * 60 * 15, // Cache 15 phút vì danh mục ít thay đổi
+        select: (data: any) => data.data || [], // Transform data ngay tại đây nếu response trả về dạng { data: [...] }
+    });
+};

@@ -6,35 +6,27 @@ import {
 } from "recharts";
 import { DollarSign, Package, TrendingUp, ShoppingBag, Calendar } from "lucide-react";
 import dayjs, { Dayjs } from "dayjs";
-import { useRevenueReport } from "../hooks/useReports";
-import { useCategories } from "@/features/categories/hooks/useCategories";
+// SỬA: Import hook nội bộ, bỏ useCategories từ module khác
+import { useRevenueReport, useReportCategories } from "../hooks/useReports";
 import { formatCurrency } from "@/utils";
 import { DashboardCards, LineChartData, PieChartData, TopProduct, MetricItem } from "../types";
 
 const { RangePicker } = DatePicker;
 
-// --- 1. COMPONENT: PIE CHART SECTION (Chart trên - Legend dưới) ---
+// --- 1. COMPONENT: PIE CHART SECTION ---
 const PieChartSection = ({ data }: { data: PieChartData }) => {
-    const COLORS = ['#14b8a6', '#3b82f6', '#ec4899', '#f59e0b', '#8b5cf6', '#94a3b8']; // Màu cuối cùng (xám) dành cho "Còn lại"
-
+    const COLORS = ['#14b8a6', '#3b82f6', '#ec4899', '#f59e0b', '#8b5cf6', '#94a3b8'];
     const totalValue = data?.total || 0;
 
-    // --- LOGIC MỚI: GỘP "CÒN LẠI" ---
     const displayItems = useMemo(() => {
         if (!data?.items) return [];
-
-        // Nếu ít hơn hoặc bằng 4 item thì hiển thị hết
         if (data.items.length <= 4) return data.items;
 
-        // Lấy top 4
         const top4 = data.items.slice(0, 4);
-
-        // Tính tổng phần còn lại
         const others = data.items.slice(4);
         const otherValue = others.reduce((acc, curr) => acc + curr.value, 0);
         const otherPercent = others.reduce((acc, curr) => acc + curr.percent, 0);
 
-        // Trả về mảng mới gồm Top 4 + Item "Còn lại"
         return [
             ...top4,
             {
@@ -42,7 +34,6 @@ const PieChartSection = ({ data }: { data: PieChartData }) => {
                 name: 'Còn lại',
                 value: otherValue,
                 percent: otherPercent,
-                // Các trường optional khác có thể bỏ qua hoặc fake
                 sku: '',
                 imageUrl: ''
             }
@@ -59,13 +50,11 @@ const PieChartSection = ({ data }: { data: PieChartData }) => {
             </div>
 
             <div className="flex flex-col items-center gap-6 flex-1">
-
                 {/* Chart Donut */}
                 <div className="relative w-56 h-56 flex-shrink-0 flex items-center justify-center">
                     <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                             <Pie
-                                // Dùng displayItems đã gộp để vẽ chart
                                 data={displayItems as any[]}
                                 innerRadius={75}
                                 outerRadius={100}
@@ -89,16 +78,14 @@ const PieChartSection = ({ data }: { data: PieChartData }) => {
                     </div>
                 </div>
 
-                {/* Legend List (Ở dưới) */}
+                {/* Legend List */}
                 <div className="w-full space-y-2 text-sm flex-1 overflow-hidden flex flex-col">
                     <div className="grid grid-cols-12 text-neutral-500 font-medium pb-2 border-b border-gray-100">
                         <span className="col-span-6 pl-2">Nhãn</span>
                         <span className="col-span-4 text-right">Giá trị</span>
                         <span className="col-span-2 text-right pr-2">%</span>
                     </div>
-
                     <div className="overflow-y-auto custom-scrollbar pr-1 flex-1 min-h-[150px]">
-                        {/* Render displayItems thay vì data.items */}
                         {displayItems.map((item, index) => (
                             <div key={index} className="grid grid-cols-12 items-center py-2 border-b border-gray-50 last:border-0 hover:bg-gray-50 rounded px-2 transition-colors">
                                 <div className="col-span-6 flex items-center gap-2 overflow-hidden">
@@ -118,7 +105,7 @@ const PieChartSection = ({ data }: { data: PieChartData }) => {
     );
 };
 
-// --- 2. COMPONENT: SUMMARY CARDS (Giữ nguyên) ---
+// --- 2. COMPONENT: SUMMARY CARDS ---
 const SummaryGrid = ({ cards }: { cards: DashboardCards }) => {
     const renderCard = (title: string, metric: MetricItem, icon: React.ReactNode, bgIcon: string, isCurrency: boolean = false) => {
         const value = metric.value ?? metric.count ?? metric.total ?? 0;
@@ -157,7 +144,7 @@ const SummaryGrid = ({ cards }: { cards: DashboardCards }) => {
     );
 };
 
-// --- 3. COMPONENT: RIGHT COLUMN CONTENT (Giữ nguyên) ---
+// --- 3. COMPONENT: RIGHT COLUMN SECTION ---
 const RightColumnSection = ({
     chartData, topProducts, dateRange, onDateChange,
     categoryIds, onCategoryChange
@@ -166,9 +153,8 @@ const RightColumnSection = ({
     dateRange: any, onDateChange: any,
     categoryIds: string[], onCategoryChange: (ids: string[]) => void
 }) => {
-
-    const { data: categoriesData, isLoading: isLoadingCats } = useCategories();
-    const categories = categoriesData?.data || [];
+    // SỬA: Sử dụng hook nội bộ, data trả về đã là mảng ReportCategory[]
+    const { data: categories = [], isLoading: isLoadingCats } = useReportCategories();
 
     const data = useMemo(() => {
         if (!chartData?.labels) return [];
@@ -188,7 +174,6 @@ const RightColumnSection = ({
 
     return (
         <div className="bg-teal-600/10 p-6 rounded-[20px] space-y-6 h-full flex flex-col">
-
             <div className="flex flex-wrap gap-3 items-center justify-between">
                 <div className="flex-1 min-w-[200px]">
                     <Select
@@ -199,6 +184,7 @@ const RightColumnSection = ({
                         value={categoryIds}
                         onChange={onCategoryChange}
                         loading={isLoadingCats}
+                        // SỬA: Map data trực tiếp từ hook nội bộ
                         options={categories.map((c: any) => ({ label: c.name, value: c.id }))}
                         className="custom-select-teal"
                     />
@@ -299,6 +285,7 @@ export const RevenueReportView = () => {
     };
 
     const { data, isLoading, isError } = useRevenueReport(queryParams);
+
     const handleDateChange = (dates: any) => setDateRange(dates as RangeValue);
 
     if (isError) return <div className="p-10 text-center text-red-500">Lỗi tải dữ liệu. Vui lòng đăng nhập lại.</div>;
@@ -306,7 +293,6 @@ export const RevenueReportView = () => {
 
     return (
         <div className="p-6 bg-[#f8fafc] min-h-screen font-['Inter']">
-
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-3xl font-bold text-cyan-950">Thống kê Doanh thu</h1>
                 <p className="text-cyan-950 opacity-70 hidden md:block text-sm">
@@ -315,18 +301,14 @@ export const RevenueReportView = () => {
             </div>
 
             <div className="grid grid-cols-12 gap-6 h-[calc(100vh-120px)]">
-
                 <div className="col-span-12 xl:col-span-5 space-y-6 flex flex-col h-full overflow-hidden">
-                    {/* Chart & Legend đã được update logic "Còn lại" */}
                     <div className="flex-[1.2] min-h-0">
                         <PieChartSection data={data?.pie || { total: 0, items: [] }} />
                     </div>
-
                     <div className="flex-1 min-h-0">
                         {data?.cards && <SummaryGrid cards={data.cards} />}
                     </div>
                 </div>
-
                 <div className="col-span-12 xl:col-span-7 h-full">
                     <RightColumnSection
                         chartData={data?.line || { labels: [], datasets: [] }}
@@ -337,7 +319,6 @@ export const RevenueReportView = () => {
                         onCategoryChange={setCategoryIds}
                     />
                 </div>
-
             </div>
         </div>
     );
