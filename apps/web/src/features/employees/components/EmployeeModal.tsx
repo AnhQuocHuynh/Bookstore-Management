@@ -214,7 +214,17 @@ export const EmployeeModal = ({ open, onClose, employee }: EmployeeModalProps) =
         }}
       >
         <DialogContent
-          className="!fixed !top-[5vh] !left-1/2 !-translate-x-1/2 !z-50 !w-[95vw] !max-w-2xl !h-[90vh] !flex !flex-col !bg-white !p-0 !rounded-xl !shadow-2xl !border-none !overflow-hidden"
+          className="
+          z-50
+          w-[95vw] max-w-2xl
+          max-h-[90vh]
+          flex flex-col
+          bg-white
+          p-0
+          rounded-xl
+          shadow-2xl
+          overflow-hidden
+        "
         >
           <DialogHeader className="flex-none px-4 pt-4 pb-3 border-b border-gray-200">
             <div className="flex items-center gap-3">
@@ -237,7 +247,7 @@ export const EmployeeModal = ({ open, onClose, employee }: EmployeeModalProps) =
               onSubmit={inviteForm.handleSubmit(handleInviteSubmit)}
               className="flex flex-col flex-1 overflow-hidden"
             >
-              <ScrollArea className="flex-1 w-full max-h-[60vh]">
+              <div className="flex-1 overflow-y-auto min-h-0 px-6 py-4">
                 <div className="p-4 space-y-3">
                   {/* BASIC INFO */}
                   <div className="bg-gradient-to-r from-teal-50 to-cyan-50 p-4 rounded-xl">
@@ -378,7 +388,7 @@ export const EmployeeModal = ({ open, onClose, employee }: EmployeeModalProps) =
                     </div>
                   </div>
                 </div>
-              </ScrollArea>
+              </div>
 
               {/* STICKY FOOTER */}
               <div className="flex-none flex justify-end gap-3 px-4 py-3 border-t border-gray-200 bg-gray-50/50">

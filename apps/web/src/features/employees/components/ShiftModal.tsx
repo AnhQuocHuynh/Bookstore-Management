@@ -376,7 +376,18 @@ export const ShiftModal = ({ isOpen, onClose, defaultDate, editingShift }: Shift
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent 
-          className="!fixed !top-[5vh] !left-1/2 !-translate-x-1/2 !z-50 !w-[95vw] !max-w-2xl !h-[90vh] !flex !flex-col !bg-white !p-0 !rounded-xl !shadow-2xl !border-none !overflow-hidden"
+          className="
+          z-50
+          w-[95vw] max-w-2xl
+          max-h-[90vh]
+          flex flex-col
+          bg-white
+          p-0
+          rounded-xl
+          shadow-2xl
+          border-none
+          overflow-hidden
+        "
       >
         <DialogHeader className="flex-none px-4 pt-4 pb-3 border-b border-gray-200">
           <div className="flex items-center gap-3">
@@ -397,8 +408,10 @@ export const ShiftModal = ({ isOpen, onClose, defaultDate, editingShift }: Shift
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="flex flex-col flex-1 min-h-0 overflow-hidden">
             {/* FORM CONTENT */}
-            <ScrollArea className="flex-1 min-h-0">
-    <div className="p-4 space-y-3">
+            
+            <div className="flex flex-col flex-1 min-h-0">
+            <div className="flex-1 overflow-y-auto min-h-0 px-6 py-4">
+    <div className="p-4 space-y-4">
               {/* EMPLOYEE & DATE */}
               <div className="bg-gradient-to-r from-teal-50 to-cyan-50 p-4 rounded-xl">
                 <h3 className="text-base font-semibold text-gray-800 mb-3">
@@ -668,7 +681,8 @@ export const ShiftModal = ({ isOpen, onClose, defaultDate, editingShift }: Shift
               </div>
             </div>
 
-            </ScrollArea>
+            </div>
+            </div>
 
             {/* STICKY FOOTER */}
             <div className="flex-none flex justify-between items-center gap-3 px-4 py-3 border-t border-gray-200 bg-gray-50/50">
