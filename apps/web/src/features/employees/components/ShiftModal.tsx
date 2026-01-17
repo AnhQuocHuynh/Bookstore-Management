@@ -207,8 +207,10 @@ export const ShiftModal = ({ isOpen, onClose, defaultDate, editingShift }: Shift
       [EmployeeRole.SALES]: [],
     };
 
-    employeesData.data.forEach((emp) => {
-      employeesByRole[emp.role].push(emp);
+    employeesData.data.forEach((emp: typeof employeesData.data[0]) => {
+      if (emp.role in employeesByRole) {
+        employeesByRole[emp.role].push(emp);
+      }
     });
 
     // Create grouped options
@@ -219,7 +221,7 @@ export const ShiftModal = ({ isOpen, onClose, defaultDate, editingShift }: Shift
         const roleLabel = ROLE_LABELS[role as EmployeeRole];
         groups.push({
           label: roleLabel,
-          options: employees.map((emp) => ({
+          options: employees.map((emp: typeof employees[0]) => ({
             label: `${emp.fullName} (${emp.staffId})`,
             value: emp.id,
           })),
@@ -262,7 +264,7 @@ export const ShiftModal = ({ isOpen, onClose, defaultDate, editingShift }: Shift
       try {
         const { employeeIds, ...shiftData } = data;
         const employeeId = employeeIds[0]; // In edit mode, only one employee
-        const employee = employeesData?.data.find((e) => e.id === employeeId);
+        const employee = employeesData?.data.find((e: typeof employeesData.data[0]) => e.id === employeeId);
         
         await updateShift({
           id: editingShift.id,
@@ -284,7 +286,7 @@ export const ShiftModal = ({ isOpen, onClose, defaultDate, editingShift }: Shift
       let failCount = 0;
 
       for (const employeeId of employeeIds) {
-        const employee = employeesData?.data.find((e) => e.id === employeeId);
+        const employee = employeesData?.data.find((e: typeof employeesData.data[0]) => e.id === employeeId);
         if (employee) {
           try {
             await saveShift({
@@ -429,7 +431,7 @@ export const ShiftModal = ({ isOpen, onClose, defaultDate, editingShift }: Shift
                             optionFilterProp="label"
                             tagRender={(props) => {
                               const { label, value, closable, onClose } = props;
-                              const emp = employeesData?.data.find(e => e.id === value);
+                              const emp = employeesData?.data.find((e: typeof employeesData.data[0]) => e.id === value);
                               const role = emp?.role || EmployeeRole.CASHIER;
                               const tagColor = getRoleTagColor(role);
                               return (
@@ -444,18 +446,19 @@ export const ShiftModal = ({ isOpen, onClose, defaultDate, editingShift }: Shift
                               );
                             }}
                             optionRender={(option) => {
-                              const emp = employeesData?.data.find(e => e.id === option.value);
+                              const emp = employeesData?.data.find((e: typeof employeesData.data[0]) => e.id === option.value);
                               if (!emp) {
                                 return <span className="font-medium text-gray-800">{option.label}</span>;
                               }
                               const colorClasses = getRoleOptionBgClass(emp.role);
+                              const roleLabel = emp.role in ROLE_LABELS ? ROLE_LABELS[emp.role as keyof typeof ROLE_LABELS] : emp.role;
                               return (
                                 <div className="flex justify-between items-center w-full py-1">
                                   <span className="font-medium text-gray-800">
                                     {option.label}
                                   </span>
                                   <span className={`text-xs ${colorClasses.bg} ${colorClasses.text} px-2 py-0.5 rounded font-medium`}>
-                                    {ROLE_LABELS[emp.role] || emp.role}
+                                    {roleLabel}
                                   </span>
                                 </div>
                               );
@@ -530,7 +533,7 @@ export const ShiftModal = ({ isOpen, onClose, defaultDate, editingShift }: Shift
                     <span className="text-sm text-gray-600">Tùy chỉnh giờ</span>
                     <Switch
                       checked={customTime}
-                      onCheckedChange={(checked) => {
+                      onCheckedChange={(checked: boolean) => {
                         setCustomTime(checked);
                         if (!checked) {
                           // Reset to preset times when disabling custom time
