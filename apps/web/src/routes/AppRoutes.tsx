@@ -35,6 +35,8 @@ import { DisplayLogsView } from "@/features/display/components/DisplayLogsView";
 import { RevenueReportView } from "@/features/reports/components/RevenueReportView";
 import { StockReportView } from "@/features/reports/components/StockReportView";
 import { EmployeeReportView } from "@/features/reports/components/EmployeeReportView";
+import { ReturnOrderListPage } from "@/features/return-orders/components";
+import { CreateReturnOrderPage } from "@/features/return-orders/components/CreateReturnOrderPage";
 
 // Select Store Page (Semi-protected: requires token but no store)
 // const SelectStorePage = () => (
@@ -118,7 +120,23 @@ export const AppRoutes = () => {
           }
         />
         <Route
-          path="/sales/create" // Đổi path nếu cần hoặc giữ /sales/create
+          path="/dashboard/products/return-orders/list"
+          element={
+              <MainLayout>
+                <ReturnOrderListPage />
+                </MainLayout>
+          }
+        />
+        <Route
+          path="/dashboard/products/return-orders/create"
+          element={
+              <MainLayout>
+                <CreateReturnOrderPage />
+                </MainLayout>
+          }
+        />
+        <Route
+          path="/sales/create"
           element={
             <MainLayout>
               <CreateSalesPage />
