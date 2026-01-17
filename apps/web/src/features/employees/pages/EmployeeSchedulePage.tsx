@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from 'antd';
-import { ChevronLeft, ChevronRight, Calendar, Clock, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { useWeekSchedule } from '../hooks/useEmployees';
-import { Shift, SHIFT_LABELS, SHIFT_COLORS, SHIFT_TEXT_COLORS, ShiftType } from '../types';
+import { Shift, SHIFT_LABELS, SHIFT_COLORS, ShiftType } from '../types';
 import { format, startOfWeek, endOfWeek, addWeeks, subWeeks, eachDayOfInterval } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { ShiftModal } from '../components/ShiftModal';
@@ -71,47 +71,50 @@ export const EmployeeSchedulePage = () => {
   // HELPERS
   // ==========================================
 
-  const getShiftsForDay = (date: Date): Shift[] => {
+  const getShiftsForDayAndType = (date: Date, shiftType: ShiftType): Shift[] => {
     if (!data?.shifts) return [];
     const dateStr = format(date, 'yyyy-MM-dd');
-    return data.shifts.filter((shift) => shift.date === dateStr);
+    return data.shifts.filter((shift: Shift) => shift.date === dateStr && shift.shiftType === shiftType);
   };
 
-  const groupShiftsByType = (shifts: Shift[]) => {
-    const grouped: Record<ShiftType, Shift[]> = {
-      [ShiftType.MORNING]: [],
-      [ShiftType.AFTERNOON]: [],
-      [ShiftType.EVENING]: [],
-      [ShiftType.FULL_DAY]: [],
-    };
-
-    shifts.forEach((shift) => {
-      if (grouped[shift.shiftType]) {
-        grouped[shift.shiftType].push(shift);
-      }
-    });
-
-    return grouped;
-  };
+  // Define shift schedule structure
+  const shiftSchedule = [
+    { type: ShiftType.MORNING, label: 'Ca Sáng', time: '7:00 - 12:00' },
+    { type: ShiftType.AFTERNOON, label: 'Ca Chiều', time: '12:00 - 17:00' },
+    { type: ShiftType.EVENING, label: 'Ca Tối', time: '17:00 - 22:00' },
+    { type: ShiftType.FULL_DAY, label: 'Ca Cả Ngày', time: '7:00 - 22:00' },
+  ];
 
   // ==========================================
   // RENDER
   // ==========================================
 
   return (
-    <div className="flex flex-col w-full min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+    <div className="relative w-full h-full overflow-hidden flex flex-col font-['Inter']">
       {/* HEADER */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">Quản lý thời gian biểu</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Lịch làm việc của nhân viên theo tuần
-        </p>
-      </div>
+      <div className="flex-shrink-0 px-6 pt-3 pb-2">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <h1 className="font-bold text-[#102e3c] text-2xl sm:text-3xl lg:text-4xl">
+              Thời Gian Biểu
+            </h1>
+            <div className="flex items-center gap-2.5">
+              <Button
+                onClick={() => {
+                  setEditingShift(null);
+                  setIsShiftModalOpen(true);
+                }}
+                type="primary"
+                className="bg-[#1a998f] hover:bg-[#158f85] h-10 px-4 rounded-xl font-bold border-none"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Thêm Ca
+              </Button>
+            </div>
+          </div>
 
-      {/* WEEK NAVIGATION */}
-      <Card className="mb-4 shadow-sm rounded-xl border-none">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          {/* WEEK NAVIGATION */}
+          <div className="flex flex-wrap items-center gap-3 mt-2 bg-white p-3 rounded-xl border border-[#102e3c]/10 shadow-sm">
             <Button
               size="sm"
               onClick={handlePreviousWeek}
@@ -120,9 +123,9 @@ export const EmployeeSchedulePage = () => {
               <ChevronLeft className="w-4 h-4" />
             </Button>
             <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-[#26A69A]" />
+              <Calendar className="w-4 h-4 text-[#1a998f]" />
               <div>
-                <h2 className="text-base font-bold text-gray-800">
+                <h2 className="text-base font-bold text-[#102e3c]">
                   Tuần {format(weekStart, 'w', { locale: vi })} - {format(currentDate, 'yyyy')}
                 </h2>
                 <p className="text-xs text-gray-500">
@@ -137,149 +140,142 @@ export const EmployeeSchedulePage = () => {
             >
               <ChevronRight className="w-4 h-4" />
             </Button>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              onClick={() => {
-                setEditingShift(null);
-                setIsShiftModalOpen(true);
-              }}
-              size="sm"
-              className="h-9 px-4 rounded-lg !bg-white !text-emerald-600 !border !border-emerald-600 hover:!bg-emerald-50 !font-semibold !shadow-none"
-            >
-              <Plus className="w-4 h-4 mr-1.5" />
-              Thêm Ca
-            </Button>
             <Button
               onClick={handleToday}
               size="sm"
-              className="h-9 px-4 rounded-lg !bg-gradient-to-r !from-emerald-500 !to-teal-600 hover:!from-emerald-600 hover:!to-teal-700 !text-white !font-bold !shadow-md hover:!shadow-lg"
+              className="ml-auto h-9 px-4 rounded-lg bg-[#1a998f] hover:bg-[#158f85] !text-white !font-bold"
             >
               Hôm nay
             </Button>
           </div>
         </div>
-      </Card>
+      </div>
 
-      {/* SHIFT LEGEND */}
-      <Card className="mb-4 shadow-sm rounded-xl border-none">
-        <div className="flex items-center gap-3 flex-wrap">
-          <span className="text-xs font-semibold text-gray-700">Chú thích ca làm:</span>
-          {Object.entries(SHIFT_LABELS).map(([key, label]) => (
-            <Badge
-              key={key}
-              className={`${SHIFT_COLORS[key as ShiftType]} !text-white !border-none px-3 py-1 text-xs !font-semibold`}
-            >
-              {label}
-            </Badge>
-          ))}
-        </div>
-      </Card>
-
-      {/* SCHEDULE GRID */}
-      {isLoading ? (
-        <div className="flex justify-center items-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#26A69A] mx-auto mb-3"></div>
-            <p className="text-sm text-gray-500">Đang tải lịch làm việc...</p>
-          </div>
-        </div>
-      ) : (
-        <div className="h-[calc(100vh-400px)] border border-gray-200 rounded-xl bg-white overflow-hidden">
-          <div className="grid grid-cols-7 gap-0 h-full">
-            {weekDays.map((day) => {
-            const shifts = getShiftsForDay(day);
-            const groupedShifts = groupShiftsByType(shifts);
-            const isToday = format(day, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
-
-            return (
-              <Card
-                key={day.toString()}
-                className="border-none rounded-none border-r border-gray-200 last:border-r-0 overflow-hidden transition-all hover:shadow-sm bg-white h-full"
-                bodyStyle={{ padding: 0, height: '100%', display: 'flex', flexDirection: 'column' }}
-              >
-                <div className="flex flex-col h-full min-h-0">
-                  {/* Sticky Day Header */}
-                  <div
-                    className={`sticky top-0 z-10 shadow-sm border-b border-gray-200 flex-shrink-0 ${
-                      isToday
-                        ? '!bg-gradient-to-r !from-emerald-500 !to-teal-600'
-                        : 'bg-white'
-                    }`}
-                  >
-                    <div className="p-2 text-center">
-                      <p className={`text-xs font-semibold uppercase ${isToday ? '!text-white' : 'text-gray-800'}`}>
-                        {format(day, 'EEE', { locale: vi })}
-                      </p>
-                      <p className={`text-xl font-bold ${isToday ? '!text-white' : 'text-gray-800'}`}>{format(day, 'd')}</p>
-                      <p className={`text-xs ${isToday ? '!text-white' : 'text-gray-600'}`}>{format(day, 'MMM', { locale: vi })}</p>
-                    </div>
-                  </div>
-                  
-                  {/* Shifts - Scrollable */}
-                  <div className="relative z-0 p-2 space-y-1.5 flex-1 bg-white overflow-y-auto min-h-0">
-                  {Object.entries(groupedShifts).map(([shiftType, shiftsOfType]) => (
-                    <div key={shiftType}>
-                      {shiftsOfType.length > 0 && (
-                        <div className="mb-2">
-                          <Badge
-                            className={`${SHIFT_COLORS[shiftType as ShiftType]} !text-white !border-none mb-1 text-xs px-2 py-0.5 !font-semibold`}
-                          >
-                            {SHIFT_LABELS[shiftType as ShiftType]}
-                          </Badge>
-                          {shiftsOfType.map((shift) => (
-                            <ShiftCard key={shift.id} shift={shift} onClick={() => handleShiftClick(shift)} />
-                          ))}
+      {/* MAIN CONTENT */}
+      <main className="flex-1 px-6 pb-6 overflow-hidden mt-4 relative">
+        <section className="relative w-full h-full bg-white rounded-[20px] overflow-hidden border border-solid border-[#102e3c] shadow-sm">
+          {isLoading ? (
+            <div className="flex justify-center items-center h-full">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#1a998f] mx-auto mb-3"></div>
+                <p className="text-sm text-gray-500">Đang tải lịch làm việc...</p>
+              </div>
+            </div>
+          ) : (
+            <div className="h-full overflow-auto custom-scrollbar">
+              <table className="w-full border-collapse">
+                <thead className="sticky top-0 z-10 bg-[#1a998f] text-white">
+                  <tr>
+                    <th className="border border-gray-300 p-3 text-left font-bold min-w-[150px]">
+                      Ca / Ngày
+                    </th>
+                    {weekDays.map((day) => {
+                      const isToday = format(day, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
+                      return (
+                        <th
+                          key={day.toString()}
+                          className={`border border-gray-300 p-3 text-center font-bold min-w-[140px] ${
+                            isToday ? 'bg-[#158f85]' : ''
+                          }`}
+                        >
+                          <div>
+                            <p className="text-sm font-semibold uppercase">
+                              {format(day, 'EEE', { locale: vi })}
+                            </p>
+                            <p className="text-lg font-bold">{format(day, 'd')}</p>
+                            <p className="text-xs">{format(day, 'MMM', { locale: vi })}</p>
+                          </div>
+                        </th>
+                      );
+                    })}
+                  </tr>
+                </thead>
+                <tbody>
+                  {shiftSchedule.map((shift) => (
+                    <tr key={shift.type}>
+                      <td className="border border-gray-300 p-3 bg-gray-50">
+                        <div>
+                          <p className="font-bold text-[#102e3c] text-sm">{shift.label}</p>
+                          <p className="text-xs text-gray-500 mt-1">{shift.time}</p>
                         </div>
-                      )}
-                    </div>
+                      </td>
+                      {weekDays.map((day) => {
+                        const shifts = getShiftsForDayAndType(day, shift.type);
+                        const isToday = format(day, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
+                        return (
+                          <td
+                            key={`${day.toString()}-${shift.type}`}
+                            className={`border border-gray-300 p-2 align-top ${
+                              isToday ? 'bg-teal-50' : 'bg-white'
+                            }`}
+                          >
+                            <div className="space-y-1">
+                              {shifts.map((s: Shift) => (
+                                <div
+                                  key={s.id}
+                                  onClick={() => handleShiftClick(s)}
+                                  className="bg-white border border-[#1a998f] rounded-lg p-2 cursor-pointer hover:shadow-md transition-all active:scale-[0.98]"
+                                  title={s.employeeName}
+                                >
+                                  <p className="text-xs font-semibold text-[#102e3c] truncate">
+                                    {s.employeeName}
+                                  </p>
+                                  {s.notes && (
+                                    <p className="text-xs text-gray-400 mt-0.5 truncate">
+                                      {s.notes}
+                                    </p>
+                                  )}
+                                </div>
+                              ))}
+                              {shifts.length === 0 && (
+                                <p className="text-xs text-gray-300 text-center py-2">-</p>
+                              )}
+                            </div>
+                          </td>
+                        );
+                      })}
+                    </tr>
                   ))}
-                  {shifts.length === 0 && (
-                    <div className="flex flex-col items-center justify-center min-h-[200px] text-gray-400 py-6">
-                      <Clock className="w-6 h-6 mb-1.5" />
-                      <p className="text-xs text-center">Chưa có ca làm việc</p>
-                    </div>
-                  )}
-                  </div>
-                </div>
-              </Card>
-            );
-          })}
-          </div>
-        </div>
-      )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      </main>
 
       {/* SUMMARY */}
-      <Card className="mt-4 shadow-sm rounded-xl border-none">
-        <div className="grid grid-cols-4 gap-3">
-          <SummaryItem
-            label="Tổng ca làm việc"
-            value={data?.shifts.length || 0}
-            color="!text-emerald-500"
-          />
-          <SummaryItem
-            label="Ca sáng"
-            value={
-              data?.shifts.filter((s) => s.shiftType === ShiftType.MORNING).length || 0
-            }
-            color="!text-amber-500"
-          />
-          <SummaryItem
-            label="Ca chiều"
-            value={
-              data?.shifts.filter((s) => s.shiftType === ShiftType.AFTERNOON).length || 0
-            }
-            color="!text-sky-500"
-          />
-          <SummaryItem
-            label="Ca tối"
-            value={
-              data?.shifts.filter((s) => s.shiftType === ShiftType.EVENING).length || 0
-            }
-            color="!text-indigo-500"
-          />
-        </div>
-      </Card>
+      <div className="px-6 pb-6">
+        <Card className="shadow-sm rounded-xl border-none">
+          <div className="grid grid-cols-4 gap-3">
+            <SummaryItem
+              label="Tổng ca làm việc"
+              value={data?.shifts.length || 0}
+              color="!text-[#1a998f]"
+            />
+            <SummaryItem
+              label="Ca sáng"
+              value={
+                data?.shifts.filter((s: Shift) => s.shiftType === ShiftType.MORNING).length || 0
+              }
+              color="!text-amber-500"
+            />
+            <SummaryItem
+              label="Ca chiều"
+              value={
+                data?.shifts.filter((s: Shift) => s.shiftType === ShiftType.AFTERNOON).length || 0
+              }
+              color="!text-sky-500"
+            />
+            <SummaryItem
+              label="Ca tối"
+              value={
+                data?.shifts.filter((s: Shift) => s.shiftType === ShiftType.EVENING).length || 0
+              }
+              color="!text-indigo-500"
+            />
+          </div>
+        </Card>
+      </div>
 
       {/* SHIFT MODAL */}
       <ShiftModal
@@ -288,35 +284,6 @@ export const EmployeeSchedulePage = () => {
         defaultDate={format(currentDate, 'yyyy-MM-dd')}
         editingShift={editingShift}
       />
-    </div>
-  );
-};
-
-// ==========================================
-// SHIFT CARD COMPONENT
-// ==========================================
-
-const ShiftCard = ({ shift, onClick }: { shift: Shift; onClick?: () => void }) => {
-  return (
-    <div
-      className="bg-white border border-gray-200 rounded-lg p-2 mb-1 hover:shadow-md transition-all cursor-pointer active:scale-[0.98]"
-      onClick={onClick}
-      title={shift.employeeName}
-    >
-      <p className="text-xs font-semibold text-gray-800 break-words whitespace-normal line-clamp-2">
-        {shift.employeeName}
-      </p>
-      <div className="flex items-center gap-1 text-xs text-gray-500 mt-1">
-        <Clock className="w-3 h-3 flex-shrink-0" />
-        <span className="text-xs">
-          {shift.startTime} - {shift.endTime}
-        </span>
-      </div>
-      {shift.notes && (
-        <p className="text-xs text-gray-400 mt-0.5 break-words whitespace-normal line-clamp-1">
-          {shift.notes}
-        </p>
-      )}
     </div>
   );
 };

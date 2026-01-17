@@ -96,7 +96,7 @@ export const EmployeeListPage = () => {
       key: 'staffId',
       width: 100,
       render: (text: string) => (
-        <span className="font-semibold text-[#26A69A]">{text}</span>
+        <span className="font-semibold text-teal-700">{text}</span>
       ),
     },
     {
@@ -109,10 +109,10 @@ export const EmployeeListPage = () => {
             <img
               src={record.avatarUrl}
               alt={text}
-              className="w-9 h-9 rounded-full object-cover border-2 border-[#26A69A]"
+              className="w-9 h-9 rounded-full object-cover border-2 border-[#1a998f]"
             />
           ) : (
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#26A69A] to-[#4DB6AC] flex items-center justify-center text-white font-bold">
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#1a998f] to-[#158f85] flex items-center justify-center text-white font-bold">
               {text.charAt(0).toUpperCase()}
             </div>
           )}
@@ -281,25 +281,27 @@ export const EmployeeListPage = () => {
                   <Spin size="large" />
                 </div>
               ) : (
-                <Table
-                  columns={columns}
-                  dataSource={data?.data || []}
-                  rowKey="id"
-                  pagination={{
-                    total: data?.total || 0,
-                    pageSize: data?.limit || 10,
-                    current: data?.page || 1,
-                    showSizeChanger: true,
-                    showTotal: (total) => `Tổng ${total} nhân viên`,
-                  }}
-                  onRow={(record) => ({
-                    onClick: () => handleRowClick(record),
-                    className: `cursor-pointer hover:bg-teal-50 transition-colors ${
-                      selectedEmployee?.id === record.id ? 'bg-teal-100' : ''
-                    }`,
-                  })}
-                  scroll={{ y: 'calc(100vh - 350px)' }}
-                />
+                <div className="overflow-y-auto custom-scrollbar flex-1">
+                  <Table
+                    columns={columns}
+                    dataSource={data?.data || []}
+                    rowKey="id"
+                    pagination={{
+                      total: data?.total || 0,
+                      pageSize: data?.limit || 10,
+                      current: data?.page || 1,
+                      showSizeChanger: true,
+                      showTotal: (total) => `Tổng ${total} nhân viên`,
+                    }}
+                    onRow={(record) => ({
+                      onClick: () => handleRowClick(record),
+                      className: `cursor-pointer hover:bg-teal-50 transition-colors ${
+                        selectedEmployee?.id === record.id ? 'bg-teal-100' : ''
+                      }`,
+                    })}
+                    scroll={{ y: 'calc(100vh - 400px)' }}
+                  />
+                </div>
               )}
             </Card>
           </div>

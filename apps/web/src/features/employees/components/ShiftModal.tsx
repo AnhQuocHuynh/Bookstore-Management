@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -19,6 +19,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import { Select, Tag } from 'antd';
 import type { DefaultOptionType } from 'antd/es/select';
 import { Loader2, Clock, Users } from 'lucide-react';
@@ -106,10 +107,10 @@ type ShiftFormData = z.infer<typeof shiftFormSchema>;
 // ==========================================
 
 const SHIFT_TIMES = {
-  [ShiftType.MORNING]: { start: '08:00', end: '12:00' },
-  [ShiftType.AFTERNOON]: { start: '13:00', end: '17:00' },
-  [ShiftType.EVENING]: { start: '18:00', end: '22:00' },
-  [ShiftType.FULL_DAY]: { start: '08:00', end: '17:00' },
+  [ShiftType.MORNING]: { start: '07:00', end: '12:00' },
+  [ShiftType.AFTERNOON]: { start: '12:00', end: '17:00' },
+  [ShiftType.EVENING]: { start: '17:00', end: '22:00' },
+  [ShiftType.FULL_DAY]: { start: '07:00', end: '22:00' },
 };
 
 // ==========================================
@@ -128,6 +129,9 @@ interface ShiftModalProps {
 // ==========================================
 
 export const ShiftModal = ({ isOpen, onClose, defaultDate, editingShift }: ShiftModalProps) => {
+  // State for custom time toggle
+  const [customTime, setCustomTime] = useState(false);
+  
   // Fetch employees for dropdown
   const { data: employeesData } = useEmployees();
   const { mutateAsync: saveShift, isPending: isSaving } = useSaveShift({ showToast: false }); // Disable individual toasts, show summary instead
@@ -160,6 +164,11 @@ export const ShiftModal = ({ isOpen, onClose, defaultDate, editingShift }: Shift
   // Pre-fill form when editingShift changes
   useEffect(() => {
     if (isOpen && editingShift) {
+      // Check if editing shift has custom times
+      const presetTimes = SHIFT_TIMES[editingShift.shiftType];
+      const hasCustomTime = editingShift.startTime !== presetTimes.start || editingShift.endTime !== presetTimes.end;
+      setCustomTime(hasCustomTime);
+      
       form.reset({
         employeeIds: [editingShift.employeeId],
         date: editingShift.date,
@@ -170,6 +179,7 @@ export const ShiftModal = ({ isOpen, onClose, defaultDate, editingShift }: Shift
       });
     } else if (isOpen && !editingShift) {
       // Reset to default values when creating new shift
+      setCustomTime(false);
       form.reset({
         employeeIds: [],
         date: getDefaultDate(),
@@ -355,7 +365,7 @@ export const ShiftModal = ({ isOpen, onClose, defaultDate, editingShift }: Shift
       >
         <DialogHeader className="flex-none px-4 pt-4 pb-3 border-b border-gray-200">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg !bg-gradient-to-r !from-[#26A69A] !to-[#4DB6AC] flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg !bg-[#1a998f] flex items-center justify-center">
               <Clock className="w-5 h-5 !text-white" />
             </div>
             <div>
@@ -512,9 +522,29 @@ export const ShiftModal = ({ isOpen, onClose, defaultDate, editingShift }: Shift
 
               {/* SHIFT DETAILS */}
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl">
-                <h3 className="text-base font-semibold text-gray-800 mb-3">
-                  Chi tiết ca làm
-                </h3>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-base font-semibold text-gray-800">
+                    Chi tiết ca làm
+                  </h3>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-600">Tùy chỉnh giờ</span>
+                    <Switch
+                      checked={customTime}
+                      onCheckedChange={(checked) => {
+                        setCustomTime(checked);
+                        if (!checked) {
+                          // Reset to preset times when disabling custom time
+                          const currentShiftType = form.getValues('shiftType');
+                          const preset = SHIFT_TIMES[currentShiftType];
+                          if (preset) {
+                            form.setValue('startTime', preset.start);
+                            form.setValue('endTime', preset.end);
+                          }
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {/* SHIFT TYPE */}
                   <FormField
@@ -527,7 +557,7 @@ export const ShiftModal = ({ isOpen, onClose, defaultDate, editingShift }: Shift
                         </FormLabel>
                         <FormControl>
                           <Select
-                            {...field}
+                            value={field.value}
                             placeholder="Chọn ca"
                             size="large"
                             className="w-full"
@@ -557,7 +587,8 @@ export const ShiftModal = ({ isOpen, onClose, defaultDate, editingShift }: Shift
                           <Input
                             {...field}
                             type="time"
-                            className="h-11 rounded-xl border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
+                            disabled={!customTime}
+                            className="h-11 rounded-xl border-gray-300 focus:border-emerald-500 focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"
                           />
                         </FormControl>
                         <FormMessage />
@@ -578,7 +609,8 @@ export const ShiftModal = ({ isOpen, onClose, defaultDate, editingShift }: Shift
                           <Input
                             {...field}
                             type="time"
-                            className="h-11 rounded-xl border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
+                            disabled={!customTime}
+                            className="h-11 rounded-xl border-gray-300 focus:border-emerald-500 focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"
                           />
                         </FormControl>
                         <FormMessage />
@@ -586,6 +618,11 @@ export const ShiftModal = ({ isOpen, onClose, defaultDate, editingShift }: Shift
                     )}
                   />
                 </div>
+                {!customTime && (
+                  <p className="text-xs text-gray-500 mt-2">
+                    💡 Khung giờ đã được thiết lập sẵn cho mỗi ca. Bật "Tùy chỉnh giờ" nếu cần thay đổi.
+                  </p>
+                )}
               </div>
 
               {/* NOTES */}
@@ -650,7 +687,7 @@ export const ShiftModal = ({ isOpen, onClose, defaultDate, editingShift }: Shift
                 <Button
                   type="submit"
                   disabled={isPending}
-                  className="h-11 px-6 !rounded-xl !bg-gradient-to-r !from-[#26A69A] !to-[#4DB6AC] hover:!from-[#00897B] hover:!to-[#26A69A] !text-white !font-bold !shadow-md hover:!shadow-lg"
+                  className="h-11 px-6 !rounded-xl !bg-[#1a998f] hover:!bg-[#158f85] !text-white !font-bold !shadow-md hover:!shadow-lg border-none"
                 >
                   {isPending ? (
                     <>
