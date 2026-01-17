@@ -214,7 +214,7 @@ export const EmployeeModal = ({ open, onClose, employee }: EmployeeModalProps) =
         }}
       >
         <DialogContent
-          className="z-50 w-full sm:max-w-2xl flex flex-col p-0 gap-0 bg-white !rounded-xl overflow-hidden h-auto max-h-[85vh] sm:h-auto"
+          className="!fixed !top-[5vh] !left-1/2 !-translate-x-1/2 !z-50 !w-[95vw] !max-w-2xl !h-[90vh] !flex !flex-col !bg-white !p-0 !rounded-xl !shadow-2xl !border-none !overflow-hidden"
         >
           <DialogHeader className="flex-none px-4 pt-4 pb-3 border-b border-gray-200">
             <div className="flex items-center gap-3">
