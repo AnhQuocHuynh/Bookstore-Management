@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -201,43 +201,6 @@ export const EmployeeModal = ({ open, onClose, employee }: EmployeeModalProps) =
 
   const isPending = inviteMutation.isPending || updateMutation.isPending;
 
-  // Refs for DialogContent elements to force center positioning
-  const inviteDialogRef = useRef<HTMLDivElement>(null);
-  const editDialogRef = useRef<HTMLDivElement>(null);
-
-  // Force center positioning after Radix UI applies inline styles
-  // Use useLayoutEffect + continuous polling to override Radix UI's inline styles
-  useLayoutEffect(() => {
-    if (!open) return;
-
-    const el = !isEditing ? inviteDialogRef.current : editDialogRef.current;
-    if (!el) return;
-
-    const forceCenter = () => {
-      // Always force set, don't check condition
-      el.style.left = '50%';
-      el.style.top = '50%';
-      el.style.transform = 'translate(-50%, -50%)';
-    };
-
-    // Initial force immediately
-    forceCenter();
-
-    // Continuous polling to override Radix UI's inline styles (Radix may set styles in animation loop)
-    const intervalId = setInterval(forceCenter, 10); // 100fps to override more aggressively
-
-    // Also try after multiple animation frames
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        forceCenter();
-      });
-    });
-
-    return () => {
-      clearInterval(intervalId);
-    };
-  }, [open, isEditing]);
-
   // ==========================================
   // RENDER: INVITE MODE (Simple Form)
   // ==========================================
@@ -251,43 +214,7 @@ export const EmployeeModal = ({ open, onClose, employee }: EmployeeModalProps) =
         }}
       >
         <DialogContent
-          className="!left-1/2 !top-1/2 !-translate-x-1/2 !-translate-y-1/2 z-50 w-full sm:max-w-2xl flex flex-col p-0 gap-0 bg-white !rounded-xl overflow-hidden h-auto max-h-[85vh] sm:h-auto"
-          ref={(el) => {
-            inviteDialogRef.current = el;
-            if (el) {
-              // Force center positioning immediately in ref callback
-              // Calculate pixel position to avoid Radix UI's matrix transform override
-              const forceCenter = () => {
-                const rect = el.getBoundingClientRect();
-                const viewportWidth = window.innerWidth;
-                const viewportHeight = window.innerHeight;
-                const centerX = viewportWidth / 2;
-                const centerY = viewportHeight / 2;
-                const modalWidth = rect.width || 672; // fallback to default width
-                const modalHeight = rect.height || 400; // fallback to default height
-                const leftPx = centerX - (modalWidth / 2);
-                const topPx = centerY - (modalHeight / 2);
-                
-                el.style.left = `${leftPx}px`;
-                el.style.top = `${topPx}px`;
-                el.style.transform = 'none';
-              };
-              
-              // Try multiple times to override Radix UI
-              forceCenter();
-              requestAnimationFrame(() => {
-                forceCenter();
-                requestAnimationFrame(() => {
-                  forceCenter();
-                  // Also set interval to continuously override
-                  const intervalId = setInterval(forceCenter, 10);
-                  // Cleanup interval after 1 second (modal should be stable by then)
-                  setTimeout(() => clearInterval(intervalId), 1000);
-                });
-              });
-              
-            }
-          }}
+          className="z-50 w-full sm:max-w-2xl flex flex-col p-0 gap-0 bg-white !rounded-xl overflow-hidden h-auto max-h-[85vh] sm:h-auto"
         >
           <DialogHeader className="flex-none px-4 pt-4 pb-3 border-b border-gray-200">
             <div className="flex items-center gap-3">
@@ -500,42 +427,7 @@ export const EmployeeModal = ({ open, onClose, employee }: EmployeeModalProps) =
       }}
       >
       <DialogContent
-        className="!left-1/2 !top-1/2 !-translate-x-1/2 !-translate-y-1/2 z-50 w-full sm:max-w-3xl flex flex-col p-0 gap-0 bg-white !rounded-xl overflow-hidden h-auto max-h-[85vh] sm:h-auto"
-        ref={(el) => {
-          editDialogRef.current = el;
-          if (el) {
-            // Force center positioning immediately in ref callback
-            // Calculate pixel position to avoid Radix UI's matrix transform override
-            const forceCenter = () => {
-              const rect = el.getBoundingClientRect();
-              const viewportWidth = window.innerWidth;
-              const viewportHeight = window.innerHeight;
-              const centerX = viewportWidth / 2;
-              const centerY = viewportHeight / 2;
-              const modalWidth = rect.width || 672; // fallback to default width
-              const modalHeight = rect.height || 400; // fallback to default height
-              const leftPx = centerX - (modalWidth / 2);
-              const topPx = centerY - (modalHeight / 2);
-              
-              el.style.setProperty('left', `${leftPx}px`, 'important');
-              el.style.setProperty('top', `${topPx}px`, 'important');
-              el.style.setProperty('transform', 'none', 'important');
-            };
-            
-            // Try multiple times to override Radix UI
-            forceCenter();
-            requestAnimationFrame(() => {
-              forceCenter();
-              requestAnimationFrame(() => {
-                forceCenter();
-                // Also set interval to continuously override
-                const intervalId = setInterval(forceCenter, 10);
-                // Cleanup interval after 1 second (modal should be stable by then)
-                setTimeout(() => clearInterval(intervalId), 1000);
-              });
-            });
-          }
-        }}
+        className="z-50 w-full sm:max-w-3xl flex flex-col p-0 gap-0 bg-white !rounded-xl overflow-hidden h-auto max-h-[85vh] sm:h-auto"
       >
           <DialogHeader className="flex-none px-4 pt-4 pb-3 border-b border-gray-200">
           <DialogTitle className="text-xl font-bold text-gray-800">

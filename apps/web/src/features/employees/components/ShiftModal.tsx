@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -181,26 +181,6 @@ export const ShiftModal = ({ isOpen, onClose, defaultDate, editingShift }: Shift
     }
   }, [isOpen, editingShift, defaultDate, form]);
 
-  useEffect(() => {
-    if (!isOpen) {
-      // Cleanup when modal closes
-      const el = dialogRef.current;
-      if (el) {
-        const intervalId = (el as any).__centerIntervalId;
-        const observer = (el as any).__centerObserver;
-        if (intervalId) {
-          clearInterval(intervalId);
-          delete (el as any).__centerIntervalId;
-        }
-        if (observer) {
-          observer.disconnect();
-          delete (el as any).__centerObserver;
-        }
-      }
-      return;
-    }
-  }, [isOpen]);
-
   // ==========================================
   // GROUP EMPLOYEES BY ROLE
   // ==========================================
@@ -364,9 +344,6 @@ export const ShiftModal = ({ isOpen, onClose, defaultDate, editingShift }: Shift
     onClose();
   };
 
-  // Ref for DialogContent to force center positioning
-  const dialogRef = useRef<HTMLDivElement>(null);
-
   // ==========================================
   // RENDER
   // ==========================================
@@ -374,54 +351,7 @@ export const ShiftModal = ({ isOpen, onClose, defaultDate, editingShift }: Shift
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent 
-          className="!left-1/2 !top-1/2 !-translate-x-1/2 !-translate-y-1/2 z-50 w-full sm:max-w-2xl flex flex-col p-0 gap-0 bg-white !rounded-xl overflow-hidden h-auto max-h-[85vh] sm:h-auto"
-        ref={(el) => {
-          dialogRef.current = el;
-          if (el) {
-            // Force center positioning immediately in ref callback
-            // Calculate pixel position to avoid Radix UI's matrix transform override
-            const forceCenter = () => {
-              const rect = el.getBoundingClientRect();
-              const viewportWidth = window.innerWidth;
-              const viewportHeight = window.innerHeight;
-              const centerX = viewportWidth / 2;
-              const centerY = viewportHeight / 2;
-              const modalWidth = rect.width || 672; // fallback to default width
-              const modalHeight = rect.height || 400; // fallback to default height
-              const leftPx = centerX - (modalWidth / 2);
-              const topPx = centerY - (modalHeight / 2);
-              
-              el.style.setProperty('left', `${leftPx}px`, 'important');
-              el.style.setProperty('top', `${topPx}px`, 'important');
-              el.style.setProperty('transform', 'none', 'important');
-            };
-            
-            // Try multiple times to override Radix UI
-            forceCenter();
-            requestAnimationFrame(() => {
-              forceCenter();
-              requestAnimationFrame(() => {
-                forceCenter();
-                // Also set interval to continuously override (5ms = 200fps for aggressive override)
-                const intervalId = setInterval(forceCenter, 5);
-                // Store intervalId on element for cleanup
-                (el as any).__centerIntervalId = intervalId;
-                
-                // Use MutationObserver to detect when Radix UI changes styles
-                const observer = new MutationObserver((mutations) => {
-                  for (const mutation of mutations) {
-                    if (mutation.type === 'attributes' && (mutation.attributeName === 'style')) {
-                      // Radix UI changed styles, force center again immediately
-                      requestAnimationFrame(forceCenter);
-                    }
-                  }
-                });
-                observer.observe(el, { attributes: true, attributeFilter: ['style'] });
-                (el as any).__centerObserver = observer;
-              });
-            });
-          }
-        }}
+          className="z-50 w-full sm:max-w-2xl flex flex-col p-0 gap-0 bg-white !rounded-xl overflow-hidden h-auto max-h-[85vh] sm:h-auto"
       >
         <DialogHeader className="flex-none px-4 pt-4 pb-3 border-b border-gray-200">
           <div className="flex items-center gap-3">
