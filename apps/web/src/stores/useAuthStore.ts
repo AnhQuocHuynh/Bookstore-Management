@@ -1,4 +1,5 @@
 import { UserProfile } from "@/features/auth";
+import { authApi } from "@/features/auth/api/auth.api";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
@@ -55,6 +56,7 @@ interface AuthState {
   setStoreToken: (newToken: string, store: Store, user: UserProfile) => void;
 
   logout: () => void;
+  logoutAsync: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -104,7 +106,30 @@ export const useAuthStore = create<AuthState>()(
           currentStore: null,
           isAuthenticated: false,
           tempCredentials: null,
+          registerTemp: null,
+          tokenFirstLogin: null,
         }),
+
+      logoutAsync: async () => {
+        try {
+          // Gọi API đăng xuất để revoke refresh token
+          await authApi.signOut();
+        } catch (error) {
+          // Nếu API fail, vẫn clear state để đảm bảo user có thể logout
+          console.error("Error during logout:", error);
+        } finally {
+          // Luôn clear state sau khi gọi API (thành công hoặc thất bại)
+          set({
+            user: null,
+            accessToken: null,
+            currentStore: null,
+            isAuthenticated: false,
+            tempCredentials: null,
+            registerTemp: null,
+            tokenFirstLogin: null,
+          });
+        }
+      },
     }),
     {
       name: "auth-storage",

@@ -251,4 +251,16 @@ export const authApi = {
     );
     return response.data;
   },
+
+  /**
+   * Đăng xuất tài khoản
+   * Revoke refresh token và xóa session
+   * @returns Response với message thành công
+   */
+  signOut: async () => {
+    const response = await apiClient.delete<{ message: string }>(
+      "/auth/sign-out",
+    );
+    return response.data;
+  },
 };
