@@ -2,16 +2,17 @@ import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { reportApi } from "../api/report.api";
 import { EmployeeReportParams, RevenueReportParams, StockReportParams } from "../types";
 
+
 export const useRevenueReport = (params: RevenueReportParams) => {
-    // Clean params: Loại bỏ undefined/null
     const cleanParams = Object.fromEntries(
         Object.entries(params).filter(([_, v]) => v != null && v !== "")
     );
-
     return useQuery({
         queryKey: ["revenue-report", cleanParams],
         queryFn: () => reportApi.getRevenueDashboard(cleanParams),
-        staleTime: 1000 * 60 * 5, // Cache 5 phút vì báo cáo không thay đổi quá nhanh
+        staleTime: 1000 * 60 * 5,
+        // FIX: Giữ dữ liệu cũ khi thay đổi bộ lọc để tránh cảm giác "reload" trang
+        placeholderData: keepPreviousData,
     });
 };
 
@@ -42,5 +43,14 @@ export const useEmployeeReport = (params: EmployeeReportParams) => {
         queryFn: () => reportApi.getEmployeeDashboard(cleanParams),
         placeholderData: keepPreviousData,
         staleTime: 1000 * 60 * 5,
+    });
+};
+
+export const useReportCategories = () => {
+    return useQuery({
+        queryKey: ["report-categories-filter"], // Key riêng để tránh conflict cache
+        queryFn: () => reportApi.getCategories(),
+        staleTime: 1000 * 60 * 15, // Cache 15 phút vì danh mục ít thay đổi
+        select: (data: any) => data.data || [], // Transform data ngay tại đây nếu response trả về dạng { data: [...] }
     });
 };

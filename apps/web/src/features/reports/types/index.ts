@@ -162,3 +162,8 @@ export interface EmployeeReportParams {
     page?: number;
     limit?: number;
 }
+
+export interface ReportCategory {
+    id: string;
+    name: string;
+}

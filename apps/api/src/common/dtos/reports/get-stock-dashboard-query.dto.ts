@@ -13,7 +13,7 @@ import {
   Min,
   Max,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 
 export class GetStockDashboardQueryDto {
   @ApiPropertyOptional({
@@ -42,6 +42,13 @@ export class GetStockDashboardQueryDto {
     example: ['uuid1', 'uuid2'],
   })
   @IsOptional()
+  // 👇 Đã thêm Transform tương tự
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      return [value];
+    }
+    return value;
+  })
   @IsArray({ message: 'Danh mục sản phẩm không hợp lệ' })
   @IsUUID('all', { each: true, message: 'Mỗi ID danh mục phải là UUID hợp lệ' })
   categoryIds?: string[];
