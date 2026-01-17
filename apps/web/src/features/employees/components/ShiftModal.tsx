@@ -376,7 +376,7 @@ export const ShiftModal = ({ isOpen, onClose, defaultDate, editingShift }: Shift
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent 
-          className="z-50 w-full sm:max-w-2xl flex flex-col p-0 gap-0 bg-white !rounded-xl overflow-hidden h-auto max-h-[85vh] sm:h-auto"
+          className="!fixed !top-[5vh] !left-1/2 !-translate-x-1/2 !z-50 !w-[95vw] !max-w-2xl !h-[90vh] !flex !flex-col !bg-white !p-0 !rounded-xl !shadow-2xl !border-none !overflow-hidden"
       >
         <DialogHeader className="flex-none px-4 pt-4 pb-3 border-b border-gray-200">
           <div className="flex items-center gap-3">
@@ -395,10 +395,10 @@ export const ShiftModal = ({ isOpen, onClose, defaultDate, editingShift }: Shift
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="flex flex-col flex-1 overflow-hidden">
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="flex flex-col flex-1 min-h-0 overflow-hidden">
             {/* FORM CONTENT */}
-            <ScrollArea className="flex-1 w-full max-h-[60vh]">
-              <div className="p-4 space-y-3">
+            <ScrollArea className="flex-1 min-h-0">
+    <div className="p-4 space-y-3">
               {/* EMPLOYEE & DATE */}
               <div className="bg-gradient-to-r from-teal-50 to-cyan-50 p-4 rounded-xl">
                 <h3 className="text-base font-semibold text-gray-800 mb-3">
@@ -564,40 +564,34 @@ export const ShiftModal = ({ isOpen, onClose, defaultDate, editingShift }: Shift
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {/* SHIFT TYPE */}
                   <FormField
-                    control={form.control}
-                    name="shiftType"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-gray-700 font-medium">
-                          Ca làm việc <span className="text-red-500">*</span>
-                        </FormLabel>
-                        <FormControl>
-                          <Select
-                            value={field.value}
-                            placeholder="Chọn ca"
-                            size="large"
-                            className="w-full"
-                            onChange={(value) => {
-                              field.onChange(value);
-                              if (!customTime) {
-                                const times = SHIFT_TIMES[value as ShiftType];
-                                if (times) {
-                                  form.setValue('startTime', times.start);
-                                  form.setValue('endTime', times.end);
-                                }
-                              }
-                            }}
-                            style={{ height: '44px' }}
-                            options={Object.entries(SHIFT_LABELS).map(([key, label]) => ({
-                              label,
-                              value: key,
-                            }))}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  control={form.control}
+                  name="shiftType"
+                  render={({ field }: { field: any }) => (
+                    <FormItem>
+                      <FormLabel>Ca làm việc</FormLabel>
+                      <FormControl>
+                        <Select
+                          className="w-full h-11"
+                          // FIX 1: Tắt cuộn ảo để tránh lỗi tính toán chiều cao trong Modal
+                          virtual={false}
+                          // FIX 2: Ép Z-Index lên cực cao để đè lên mọi layer khác
+                          dropdownStyle={{ zIndex: 9999 }}
+                          // FIX 3: Render dropdown gắn vào phần tử cha để tránh trôi layout
+                          getPopupContainer={(triggerNode) =>
+                            triggerNode.parentElement
+                          }
+                          value={field.value}
+                          onChange={field.onChange}
+                          options={Object.values(ShiftType).map((type) => ({
+                            label: SHIFT_LABELS[type],
+                            value: type,
+                          }))}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                   {/* START TIME */}
                   <FormField
