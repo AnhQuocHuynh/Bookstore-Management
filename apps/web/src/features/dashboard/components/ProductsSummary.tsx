@@ -1,81 +1,52 @@
-"use client";
-
+// file: components/ProductsSummary.tsx
 import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from "recharts";
+import { ChartResponse } from "../types/dashboard";
+import { useMemo } from "react";
+import { Spin } from "antd";
 
-const mockData = [
-  { date: "01/12", books: 1200, stationery: 600 },
-  { date: "02/12", books: 2100, stationery: 900 },
-  { date: "03/12", books: 800, stationery: 400 },
-  { date: "04/12", books: 1600, stationery: 700 },
-  { date: "05/12", books: 900, stationery: 300 },
-  { date: "06/12", books: 1700, stationery: 800 },
-  { date: "07/12", books: 2200, stationery: 1000 },
-];
+interface ProductSummaryProps {
+  data?: ChartResponse;
+  isLoading: boolean;
+  totalItems?: number;
+}
 
-const ProductSummary = () => {
+const ProductSummary: React.FC<ProductSummaryProps> = ({ data, isLoading, totalItems }) => {
+  const chartData = useMemo(() => {
+    if (!data?.labels) return [];
+    return data.labels.map((label, index) => {
+      const item: any = { date: label };
+      data.datasets.forEach((ds) => {
+        item[ds.name] = ds.values[index] || 0;
+      });
+      return item;
+    });
+  }, [data]);
+
+  if (isLoading) return <div className="h-60 flex items-center justify-center"><Spin /></div>;
+
   return (
-    <div className="bg-white p-6 rounded-xl shadow-sm hover:shadow-lg transition-all">
-      {/* Header card */}
-      <div className="flex flex-col gap-1 mb-2">
-        <h2 className="text-lg font-semibold text-[#102E3C]">776</h2>
+    <div className="bg-white p-6 rounded-xl shadow-sm hover:shadow-lg transition-all h-full">
+      <div className="flex flex-col gap-1 mb-4">
+        <h2 className="text-lg font-semibold text-[#102E3C]">{totalItems ?? 0}</h2>
         <p className="text-sm text-gray-500">Sản phẩm bán được</p>
       </div>
 
-      {/* Biểu đồ */}
-      <div className="w-full h-60">
+      <div className="w-full h-64">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart
-            data={mockData}
-            margin={{ top: 10, right: 20, left: 0, bottom: 0 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" />
-            <YAxis />
+          <LineChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+            <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+            <YAxis width={30} />
             <Tooltip />
-
-            {/* Đường sách */}
-            <Line
-              type="monotone"
-              dataKey="books"
-              name="Sách"
-              stroke="#1A998F"
-              strokeWidth={3}
-              dot={{ r: 4 }}
-              activeDot={{ r: 6 }}
-            />
-
-            {/* Đường văn phòng phẩm */}
-            <Line
-              type="monotone"
-              dataKey="stationery"
-              name="Văn phòng phẩm"
-              stroke="#e73108"
-              strokeWidth={3}
-              dot={{ r: 4 }}
-              activeDot={{ r: 6 }}
-            />
+            <Legend />
+            {/* Backend trả về: Tổng sản phẩm, Sách, Văn phòng phẩm, Sản phẩm khác */}
+            <Line type="monotone" dataKey="Sách" stroke="#1A998F" strokeWidth={2} dot={false} />
+            <Line type="monotone" dataKey="Văn phòng phẩm" stroke="#e73108" strokeWidth={2} dot={false} />
+            <Line type="monotone" dataKey="Sản phẩm khác" stroke="#f59e0b" strokeWidth={2} dot={false} />
           </LineChart>
         </ResponsiveContainer>
-      </div>
-
-      {/* Note / Legend */}
-      <div className="flex gap-4 mt-3">
-        <div className="flex items-center gap-1">
-          <span className="block w-3 h-3 bg-[#1A998F] rounded-full"></span>
-          <span className="text-sm text-gray-600">Sách</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <span className="block w-3 h-3 bg-[#e73108] rounded-full"></span>
-          <span className="text-sm text-gray-600">Văn phòng phẩm</span>
-        </div>
       </div>
     </div>
   );
