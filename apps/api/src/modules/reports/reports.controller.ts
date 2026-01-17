@@ -25,51 +25,41 @@ export class ReportsController {
   @Get('overview')
   @ApiOperation({
     summary: 'Lấy dữ liệu tổng quan kinh doanh',
-    description: `
-      Trả về dữ liệu 5 card dashboard gồm:
-      - profit: lợi nhuận
-      - revenue: tổng tiền bán
-      - transactions: số hóa đơn hoàn tất
-      - items_sold: tổng số sản phẩm bán ra, phân loại theo loại sản phẩm
-      - expenses: tổng chi phí
-      Có tính growth_percent so với kỳ trước.
-    `,
   })
   @ApiResponse({
     status: HttpStatus.OK,
     example: {
-      timestamp: '2025-12-18T07:30:00.000Z',
+      timestamp: '2024-05-24T08:30:00.000Z',
+      range: {
+        current: {
+          start: '2024-05-01T00:00:00.000Z',
+          end: '2024-05-24T08:30:00.000Z',
+        },
+        previous: {
+          start: '2024-04-07T15:30:00.000Z',
+          end: '2024-05-01T00:00:00.000Z',
+        },
+      },
       overview: {
         profit: {
-          value: 1200000,
+          value: 15250000,
+          growth_percent: 12.5,
           currency: 'VND',
-          growth_percent: 5.2,
-          note: 'Lợi nhuận = Doanh thu - Giá vốn',
         },
         revenue: {
-          value: 3625000,
+          value: 45000000,
+          growth_percent: 8.2,
           currency: 'VND',
-          growth_percent: 4.8,
         },
-        transactions: {
-          count: 76,
-          growth_percent: 2.5,
-        },
-        items_sold: {
-          total: 276,
-          breakdown: {
-            book: 150,
-            stationery: 126,
-            other: 0,
-          },
-        },
-        expenses: {
-          total: 2425000,
+        purchase_cost: {
+          value: 28000000,
+          growth_percent: 5.4,
           currency: 'VND',
-          breakdown: {
-            purchase_cost: 2000000,
-            service_fee: 425000,
-          },
+        },
+        service_fee: {
+          value: 1750000,
+          growth_percent: 10.0,
+          currency: 'VND',
         },
       },
     },

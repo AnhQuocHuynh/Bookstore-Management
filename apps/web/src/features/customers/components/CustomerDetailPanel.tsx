@@ -50,6 +50,7 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({ select
                     />
 
                     <div className="my-4 border-t border-dashed border-gray-300"></div>
+                    <h4 className="text-[#1a998f] font-bold mb-2">Thông tin liên hệ</h4>
 
                     <InfoRow label="Số điện thoại" value={selectedItem.phoneNumber} />
                     <InfoRow label="Email" value={selectedItem.email} />

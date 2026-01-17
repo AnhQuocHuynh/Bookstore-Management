@@ -35,9 +35,7 @@ export class Product {
   })
   sku: string;
 
-  @Column({
-    unique: true,
-  })
+  @Column()
   name: string;
 
   @Column({

@@ -1,13 +1,19 @@
 import React, { useState, useMemo } from "react";
-import { Table, Input, Select, Tag, Empty } from "antd";
-import { Search } from "lucide-react";
+import { Input, Select } from "antd";
+import { Search, X } from "lucide-react";
 import { useDisplayProducts, useShelves } from "../hooks/useDisplay";
 import { useDebounce } from "@/hooks/use-debounce";
+import { DisplayProductTable, TableHeader } from "./DisplayProductTable";
+import { DisplayProductDetailPanel } from "./DisplayProductDetailPanel";
+import { DisplayProduct } from "../types";
+
+const { Option } = Select;
 
 export const DisplayProductsView = () => {
-    // State quản lý input
+    // --- States ---
     const [searchText, setSearchText] = useState("");
     const [selectedShelfId, setSelectedShelfId] = useState<string | undefined>(undefined);
+    const [selectedItem, setSelectedItem] = useState<DisplayProduct | null>(null);
 
     // Debounce input tìm kiếm (500ms)
     const debouncedSearchText = useDebounce(searchText, 500);
@@ -22,7 +28,6 @@ export const DisplayProductsView = () => {
         }
 
         // 2. Map 'selectedShelfId' -> 'displayShelfId' (Backend yêu cầu)
-        // Quan trọng: Nếu undefined/null thì KHÔNG thêm vào params để tránh lỗi 400
         if (selectedShelfId) {
             params.displayShelfId = selectedShelfId;
         }
@@ -37,71 +42,36 @@ export const DisplayProductsView = () => {
     const { data: products, isLoading } = useDisplayProducts(queryParams);
     const { data: shelves } = useShelves();
 
-    const columns = [
-        {
-            title: "Sản phẩm",
-            dataIndex: ["product", "name"],
-            render: (text: string, record: any) => (
-                <div className="flex gap-3 items-center">
-                    {record.product.imageUrl ? (
-                        <img src={record.product.imageUrl} alt="" className="w-10 h-10 object-cover rounded border border-gray-200" />
-                    ) : (
-                        <div className="w-10 h-10 bg-gray-100 rounded border border-gray-200 flex items-center justify-center text-xs text-gray-400">No Img</div>
-                    )}
-                    <div>
-                        <div className="font-medium text-[#102e3c]">{text}</div>
-                        <div className="text-xs text-gray-500">
-                            SKU: {record.product.sku}
-                            {/* Hiển thị thêm tên tác giả nếu là sách (Dựa trên JSON mới) */}
-                            {record.product.type === 'book' && record.product.book?.author && (
-                                <span className="ml-1 text-gray-400">| {record.product.book.author}</span>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )
-        },
-        {
-            title: "Vị trí Kệ",
-            dataIndex: ["displayShelf", "name"],
-            render: (text: string) => <Tag color="blue">{text}</Tag>
-        },
-        {
-            title: "Số lượng",
-            dataIndex: "quantity",
-            align: "center" as const,
-            render: (q: number) => <span className="font-bold">{q}</span>
-        },
-        {
-            title: "Trạng thái",
-            dataIndex: "status",
-            align: "center" as const,
-            render: (status: string) => status === 'active'
-                ? <Tag color="success">Đang trưng bày</Tag>
-                : <Tag color="default">Ẩn</Tag>
+    // --- Handlers ---
+    const handleRowClick = (record: DisplayProduct) => {
+        if (selectedItem?.id === record.id) {
+            setSelectedItem(null);
+        } else {
+            setSelectedItem(record);
         }
-    ];
+    };
 
     return (
-        <div className="flex flex-col h-full gap-4">
-            {/* FILTER BAR */}
-            <div className="flex flex-wrap gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                <div className="flex-1 min-w-[200px]">
-                    <Input
-                        prefix={<Search size={16} className="text-gray-400" />}
-                        placeholder="Tìm theo Tên sách hoặc Mã SKU..."
-                        className="h-10"
-                        value={searchText}
-                        onChange={e => setSearchText(e.target.value)}
-                        allowClear
-                    />
-                </div>
-                <div className="w-[250px]">
+        <div className="relative w-full h-full overflow-hidden flex flex-col font-['Inter']">
+            {/* --- Filter Bar --- */}
+            <div className="flex-shrink-0 px-6 pt-3 pb-2">
+                <div className="flex flex-wrap items-center gap-3 bg-white p-3 rounded-xl border border-[#102e3c]/10 shadow-sm">
+                    <div className="relative flex-1 min-w-[200px]">
+                        <Input
+                            prefix={<Search size={16} className="text-gray-400" />}
+                            placeholder="Tìm theo Tên sách hoặc Mã SKU..."
+                            className="rounded-lg border-teal-600/30 hover:border-teal-600 focus:border-teal-600 h-[38px]"
+                            value={searchText}
+                            onChange={(e) => setSearchText(e.target.value)}
+                            allowClear
+                        />
+                    </div>
+                    
                     <Select
                         placeholder="Lọc theo kệ"
                         allowClear
-                        className="w-full h-10"
-                        // Map dữ liệu kệ vào dropdown
+                        className="min-w-[250px]"
+                        style={{ height: 38 }}
                         options={shelves?.map((s: any) => ({ label: s.name, value: s.id }))}
                         onChange={setSelectedShelfId}
                         value={selectedShelfId}
@@ -109,18 +79,48 @@ export const DisplayProductsView = () => {
                 </div>
             </div>
 
-            {/* TABLE CONTENT */}
-            <div className="flex-1 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col">
-                <Table
-                    dataSource={products || []}
-                    columns={columns}
-                    rowKey="id"
-                    loading={isLoading}
-                    pagination={{ pageSize: 10, showSizeChanger: true }}
-                    scroll={{ y: 'calc(100vh - 300px)' }}
-                    locale={{ emptyText: <Empty description="Không tìm thấy sản phẩm trưng bày nào" /> }}
-                />
-            </div>
+            {/* --- Main Content --- */}
+            <main className="flex-1 px-6 pb-6 overflow-hidden mt-4 relative">
+                <section className="relative w-full h-full bg-white rounded-[20px] overflow-hidden border border-solid border-[#102e3c] shadow-sm flex flex-col">
+                    
+                    <div className={`
+                        absolute top-3 bottom-3 left-[13px] rounded-[20px] transition-all duration-300 flex flex-col bg-white z-10
+                        ${selectedItem ? "right-[450px]" : "right-[20px]"}
+                    `}>
+                        <div className="flex-shrink-0">
+                            <TableHeader isPanelOpen={!!selectedItem} />
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto relative custom-scrollbar">
+                            <DisplayProductTable
+                                data={products || []}
+                                loading={isLoading}
+                                selectedItem={selectedItem}
+                                onRowClick={handleRowClick}
+                                isPanelOpen={!!selectedItem}
+                            />
+                        </div>
+                    </div>
+
+                    {/* DETAIL PANEL */}
+                    <div className={`
+                        absolute top-3 bottom-3 w-[430px] bg-white rounded-[20px] border-[3px] border-[#1a998f]
+                        transition-all duration-300 ease-in-out z-20 shadow-xl overflow-hidden flex flex-col
+                        ${selectedItem ? "right-3 translate-x-0 opacity-100" : "right-3 translate-x-[110%] opacity-0 pointer-events-none"}
+                    `}>
+                        <button
+                            onClick={() => setSelectedItem(null)}
+                            className="absolute top-3 right-3 p-1.5 rounded-full hover:bg-gray-100 text-gray-500 hover:text-red-500 transition-colors z-50 cursor-pointer"
+                        >
+                            <X size={24} />
+                        </button>
+
+                        <div className="flex-1 overflow-hidden h-full">
+                            <DisplayProductDetailPanel selectedItem={selectedItem} />
+                        </div>
+                    </div>
+                </section>
+            </main>
         </div>
     );
 };

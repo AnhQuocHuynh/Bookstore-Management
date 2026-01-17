@@ -136,26 +136,45 @@ export const InventoryAddPanel: React.FC<InventoryAddPanelProps> = ({
                 </Form.Item>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <Form.Item name="stock" label={<span className="text-lg font-semibold text-[#102e3c]">Tồn Kho:</span>} rules={[{ required: true }]}>
-                  <InputNumber min={0} controls={false} className="w-full border-0 border-b-2 border-[#102e3c] rounded-none bg-transparent text-lg px-0" />
-                </Form.Item>
-                <Form.Item name="category" label={<span className="text-lg font-semibold text-[#102e3c]">Loại:</span>}>
-                  <Select variant="borderless" style={{ fontSize: 18, borderBottom: "2px solid #102e3c" }}>
-                    <Select.Option value="Sách">Sách</Select.Option>
-                    <Select.Option value="Văn phòng phẩm">Văn phòng phẩm</Select.Option>
-                    <Select.Option value="Khác">Khác</Select.Option>
-                  </Select>
-                </Form.Item>
-              </div>
+              <Form.Item name="category" label={<span className="text-lg font-semibold text-[#102e3c]">Loại:</span>}>
+                <Select variant="borderless" style={{ fontSize: 18, borderBottom: "2px solid #102e3c" }} disabled value={category}>
+                  <Select.Option value="Sách">Sách</Select.Option>
+                  <Select.Option value="Văn phòng phẩm">Văn phòng phẩm</Select.Option>
+                </Select>
+              </Form.Item>
 
               <Form.Item name="supplier" label={<span className="text-lg font-semibold text-[#102e3c]">Nhà Cung Cấp:</span>}>
                 <Input variant="borderless" style={{ width: "100%", fontSize: 18, borderBottom: "2px solid #102e3c", padding: "4px 0", backgroundColor: "transparent" }} />
               </Form.Item>
 
-              <Form.Item name="description" label={<span className="text-lg font-semibold text-[#102e3c]">Mô Tả:</span>}>
-                <Input.TextArea rows={3} className="border-2 border-[#102e3c] rounded-lg bg-transparent text-lg resize-none focus:border-[#1a998f] hover:border-[#1a998f]" />
+              <Form.Item name="stock" label={<span className="text-lg font-semibold text-[#102e3c]">Tồn Kho:</span>} rules={[{ required: true }]}>
+                <InputNumber min={0} controls={false} className="w-full border-0 border-b-2 border-[#102e3c] rounded-none bg-transparent text-lg px-0" />
               </Form.Item>
+
+              {category === "Sách" && (
+                <>
+                  <Form.Item name="author" label={<span className="text-lg font-semibold text-[#102e3c]">Tác Giả:</span>}>
+                    <Input variant="borderless" style={{ width: "100%", fontSize: 18, borderBottom: "2px solid #102e3c", padding: "4px 0", backgroundColor: "transparent" }} />
+                  </Form.Item>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <Form.Item name="publisher" label={<span className="text-lg font-semibold text-[#102e3c]">Nhà Xuất Bản:</span>}>
+                      <Input variant="borderless" style={{ width: "100%", fontSize: 18, borderBottom: "2px solid #102e3c", padding: "4px 0", backgroundColor: "transparent" }} />
+                    </Form.Item>
+                    <Form.Item name="releaseYear" label={<span className="text-lg font-semibold text-[#102e3c]">Năm Xuất:</span>}>
+                      <Input variant="borderless" style={{ width: "100%", fontSize: 18, borderBottom: "2px solid #102e3c", padding: "4px 0", backgroundColor: "transparent" }} />
+                    </Form.Item>
+                  </div>
+
+                  <Form.Item name="releaseVersion" label={<span className="text-lg font-semibold text-[#102e3c]">Phiên Bản Phát Hành:</span>}>
+                    <Input variant="borderless" style={{ width: "100%", fontSize: 18, borderBottom: "2px solid #102e3c", padding: "4px 0", backgroundColor: "transparent" }} />
+                  </Form.Item>
+
+                  <Form.Item name="language" label={<span className="text-lg font-semibold text-[#102e3c]">Ngôn Ngữ:</span>}>
+                    <Input variant="borderless" style={{ width: "100%", fontSize: 18, borderBottom: "2px solid #102e3c", padding: "4px 0", backgroundColor: "transparent" }} />
+                  </Form.Item>
+                </>
+              )}
             </Form>
           </div>
         </div>
