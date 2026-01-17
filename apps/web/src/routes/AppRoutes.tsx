@@ -3,7 +3,8 @@ import RegisterPage from "@/features/auth/pages/RegisterPage";
 import { Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { ForgotPasswordPage } from "../features/auth/pages/ForgotPasswordPage";
 import { DashboardPage } from "../features/dashboard/pages/DashboardPage";
-import { EmployeesPage } from "../features/employees/components/EmployeesPage";
+import { EmployeeListPage } from "../features/employees/pages/EmployeeListPage";
+import { EmployeeSchedulePage } from "../features/employees/pages/EmployeeSchedulePage";
 import { ProductsPage } from "../features/products/components/ProductsPage";
 import { SuppliersPage } from "../features/suppliers/components/SuppliersPage";
 import { InventoryPage } from "../features/inventory/components/InventoryPage";
@@ -11,7 +12,6 @@ import { UsersPage } from "../features/users/components/UsersPage";
 import { UserEditPage } from "../features/users/components/UserEditPage";
 import { CreateSalesPage } from "../features/sales/components/pages/CreateSalesPage";
 import { SalesListPage } from "../features/sales/components/pages/SalesListPage";
-import { EmployeeListPage } from "@/features/employees/components/EmployeeListPage";
 
 import SelectStorePage from "@/features/auth/pages/SelectStorePage";
 import VerifyEmailPage from "@/features/auth/pages/VerifyEmailPage";
@@ -178,6 +178,14 @@ export const AppRoutes = () => {
           element={
             <MainLayout>
               <EmployeeListPage />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/dashboard/employees/schedule"
+          element={
+            <MainLayout>
+              <EmployeeSchedulePage />
             </MainLayout>
           }
         />

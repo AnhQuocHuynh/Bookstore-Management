@@ -28,9 +28,9 @@ export const EmployeeEditPanel: React.FC<EmployeeEditPanelProps> = ({
             form.setFieldsValue({
                 fullName: initialData.fullName,
                 email: initialData.email,
-                phoneNumber: initialData.phoneNumber,
+                phone: initialData.phone,
                 address: initialData.address,
-                birthDate: initialData.birthDate ? dayjs(initialData.birthDate) : null,
+                dateOfBirth: initialData.dateOfBirth ? dayjs(initialData.dateOfBirth) : null,
             });
             setAvatarUrl(initialData.avatarUrl || "");
             setRawFile(null);
@@ -85,13 +85,13 @@ export const EmployeeEditPanel: React.FC<EmployeeEditPanelProps> = ({
             const formData: EmployeeFormData = {
                 fullName: values.fullName,
                 email: values.email,
-                phoneNumber: values.phoneNumber,
+                phone: values.phone,
                 address: values.address,
                 // SỬA: Backend yêu cầu ISO 8601. 
                 // Nếu Backend dùng NestJS/Java strict, dùng .toISOString().
                 // Nếu Backend linh động xử lý ngày, giữ format YYYY-MM-DD cũng được nhưng cần thống nhất.
                 // Dưới đây là cách convert sang ISO chuẩn (đặt giờ về 00:00:00 UTC để tránh lệch ngày):
-                birthDate: values.birthDate ? values.birthDate.toISOString() : undefined,
+                dateOfBirth: values.dateOfBirth ? values.dateOfBirth.toISOString() : undefined,
 
                 avatarUrl: finalAvatarUrl || undefined,
                 // Đảm bảo KHÔNG gửi role hay isActive (Code cũ đã làm đúng việc này)
@@ -173,7 +173,7 @@ export const EmployeeEditPanel: React.FC<EmployeeEditPanelProps> = ({
                             </Form.Item>
 
                             <Form.Item
-                                name="phoneNumber"
+                                name="phone"
                                 label={<span className="text-lg font-semibold text-[#102e3c]">Số Điện Thoại:</span>}
                                 rules={[{ required: true, message: "Vui lòng nhập số điện thoại" }]}
                             >
@@ -189,7 +189,7 @@ export const EmployeeEditPanel: React.FC<EmployeeEditPanelProps> = ({
                             </Form.Item>
 
                             <Form.Item
-                                name="birthDate"
+                                name="dateOfBirth"
                                 label={<span className="text-lg font-semibold text-[#102e3c]">Ngày Sinh:</span>}
                             >
                                 <DatePicker

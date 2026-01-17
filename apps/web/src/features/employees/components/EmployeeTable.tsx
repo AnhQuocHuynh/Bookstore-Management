@@ -10,28 +10,31 @@ interface EmployeeTableProps {
     isPanelOpen: boolean;
 }
 
-const getRoleColor = (role: EmployeeRole) => {
+const getRoleColor = (role: string) => {
     switch (role) {
-        case 'ADMIN': return 'red';
+        case 'OWNER': return 'red';
         case 'MANAGER': return 'blue';
-        default: return 'green'; // STAFF
+        default: return 'green'; // CASHIER, WAREHOUSE, SALES
     }
 };
 
-const getRoleLabel = (role: EmployeeRole) => {
+const getRoleLabel = (role: string) => {
     switch (role) {
-        case 'ADMIN': return 'Quản lý';
-        case 'MANAGER': return 'Trưởng ca';
+        case 'OWNER': return 'Chủ cửa hàng';
+        case 'MANAGER': return 'Quản lý';
+        case 'CASHIER': return 'Thu ngân';
+        case 'WAREHOUSE': return 'Kho hàng';
+        case 'SALES': return 'Bán hàng';
         default: return 'Nhân viên';
     }
 };
 
-const getStatusColor = (isActive: boolean) => {
-    return isActive ? 'green' : 'red';
+const getStatusColor = (status: string) => {
+    return status === 'ACTIVE' ? 'green' : 'red';
 };
 
-const getStatusLabel = (isActive: boolean) => {
-    return isActive ? 'Hoạt động' : 'Ngừng hoạt động';
+const getStatusLabel = (status: string) => {
+    return status === 'ACTIVE' ? 'Hoạt động' : 'Ngừng hoạt động';
 };
 
 export const TableHeader: React.FC<{ isPanelOpen: boolean }> = ({ isPanelOpen }) => {
@@ -97,8 +100,8 @@ export const EmployeeTable: React.FC<EmployeeTableProps> = ({
 
                     {!isPanelOpen && (
                         <div className="w-24 text-center">
-                            <Tag color={getStatusColor(item.isActive)} className="m-0">
-                                {getStatusLabel(item.isActive)}
+                            <Tag color={getStatusColor(item.status)} className="m-0">
+                                {getStatusLabel(item.status)}
                             </Tag>
                         </div>
                     )}
