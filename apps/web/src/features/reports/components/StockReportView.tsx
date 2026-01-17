@@ -1,14 +1,14 @@
 import React, { useState } from "react";
-import { Table, Input, Select, Spin, Pagination, Segmented } from "antd"; // Import Segmented
+import { Table, Input, Select, Spin, Pagination, Segmented } from "antd";
 import {
     BarChart, Bar, XAxis, Tooltip as RechartsTooltip, ResponsiveContainer, CartesianGrid, Cell
 } from "recharts";
-import { Search, AlertCircle, CheckCircle, Package, TrendingDown, ArrowUpDown, Filter } from "lucide-react";
+import { Search, AlertCircle, CheckCircle, Package, TrendingDown, ArrowUpDown } from "lucide-react";
 import dayjs from "dayjs";
 import { useStockReport, useReportCategories } from "../hooks/useReports";
 import { StockTableItem, StockChartData } from "../types";
 
-// ... (Giữ nguyên Helpers: getStatusRowClass)
+// ... (Giữ nguyên Helpers getStatusRowClass và Component ChartCard)
 const getStatusRowClass = (status: string) => {
     switch (status) {
         case 'Lỗi tồn kho': return 'bg-red-50 text-red-600 hover:bg-red-100';
@@ -18,7 +18,6 @@ const getStatusRowClass = (status: string) => {
     }
 };
 
-// ... (Giữ nguyên component ChartCard)
 const ChartCard = ({
     title, data, barColor, emptyMessage
 }: {
@@ -66,22 +65,20 @@ const ChartCard = ({
 };
 
 export const StockReportView = () => {
-    // State cơ bản
+    // State
     const [page, setPage] = useState(1);
-    const [limit, setLimit] = useState(10); // Thêm state limit
+    const [limit, setLimit] = useState(10);
     const [keyword, setKeyword] = useState("");
     const [categoryIds, setCategoryIds] = useState<string[]>([]);
     const [sortBy, setSortBy] = useState("stockQuantity");
     const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC'>("ASC");
     const [selectedProductId, setSelectedProductId] = useState<string | undefined>(undefined);
 
-    // State mới
     const [productType, setProductType] = useState<string | undefined>(undefined);
-    const [chartPeriod, setChartPeriod] = useState<string>('month'); // Chung cho cả nhập/xuất
+    const [chartPeriod, setChartPeriod] = useState<string>('month');
 
     const { data: categories = [], isLoading: catLoading } = useReportCategories();
 
-    // Load Report Data
     const { data, isLoading, isError } = useStockReport({
         page,
         limit,
@@ -89,9 +86,8 @@ export const StockReportView = () => {
         categoryIds: categoryIds.length > 0 ? categoryIds : undefined,
         sortBy,
         sortOrder,
-        productType, // Thêm productType
+        productType,
         productId: selectedProductId,
-        // Thêm params cho chart
         salesPeriod: chartPeriod as any,
         importPeriod: chartPeriod as any
     });
@@ -100,7 +96,7 @@ export const StockReportView = () => {
     const totalItems = data?.table?.total || 0;
     const lastSync = data?.meta?.lastDataAt;
 
-    // Columns... (Giữ nguyên)
+    // Columns...
     const columns = [
         {
             title: 'STT',
@@ -155,7 +151,6 @@ export const StockReportView = () => {
 
     return (
         <div className="p-6 md:p-8 bg-[#f1f5f9] min-h-screen font-['Inter']">
-            {/* HEADER */}
             <div className="flex flex-col md:flex-row justify-between items-end mb-8 gap-4">
                 <div>
                     <h1 className="text-3xl md:text-4xl font-bold text-cyan-950">Thống kê về Tồn Kho</h1>
@@ -166,7 +161,6 @@ export const StockReportView = () => {
             </div>
 
             <div className="grid grid-cols-12 gap-6">
-                {/* --- LEFT COLUMN: TABLE (7 cols) --- */}
                 <div className="col-span-12 lg:col-span-7 bg-white rounded-[20px] shadow-sm overflow-hidden border border-gray-200 flex flex-col h-[calc(100vh-180px)]">
                     <style>{`
             .custom-stock-table .ant-table-thead > tr > th {
@@ -183,7 +177,6 @@ export const StockReportView = () => {
             }
           `}</style>
 
-                    {/* TABLE FILTER BAR */}
                     <div className="p-3 border-b border-gray-100 bg-gray-50 flex gap-2 flex-wrap">
                         <Select
                             placeholder="Loại SP"
@@ -232,7 +225,7 @@ export const StockReportView = () => {
                         <Pagination
                             current={page}
                             total={totalItems}
-                            pageSize={limit} // Dùng state limit
+                            pageSize={limit}
                             onChange={setPage}
                             size="small"
                             showTotal={(total) => `Tổng ${total} SP`}
@@ -240,9 +233,7 @@ export const StockReportView = () => {
                     </div>
                 </div>
 
-                {/* --- RIGHT COLUMN: FILTERS & CHARTS (5 cols) --- */}
                 <div className="col-span-12 lg:col-span-5 flex flex-col gap-6">
-                    {/* FILTERS SECTION */}
                     <div className="flex flex-wrap gap-3 justify-end items-center">
                         <Input
                             prefix={<Search size={16} className="text-teal-700" />}
@@ -255,7 +246,7 @@ export const StockReportView = () => {
                         <Select
                             placeholder="Lọc: Tất cả"
                             className="min-w-[160px] custom-rounded-select"
-                            styles={{ popup: { borderRadius: 12 } }}
+                            // FIX: Xóa styles gây lỗi TS
                             options={categories.map((c: any) => ({ label: c.name, value: c.id }))}
                             value={categoryIds.length > 0 ? categoryIds[0] : undefined}
                             onChange={(val) => { setCategoryIds(val ? [val] : []); setPage(1); }}
@@ -271,9 +262,7 @@ export const StockReportView = () => {
                         </button>
                     </div>
 
-                    {/* CHARTS CONTAINER */}
                     <div className="bg-slate-100 p-6 rounded-[20px] space-y-6 flex-1 border border-slate-200 flex flex-col">
-                        {/* Chart Control: Period Selector */}
                         <div className="flex justify-end">
                             <Segmented
                                 options={[
@@ -308,7 +297,6 @@ export const StockReportView = () => {
                     </div>
                 </div>
             </div>
-            {/* Styles */}
             <style>{`
         .custom-rounded-select .ant-select-selector {
           border: 2px solid #0d9488 !important;

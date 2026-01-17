@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { DatePicker, Spin, Select, Segmented, InputNumber, Input } from "antd"; // Thêm Segmented, InputNumber
+import { DatePicker, Spin, Select, Segmented, InputNumber, Input } from "antd";
 import {
     PieChart, Pie, Cell, ResponsiveContainer,
     AreaChart, Area, XAxis, Tooltip as RechartsTooltip, CartesianGrid
@@ -12,38 +12,53 @@ import { DashboardCards, LineChartData, PieChartData, TopProduct, MetricItem } f
 
 const { RangePicker } = DatePicker;
 
-// ... (Giữ nguyên component PieChartSection)
+// --- 1. COMPONENT: PIE CHART SECTION ---
 const PieChartSection = ({ data }: { data: PieChartData }) => {
-    // Code PieChartSection giữ nguyên như cũ...
-    const COLORS = ['#14b8a6', '#3b82f6', '#ec4899', '#f59e0b', '#8b5cf6', '#94a3b8'];
+    // Tạo bảng màu đủ lớn cho Top N (ví dụ tối đa 20 màu)
+    const COLORS = [
+        '#14b8a6', '#3b82f6', '#ec4899', '#f59e0b', '#8b5cf6',
+        '#ef4444', '#84cc16', '#06b6d4', '#6366f1', '#d946ef',
+        '#f43f5e', '#f97316', '#eab308', '#22c55e', '#10b981'
+    ];
     const totalValue = data?.total || 0;
 
+    // --- LOGIC MỚI: TopN + Others ---
     const displayItems = useMemo(() => {
-        if (!data?.items) return [];
-        if (data.items.length <= 4) return data.items;
+        if (!data?.items || data.items.length === 0) return [];
 
-        const top4 = data.items.slice(0, 4);
-        const others = data.items.slice(4);
-        const otherValue = others.reduce((acc, curr) => acc + curr.value, 0);
-        const otherPercent = others.reduce((acc, curr) => acc + curr.percent, 0);
+        // 1. Lấy danh sách items từ API (API đã trả về đúng TopN rồi)
+        const currentItems = data.items;
 
-        return [
-            ...top4,
-            {
-                productId: 'others',
-                name: 'Còn lại',
-                value: otherValue,
-                percent: otherPercent,
-                sku: '',
-                imageUrl: ''
-            }
-        ];
-    }, [data]);
+        // 2. Tính tổng giá trị của các items đang hiển thị
+        const currentSum = currentItems.reduce((acc, curr) => acc + curr.value, 0);
+
+        // 3. Tính giá trị "Còn lại" (Total - Sum)
+        // Lưu ý: Đôi khi làm tròn số liệu có thể gây lệch nhỏ, nên chỉ hiện nếu > 0
+        const otherValue = totalValue - currentSum;
+        const otherPercent = 100 - currentItems.reduce((acc, curr) => acc + curr.percent, 0);
+
+        // 4. Nếu có phần dư đáng kể (> 1% hoặc > 0đ), thêm mục "Còn lại"
+        if (otherValue > 0) {
+            return [
+                ...currentItems,
+                {
+                    productId: 'others',
+                    name: 'Sản phẩm khác', // Đổi tên cho thân thiện
+                    value: otherValue,
+                    percent: otherPercent > 0 ? otherPercent : 0,
+                    sku: '',
+                    imageUrl: ''
+                }
+            ];
+        }
+
+        return currentItems;
+    }, [data, totalValue]);
 
     return (
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-100 flex flex-col h-full">
             <div className="flex justify-between items-center mb-4 flex-shrink-0">
-                <h2 className="text-xl font-bold text-neutral-800">Doanh số theo Hàng hóa</h2>
+                <h2 className="text-xl font-bold text-neutral-800">Tỷ trọng Doanh thu</h2>
                 <div className="px-3 py-1 border border-teal-600 rounded-full text-cyan-950 font-bold text-xs bg-teal-50">
                     {dayjs().format('DD/MM/YYYY')}
                 </div>
@@ -58,22 +73,28 @@ const PieChartSection = ({ data }: { data: PieChartData }) => {
                                 data={displayItems as any[]}
                                 innerRadius={75}
                                 outerRadius={100}
-                                paddingAngle={4}
+                                paddingAngle={2}
                                 dataKey="value"
                                 startAngle={90}
                                 endAngle={-270}
-                                cornerRadius={6}
+                                cornerRadius={4}
                             >
-                                {displayItems.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="none" />
-                                ))}
+                                {displayItems.map((entry, index) => {
+                                    // Nếu là mục "Sản phẩm khác" thì dùng màu xám (màu cuối) hoặc màu riêng
+                                    const color = entry.productId === 'others' ? '#94a3b8' : COLORS[index % COLORS.length];
+                                    return <Cell key={`cell-${index}`} fill={color} stroke="none" />;
+                                })}
                             </Pie>
                         </PieChart>
                     </ResponsiveContainer>
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
-                        <p className="text-neutral-500 text-sm">Total Value</p>
+                        <p className="text-neutral-500 text-sm">Tổng thu</p>
                         <p className="text-2xl font-bold text-cyan-950">
-                            {totalValue >= 1000000 ? `${(totalValue / 1000000).toFixed(1)}Tr` : `${(totalValue / 1000).toFixed(0)}K`}
+                            {totalValue >= 1000000000
+                                ? `${(totalValue / 1000000000).toFixed(1)}B`
+                                : totalValue >= 1000000
+                                    ? `${(totalValue / 1000000).toFixed(1)}M`
+                                    : `${(totalValue / 1000).toFixed(0)}K`}
                         </p>
                     </div>
                 </div>
@@ -81,23 +102,26 @@ const PieChartSection = ({ data }: { data: PieChartData }) => {
                 {/* Legend List */}
                 <div className="w-full space-y-2 text-sm flex-1 overflow-hidden flex flex-col">
                     <div className="grid grid-cols-12 text-neutral-500 font-medium pb-2 border-b border-gray-100">
-                        <span className="col-span-6 pl-2">Nhãn</span>
+                        <span className="col-span-6 pl-2">Sản phẩm</span>
                         <span className="col-span-4 text-right">Giá trị</span>
                         <span className="col-span-2 text-right pr-2">%</span>
                     </div>
                     <div className="overflow-y-auto custom-scrollbar pr-1 flex-1 min-h-[150px]">
-                        {displayItems.map((item, index) => (
-                            <div key={index} className="grid grid-cols-12 items-center py-2 border-b border-gray-50 last:border-0 hover:bg-gray-50 rounded px-2 transition-colors">
-                                <div className="col-span-6 flex items-center gap-2 overflow-hidden">
-                                    <i className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: COLORS[index % COLORS.length] }}></i>
-                                    <span className="truncate text-neutral-700 font-medium" title={item.name}>{item.name}</span>
+                        {displayItems.map((item, index) => {
+                            const color = item.productId === 'others' ? '#94a3b8' : COLORS[index % COLORS.length];
+                            return (
+                                <div key={index} className="grid grid-cols-12 items-center py-2 border-b border-gray-50 last:border-0 hover:bg-gray-50 rounded px-2 transition-colors">
+                                    <div className="col-span-6 flex items-center gap-2 overflow-hidden">
+                                        <i className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: color }}></i>
+                                        <span className="truncate text-neutral-700 font-medium" title={item.name}>{item.name}</span>
+                                    </div>
+                                    <div className="col-span-4 text-right font-bold text-cyan-950">
+                                        {formatCurrency(item.value)}
+                                    </div>
+                                    <div className="col-span-2 text-right text-neutral-500">{item.percent.toFixed(1)}%</div>
                                 </div>
-                                <div className="col-span-4 text-right font-bold text-cyan-950">
-                                    {item.value >= 1000000 ? `${(item.value / 1000000).toFixed(1)}Tr` : `${(item.value / 1000).toFixed(0)}K`}
-                                </div>
-                                <div className="col-span-2 text-right text-neutral-500">{item.percent.toFixed(1)}%</div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
             </div>
@@ -105,9 +129,9 @@ const PieChartSection = ({ data }: { data: PieChartData }) => {
     );
 };
 
-// ... (Giữ nguyên component SummaryGrid)
+// --- 2. COMPONENT: SUMMARY GRID (Giữ nguyên) ---
 const SummaryGrid = ({ cards }: { cards: DashboardCards }) => {
-    // ... Code SummaryGrid giữ nguyên
+    // ... Code cũ giữ nguyên
     const renderCard = (title: string, metric: MetricItem, icon: React.ReactNode, bgIcon: string, isCurrency: boolean = false) => {
         const value = metric.value ?? metric.count ?? metric.total ?? 0;
         const growth = metric.growthPercent;
@@ -145,10 +169,9 @@ const SummaryGrid = ({ cards }: { cards: DashboardCards }) => {
     );
 };
 
-// --- COMPONENT: RIGHT COLUMN ---
+// --- 3. COMPONENT: RIGHT COLUMN ---
 const RightColumnSection = ({
     chartData, topProducts,
-    // Props mới
     dateRange, onDateChange,
     categoryIds, onCategoryChange,
     period, onPeriodChange,
@@ -164,12 +187,14 @@ const RightColumnSection = ({
 }) => {
     const { data: categories = [], isLoading: isLoadingCats } = useReportCategories();
 
+    // FIX: Tính toán data chart an toàn hơn
     const data = useMemo(() => {
         if (!chartData?.labels) return [];
         return chartData.labels.map((label, index) => {
             const item: any = { time: label };
             let total = 0;
-            chartData.datasets.forEach(ds => {
+            // dataset có thể rỗng nếu không có dữ liệu
+            (chartData.datasets || []).forEach(ds => {
                 item[ds.name] = ds.values[index] || 0;
                 total += ds.values[index] || 0;
             });
@@ -182,7 +207,7 @@ const RightColumnSection = ({
 
     return (
         <div className="bg-teal-600/10 p-6 rounded-[20px] space-y-6 h-full flex flex-col">
-            {/* FILTER BAR 1: Danh mục & Tìm kiếm & TopN */}
+            {/* FILTER BAR 1 */}
             <div className="flex flex-wrap gap-3 items-center">
                 <div className="flex-1 min-w-[150px]">
                     <Input
@@ -203,14 +228,14 @@ const RightColumnSection = ({
                         onChange={onCategoryChange}
                         loading={isLoadingCats}
                         options={categories.map((c: any) => ({ label: c.name, value: c.id }))}
-                        styles={{ popup: { borderRadius: 12 } }}
+                        // FIX: Xóa prop styles={{ popup: ... }} gây lỗi TS
                         className="custom-select-teal"
                     />
                 </div>
-                <div className="w-[100px]" title="Số lượng Top sản phẩm hiển thị">
+                <div className="w-[100px]" title="Số lượng Top sản phẩm">
                     <InputNumber
                         addonBefore="Top"
-                        min={3} max={50}
+                        min={3} max={20}
                         value={topN}
                         onChange={onTopNChange}
                         className="w-full"
@@ -218,9 +243,8 @@ const RightColumnSection = ({
                 </div>
             </div>
 
-            {/* FILTER BAR 2: Thời gian & Chu kỳ */}
+            {/* FILTER BAR 2 */}
             <div className="flex flex-wrap gap-3 items-center justify-between">
-                {/* Segmented Control cho Period */}
                 <Segmented
                     options={[
                         { label: 'Ngày', value: 'day' },
@@ -252,7 +276,6 @@ const RightColumnSection = ({
                         <h3 className="text-3xl font-bold text-cyan-950">{formatCurrency(totalRevenue)}</h3>
                         <p className="text-neutral-500">Doanh thu theo thời gian</p>
                     </div>
-                    {/* Tag hiển thị chu kỳ đang xem */}
                     <span className="text-xs bg-teal-50 text-teal-700 px-2 py-1 rounded border border-teal-100">
                         Theo {period === 'day' ? 'Ngày' : period === 'week' ? 'Tuần' : 'Tháng'}
                     </span>
@@ -272,7 +295,6 @@ const RightColumnSection = ({
                                 axisLine={false}
                                 tickLine={false}
                                 tick={{ fill: '#9ca3af', fontSize: 11 }}
-                                // Format ngày tùy theo period
                                 tickFormatter={(val) => {
                                     if (period === 'month') return dayjs(val).format('MM/YY');
                                     return dayjs(val).format('DD/MM');
@@ -334,10 +356,10 @@ export const RevenueReportView = () => {
     const [dateRange, setDateRange] = useState<RangeValue>([dayjs().startOf('month'), dayjs()]);
     const [categoryIds, setCategoryIds] = useState<string[]>([]);
 
-    // --- States Mới ---
+    // States
     const [period, setPeriod] = useState<string>('day');
     const [search, setSearch] = useState<string>('');
-    const [topN, setTopN] = useState<number>(6);
+    const [topN, setTopN] = useState<number>(6); // Mặc định Top 6
 
     const queryParams = {
         from: dateRange?.[0]?.format('YYYY-MM-DD'),
@@ -352,7 +374,10 @@ export const RevenueReportView = () => {
     const handleDateChange = (dates: any) => setDateRange(dates as RangeValue);
 
     if (isError) return <div className="p-10 text-center text-red-500">Lỗi tải dữ liệu. Vui lòng đăng nhập lại.</div>;
-    if (isLoading) return <div className="h-screen flex items-center justify-center"><Spin size="large" /></div>;
+
+    // FIX: Nếu đang loading lần đầu tiên (data undefined) thì hiện Spin.
+    // Nếu đang loading background (khi đổi filter), data cũ vẫn còn -> Không hiện Spin.
+    if (isLoading && !data) return <div className="h-screen flex items-center justify-center"><Spin size="large" /></div>;
 
     return (
         <div className="p-6 bg-[#f8fafc] min-h-screen font-['Inter']">
@@ -366,6 +391,7 @@ export const RevenueReportView = () => {
             <div className="grid grid-cols-12 gap-6 h-[calc(100vh-120px)]">
                 <div className="col-span-12 xl:col-span-5 space-y-6 flex flex-col h-full overflow-hidden">
                     <div className="flex-[1.2] min-h-0">
+                        {/* Truyền dữ liệu vào PieChart */}
                         <PieChartSection data={data?.pie || { total: 0, items: [] }} />
                     </div>
                     <div className="flex-1 min-h-0">
@@ -376,7 +402,6 @@ export const RevenueReportView = () => {
                     <RightColumnSection
                         chartData={data?.line || { labels: [], datasets: [] }}
                         topProducts={data?.top || []}
-                        // Pass props
                         dateRange={dateRange} onDateChange={handleDateChange}
                         categoryIds={categoryIds} onCategoryChange={setCategoryIds}
                         period={period} onPeriodChange={setPeriod}
