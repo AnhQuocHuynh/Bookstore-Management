@@ -6,10 +6,11 @@ import { ChartResponse } from "../types/dashboard";
 import { Spin } from "antd";
 import { formatCurrency } from "@/utils";
 import dayjs from "dayjs";
-import weekOfYear from "dayjs/plugin/weekOfYear"; // Import plugin tuần
+import weekOfYear from "dayjs/plugin/weekOfYear";
+import customParseFormat from "dayjs/plugin/customParseFormat"; // Import thêm để parse string
 
-// Kích hoạt plugin
 dayjs.extend(weekOfYear);
+dayjs.extend(customParseFormat);
 
 interface RevenueSummaryProps {
   data?: ChartResponse;
@@ -29,6 +30,17 @@ const RevenueSummary: React.FC<RevenueSummaryProps> = ({ data, isLoading, totalR
       return item;
     });
   }, [data]);
+
+  // Hàm xử lý hiển thị ngày an toàn
+  const formatDateLabel = (val: string) => {
+    if (!val) return "";
+    const dateObj = dayjs(val);
+    if (!dateObj.isValid()) return val; // Nếu không parse được thì hiện nguyên gốc
+
+    if (period === 'month') return dateObj.format('MM/YY');
+    if (period === 'week') return `W${dateObj.week()}`;
+    return dateObj.format('DD/MM');
+  };
 
   if (isLoading) return <div className="h-64 flex items-center justify-center bg-white rounded-xl"><Spin /></div>;
 
@@ -51,12 +63,7 @@ const RevenueSummary: React.FC<RevenueSummaryProps> = ({ data, isLoading, totalR
               axisLine={false}
               tickLine={false}
               dy={10}
-              tickFormatter={(val) => {
-                if (period === 'month') return dayjs(val).format('MM/YY');
-                // Sửa lỗi .week() tại đây
-                if (period === 'week') return `W${dayjs(val).week()}`;
-                return dayjs(val).format('DD/MM');
-              }}
+              tickFormatter={formatDateLabel} // Dùng hàm format an toàn
             />
             <YAxis
               width={80}
@@ -73,12 +80,27 @@ const RevenueSummary: React.FC<RevenueSummaryProps> = ({ data, isLoading, totalR
             <Tooltip
               contentStyle={{ borderRadius: 8, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
               formatter={(value: number) => formatCurrency(value)}
-              labelFormatter={(label) => dayjs(label).format(period === 'month' ? 'MM/YYYY' : 'DD/MM/YYYY')}
+              labelFormatter={formatDateLabel}
             />
             <Legend verticalAlign="top" height={36} />
 
-            <Line type="monotone" dataKey="Doanh thu" stroke="#1A998F" strokeWidth={3} dot={{ r: 0 }} activeDot={{ r: 6 }} />
-            <Line type="monotone" dataKey="Lợi nhuận" stroke="#e73108" strokeWidth={3} dot={{ r: 0 }} activeDot={{ r: 6 }} />
+            {/* FIX: Để dot={{ r: 4 }} để hiện chấm tròn kể cả khi chỉ có 1 điểm dữ liệu */}
+            <Line
+              type="monotone"
+              dataKey="Doanh thu"
+              stroke="#1A998F"
+              strokeWidth={3}
+              dot={{ r: 4, fill: "#1A998F", strokeWidth: 0 }}
+              activeDot={{ r: 6 }}
+            />
+            <Line
+              type="monotone"
+              dataKey="Lợi nhuận"
+              stroke="#e73108"
+              strokeWidth={3}
+              dot={{ r: 4, fill: "#e73108", strokeWidth: 0 }}
+              activeDot={{ r: 6 }}
+            />
           </LineChart>
         </ResponsiveContainer>
       </div>

@@ -5,10 +5,11 @@ import {
 import { ChartResponse } from "../types/dashboard";
 import { Spin } from "antd";
 import dayjs from "dayjs";
-import weekOfYear from "dayjs/plugin/weekOfYear"; // Import plugin tuần
+import weekOfYear from "dayjs/plugin/weekOfYear";
+import customParseFormat from "dayjs/plugin/customParseFormat";
 
-// Kích hoạt plugin
 dayjs.extend(weekOfYear);
+dayjs.extend(customParseFormat);
 
 interface ProductSummaryProps {
   data?: ChartResponse;
@@ -29,6 +30,16 @@ const ProductSummary: React.FC<ProductSummaryProps> = ({ data, isLoading, totalI
     });
   }, [data]);
 
+  const formatDateLabel = (val: string) => {
+    if (!val) return "";
+    const dateObj = dayjs(val);
+    if (!dateObj.isValid()) return val;
+
+    if (period === 'month') return dateObj.format('MM/YY');
+    if (period === 'week') return `W${dateObj.week()}`;
+    return dateObj.format('DD/MM');
+  };
+
   if (isLoading) return <div className="h-64 flex items-center justify-center bg-white rounded-xl"><Spin /></div>;
 
   return (
@@ -48,12 +59,7 @@ const ProductSummary: React.FC<ProductSummaryProps> = ({ data, isLoading, totalI
               axisLine={false}
               tickLine={false}
               dy={10}
-              tickFormatter={(val) => {
-                if (period === 'month') return dayjs(val).format('MM/YY');
-                // Sửa lỗi .week() tại đây
-                if (period === 'week') return `W${dayjs(val).week()}`;
-                return dayjs(val).format('DD/MM');
-              }}
+              tickFormatter={formatDateLabel}
             />
             <YAxis
               width={40}
@@ -63,14 +69,40 @@ const ProductSummary: React.FC<ProductSummaryProps> = ({ data, isLoading, totalI
             />
             <Tooltip
               contentStyle={{ borderRadius: 8, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-              labelFormatter={(label) => dayjs(label).format(period === 'month' ? 'MM/YYYY' : 'DD/MM/YYYY')}
+              labelFormatter={formatDateLabel}
             />
             <Legend verticalAlign="top" height={36} />
 
-            {/* Sắp xếp đúng thứ tự: Sách -> VPP -> Khác */}
-            <Line type="monotone" dataKey="Sách" stroke="#1A998F" strokeWidth={2} dot={false} activeDot={{ r: 5 }} />
-            <Line type="monotone" dataKey="Văn phòng phẩm" stroke="#e73108" strokeWidth={2} dot={false} activeDot={{ r: 5 }} />
-            <Line type="monotone" dataKey="Sản phẩm khác" stroke="#f59e0b" strokeWidth={2} dot={false} activeDot={{ r: 5 }} />
+            {/* FIX: Sắp xếp lại đúng thứ tự hiển thị trong Legend */}
+            {/* 1. Sách (Màu Xanh) */}
+            <Line
+              type="monotone"
+              dataKey="Sách"
+              stroke="#1A998F"
+              strokeWidth={2}
+              dot={{ r: 3, fill: "#1A998F", strokeWidth: 0 }}
+              activeDot={{ r: 5 }}
+            />
+
+            {/* 2. Văn phòng phẩm (Màu Đỏ/Cam đậm) */}
+            <Line
+              type="monotone"
+              dataKey="Văn phòng phẩm"
+              stroke="#e73108"
+              strokeWidth={2}
+              dot={{ r: 3, fill: "#e73108", strokeWidth: 0 }}
+              activeDot={{ r: 5 }}
+            />
+
+            {/* 3. Sản phẩm khác (Màu Vàng) */}
+            <Line
+              type="monotone"
+              dataKey="Sản phẩm khác"
+              stroke="#f59e0b"
+              strokeWidth={2}
+              dot={{ r: 3, fill: "#f59e0b", strokeWidth: 0 }}
+              activeDot={{ r: 5 }}
+            />
           </LineChart>
         </ResponsiveContainer>
       </div>
