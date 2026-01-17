@@ -14,7 +14,7 @@ const { RangePicker } = DatePicker;
 
 // --- 1. COMPONENT: PIE CHART SECTION ---
 const PieChartSection = ({ data }: { data: PieChartData }) => {
-    // Tạo bảng màu đủ lớn cho Top N (ví dụ tối đa 20 màu)
+    // Bảng màu mở rộng
     const COLORS = [
         '#14b8a6', '#3b82f6', '#ec4899', '#f59e0b', '#8b5cf6',
         '#ef4444', '#84cc16', '#06b6d4', '#6366f1', '#d946ef',
@@ -22,30 +22,25 @@ const PieChartSection = ({ data }: { data: PieChartData }) => {
     ];
     const totalValue = data?.total || 0;
 
-    // --- LOGIC MỚI: TopN + Others ---
+    // --- LOGIC MỚI: Hiển thị đúng TopN từ API ---
     const displayItems = useMemo(() => {
         if (!data?.items || data.items.length === 0) return [];
 
-        // 1. Lấy danh sách items từ API (API đã trả về đúng TopN rồi)
         const currentItems = data.items;
-
-        // 2. Tính tổng giá trị của các items đang hiển thị
         const currentSum = currentItems.reduce((acc, curr) => acc + curr.value, 0);
 
-        // 3. Tính giá trị "Còn lại" (Total - Sum)
-        // Lưu ý: Đôi khi làm tròn số liệu có thể gây lệch nhỏ, nên chỉ hiện nếu > 0
-        const otherValue = totalValue - currentSum;
-        const otherPercent = 100 - currentItems.reduce((acc, curr) => acc + curr.percent, 0);
+        // Tính phần "Còn lại"
+        const otherValue = Math.max(0, totalValue - currentSum);
+        const otherPercent = Math.max(0, 100 - currentItems.reduce((acc, curr) => acc + curr.percent, 0));
 
-        // 4. Nếu có phần dư đáng kể (> 1% hoặc > 0đ), thêm mục "Còn lại"
         if (otherValue > 0) {
             return [
                 ...currentItems,
                 {
                     productId: 'others',
-                    name: 'Sản phẩm khác', // Đổi tên cho thân thiện
+                    name: 'Còn lại',
                     value: otherValue,
-                    percent: otherPercent > 0 ? otherPercent : 0,
+                    percent: otherPercent,
                     sku: '',
                     imageUrl: ''
                 }
@@ -55,8 +50,15 @@ const PieChartSection = ({ data }: { data: PieChartData }) => {
         return currentItems;
     }, [data, totalValue]);
 
+    // Helper format đơn vị Việt Nam (Tr/Tỷ)
+    const formatShortValue = (val: number) => {
+        if (val >= 1000000000) return `${(val / 1000000000).toFixed(1)} Tỷ`;
+        if (val >= 1000000) return `${(val / 1000000).toFixed(1)} Tr`;
+        return `${(val / 1000).toFixed(0)} K`;
+    };
+
     return (
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-100 flex flex-col h-full">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-100 flex flex-col h-full overflow-hidden">
             <div className="flex justify-between items-center mb-4 flex-shrink-0">
                 <h2 className="text-xl font-bold text-neutral-800">Tỷ trọng Doanh thu</h2>
                 <div className="px-3 py-1 border border-teal-600 rounded-full text-cyan-950 font-bold text-xs bg-teal-50">
@@ -64,15 +66,15 @@ const PieChartSection = ({ data }: { data: PieChartData }) => {
                 </div>
             </div>
 
-            <div className="flex flex-col items-center gap-6 flex-1 min-h-0">
-                {/* Chart Donut */}
-                <div className="relative w-56 h-56 flex-shrink-0 flex items-center justify-center">
+            <div className="flex flex-col items-center gap-4 flex-1 min-h-0 overflow-hidden">
+                {/* Chart Donut - Giảm size một chút để dành chỗ cho list */}
+                <div className="relative w-48 h-48 flex-shrink-0 flex items-center justify-center">
                     <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                             <Pie
                                 data={displayItems as any[]}
-                                innerRadius={75}
-                                outerRadius={100}
+                                innerRadius={65}
+                                outerRadius={90}
                                 paddingAngle={2}
                                 dataKey="value"
                                 startAngle={90}
@@ -80,7 +82,6 @@ const PieChartSection = ({ data }: { data: PieChartData }) => {
                                 cornerRadius={4}
                             >
                                 {displayItems.map((entry, index) => {
-                                    // Nếu là mục "Sản phẩm khác" thì dùng màu xám (màu cuối) hoặc màu riêng
                                     const color = entry.productId === 'others' ? '#94a3b8' : COLORS[index % COLORS.length];
                                     return <Cell key={`cell-${index}`} fill={color} stroke="none" />;
                                 })}
@@ -88,37 +89,37 @@ const PieChartSection = ({ data }: { data: PieChartData }) => {
                         </PieChart>
                     </ResponsiveContainer>
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
-                        <p className="text-neutral-500 text-sm">Tổng thu</p>
-                        <p className="text-2xl font-bold text-cyan-950">
-                            {totalValue >= 1000000000
-                                ? `${(totalValue / 1000000000).toFixed(1)}B`
-                                : totalValue >= 1000000
-                                    ? `${(totalValue / 1000000).toFixed(1)}M`
-                                    : `${(totalValue / 1000).toFixed(0)}K`}
+                        <p className="text-neutral-500 text-xs">Tổng thu</p>
+                        <p className="text-xl font-bold text-cyan-950">
+                            {formatShortValue(totalValue)}
                         </p>
                     </div>
                 </div>
 
                 {/* Legend List */}
-                <div className="w-full space-y-2 text-sm flex-1 overflow-hidden flex flex-col">
-                    <div className="grid grid-cols-12 text-neutral-500 font-medium pb-2 border-b border-gray-100">
+                <div className="w-full flex-1 flex flex-col min-h-0 overflow-hidden">
+                    {/* Header List */}
+                    <div className="grid grid-cols-12 text-neutral-500 font-medium pb-2 border-b border-gray-100 text-xs flex-shrink-0">
                         <span className="col-span-6 pl-2">Sản phẩm</span>
                         <span className="col-span-4 text-right">Giá trị</span>
                         <span className="col-span-2 text-right pr-2">%</span>
                     </div>
-                    <div className="overflow-y-auto custom-scrollbar pr-1 flex-1 min-h-[150px]">
+
+                    {/* List Items - FIX: Bỏ min-h-[150px] để không bị chiếm chỗ khi ít item */}
+                    <div className="overflow-y-auto custom-scrollbar pr-1 flex-1 min-h-0">
                         {displayItems.map((item, index) => {
                             const color = item.productId === 'others' ? '#94a3b8' : COLORS[index % COLORS.length];
                             return (
-                                <div key={index} className="grid grid-cols-12 items-center py-2 border-b border-gray-50 last:border-0 hover:bg-gray-50 rounded px-2 transition-colors">
+                                <div key={index} className="grid grid-cols-12 items-center py-2 border-b border-gray-50 last:border-0 hover:bg-gray-50 rounded px-2 transition-colors text-sm">
                                     <div className="col-span-6 flex items-center gap-2 overflow-hidden">
-                                        <i className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: color }}></i>
+                                        <i className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }}></i>
                                         <span className="truncate text-neutral-700 font-medium" title={item.name}>{item.name}</span>
                                     </div>
-                                    <div className="col-span-4 text-right font-bold text-cyan-950">
-                                        {formatCurrency(item.value)}
+                                    <div className="col-span-4 text-right font-bold text-cyan-950 truncate">
+                                        {/* Format gọn cho list: 1.2 Tr */}
+                                        {item.value >= 1000000 ? formatShortValue(item.value) : formatCurrency(item.value)}
                                     </div>
-                                    <div className="col-span-2 text-right text-neutral-500">{item.percent.toFixed(1)}%</div>
+                                    <div className="col-span-2 text-right text-neutral-500 text-xs">{item.percent.toFixed(1)}%</div>
                                 </div>
                             );
                         })}
@@ -131,7 +132,6 @@ const PieChartSection = ({ data }: { data: PieChartData }) => {
 
 // --- 2. COMPONENT: SUMMARY GRID (Giữ nguyên) ---
 const SummaryGrid = ({ cards }: { cards: DashboardCards }) => {
-    // ... Code cũ giữ nguyên
     const renderCard = (title: string, metric: MetricItem, icon: React.ReactNode, bgIcon: string, isCurrency: boolean = false) => {
         const value = metric.value ?? metric.count ?? metric.total ?? 0;
         const growth = metric.growthPercent;
@@ -187,13 +187,11 @@ const RightColumnSection = ({
 }) => {
     const { data: categories = [], isLoading: isLoadingCats } = useReportCategories();
 
-    // FIX: Tính toán data chart an toàn hơn
     const data = useMemo(() => {
         if (!chartData?.labels) return [];
         return chartData.labels.map((label, index) => {
             const item: any = { time: label };
             let total = 0;
-            // dataset có thể rỗng nếu không có dữ liệu
             (chartData.datasets || []).forEach(ds => {
                 item[ds.name] = ds.values[index] || 0;
                 total += ds.values[index] || 0;
@@ -228,14 +226,14 @@ const RightColumnSection = ({
                         onChange={onCategoryChange}
                         loading={isLoadingCats}
                         options={categories.map((c: any) => ({ label: c.name, value: c.id }))}
-                        // FIX: Xóa prop styles={{ popup: ... }} gây lỗi TS
                         className="custom-select-teal"
                     />
                 </div>
                 <div className="w-[100px]" title="Số lượng Top sản phẩm">
+                    {/* FIX: min = 1, sửa lỗi nhập tối thiểu */}
                     <InputNumber
                         addonBefore="Top"
-                        min={3} max={20}
+                        min={1} max={50}
                         value={topN}
                         onChange={onTopNChange}
                         className="w-full"
@@ -359,7 +357,7 @@ export const RevenueReportView = () => {
     // States
     const [period, setPeriod] = useState<string>('day');
     const [search, setSearch] = useState<string>('');
-    const [topN, setTopN] = useState<number>(6); // Mặc định Top 6
+    const [topN, setTopN] = useState<number>(6);
 
     const queryParams = {
         from: dateRange?.[0]?.format('YYYY-MM-DD'),
@@ -370,13 +368,12 @@ export const RevenueReportView = () => {
         search: search || undefined
     };
 
+    // Đã thêm keepPreviousData ở hook useRevenueReport (trong file hooks/useReports.ts)
+    // để tránh reload
     const { data, isLoading, isError } = useRevenueReport(queryParams);
     const handleDateChange = (dates: any) => setDateRange(dates as RangeValue);
 
     if (isError) return <div className="p-10 text-center text-red-500">Lỗi tải dữ liệu. Vui lòng đăng nhập lại.</div>;
-
-    // FIX: Nếu đang loading lần đầu tiên (data undefined) thì hiện Spin.
-    // Nếu đang loading background (khi đổi filter), data cũ vẫn còn -> Không hiện Spin.
     if (isLoading && !data) return <div className="h-screen flex items-center justify-center"><Spin size="large" /></div>;
 
     return (
@@ -390,8 +387,7 @@ export const RevenueReportView = () => {
 
             <div className="grid grid-cols-12 gap-6 h-[calc(100vh-120px)]">
                 <div className="col-span-12 xl:col-span-5 space-y-6 flex flex-col h-full overflow-hidden">
-                    <div className="flex-[1.2] min-h-0">
-                        {/* Truyền dữ liệu vào PieChart */}
+                    <div className="flex-[1.2] min-h-0 overflow-hidden">
                         <PieChartSection data={data?.pie || { total: 0, items: [] }} />
                     </div>
                     <div className="flex-1 min-h-0">
