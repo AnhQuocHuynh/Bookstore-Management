@@ -18,14 +18,12 @@ export default function UserMenu() {
     try {
       setIsLoggingOut(true);
       await logoutAsync();
-      // Navigate về trang login sau khi logout thành công
-      navigate("/auth/login", { replace: true });
+      // Reload trang để đảm bảo cookie được xóa và state được clear hoàn toàn
+      window.location.href = "/auth/login";
     } catch (error) {
       console.error("Logout error:", error);
-      // Vẫn navigate về login ngay cả khi có lỗi
-      navigate("/auth/login", { replace: true });
-    } finally {
-      setIsLoggingOut(false);
+      // Vẫn reload về login ngay cả khi có lỗi
+      window.location.href = "/auth/login";
     }
   };
 

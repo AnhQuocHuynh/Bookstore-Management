@@ -296,10 +296,12 @@ export class AuthController {
   async signOut(
     @UserSession() userSession: TUserSession,
     @RefreshToken() token: string | null,
+    @Res({ passthrough: true }) response: Response,
   ) {
     if (!token)
       throw new UnauthorizedException('Thiếu refresh token để xác thực.');
-    return this.authService.signOut(userSession, token);
+    const result = await this.authService.signOut(userSession, token, response);
+    return result;
   }
 
   @ApiOperation({

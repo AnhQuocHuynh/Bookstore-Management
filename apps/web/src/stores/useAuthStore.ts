@@ -128,6 +128,8 @@ export const useAuthStore = create<AuthState>()(
             registerTemp: null,
             tokenFirstLogin: null,
           });
+          // Xóa localStorage để đảm bảo state được clear hoàn toàn
+          localStorage.removeItem("auth-storage");
         }
       },
     }),
