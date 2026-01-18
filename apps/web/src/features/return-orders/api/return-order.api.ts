@@ -4,7 +4,7 @@ export const returnOrderApi = {
   
   // chưa có api nma nên thêm
   // Lấy danh sách đơn trả/đổi
-  //getAll: (params?: unknown) => apiClient.get("/return-orders", { params }),
+  getAll: (params?: unknown) => apiClient.get("/return-orders", { params }),
 
   // Lấy chi tiết đơn trả/đổi
   getById: (id: string) => apiClient.get(`/return-orders/${id}`),
@@ -23,6 +23,8 @@ export const returnOrderApi = {
     apiClient.patch(`/return-orders/${id}/details/${detailId}`, data),
 
   // Xóa chi tiết đơn
+  
+  delete: (id: string) => apiClient.delete(`/return-orders/${id}`),
   deleteDetail: (id: string, detailId: string) =>
     apiClient.delete(`/return-orders/${id}/details/${detailId}`),
 
@@ -31,13 +33,10 @@ export const returnOrderApi = {
     apiClient.post(`/return-orders/${id}/recalculate`),
 
   // Từ chối đơn trả/đổi
-  reject: (id: string, data?: unknown) =>
-    apiClient.post(`/return-orders/${id}/reject`, data || {}),
+  reject: (id: string) =>
+    apiClient.post(`/return-orders/${id}/reject`),
 
   // Duyệt đơn trả/đổi
   approve: (id: string) => apiClient.post(`/return-orders/${id}/approve`),
 
-  // chưa có api nma nên thêm
-  // Xóa đơn trả/đổi (stub for compatibility)
-  //delete: (id: string) => apiClient.delete(`/return-orders/${id}`),
   };

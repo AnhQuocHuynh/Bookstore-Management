@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Input, Select, Modal } from "antd";
+import { Button, Input, Select, Modal, message } from "antd";
 import { Plus, Search, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useDebounce } from "@/hooks/use-debounce";
@@ -7,7 +7,6 @@ import { useReturnOrders, useDeleteReturnOrder } from "../hooks/useReturnOrder";
 import { ReturnOrderTable, TableHeader } from "./ReturnOrderTable";
 import { ReturnOrderDetailPanel } from "./ReturnOrderDetailPanel";
 import { ReturnOrderListItem } from "../types";
-import { mockReturnOrders } from "./mockData";
 
 const { Option } = Select;
 
@@ -26,8 +25,8 @@ export const ReturnOrderListPage = () => {
     status: statusFilter as any,
   });
 
-  // Use mock data if no real data is available
-  const orders = ordersData || mockReturnOrders;
+  // Use empty array if no real data is available
+  const orders = ordersData || [];
 
   const isPanelOpen = !!selectedOrder;
 
@@ -48,10 +47,12 @@ export const ReturnOrderListPage = () => {
 
   const handleEdit = () => {
     if (!selectedOrder) return;
-    Modal.info({
-      title: "Sửa Đơn Trả/Đổi",
-      content: `Mã đơn: ${selectedOrder.orderNumber || selectedOrder.id.slice(0, 8)}`,
-      okText: "Đóng",
+    if (selectedOrder.status !== "pending") {
+      message.warning("Chỉ có thể sửa đơn ở trạng thái chờ duyệt");
+      return;
+    }
+    navigate("/dashboard/products/return-orders/create", { 
+      state: { editingOrderId: selectedOrder.id } 
     });
   };
 
@@ -83,15 +84,17 @@ export const ReturnOrderListPage = () => {
               <Button
                 onClick={handleDelete}
                 danger
-                disabled={!selectedOrder}
+                disabled={!selectedOrder || selectedOrder.status !== "pending"}
                 className="h-10 rounded-xl font-semibold"
+                title={selectedOrder && selectedOrder.status !== "pending" ? "Chỉ có thể xóa đơn ở trạng thái chờ duyệt" : ""}
               >
                 Xóa
               </Button>
               <Button
                 onClick={handleEdit}
-                disabled={!selectedOrder}
+                disabled={!selectedOrder || selectedOrder.status !== "pending"}
                 className="h-10 rounded-xl font-semibold border-teal-600 text-teal-700"
+                title={selectedOrder && selectedOrder.status !== "pending" ? "Chỉ có thể sửa đơn ở trạng thái chờ duyệt" : ""}
               >
                 Sửa
               </Button>
@@ -176,7 +179,7 @@ export const ReturnOrderListPage = () => {
               <X size={24} />
             </button>
             <div className="flex-1 overflow-hidden h-full">
-              <ReturnOrderDetailPanel orderId={selectedOrder?.id || null} />
+              <ReturnOrderDetailPanel orderId={selectedOrder?.id || null} onDeleteSuccess={() => setSelectedOrder(null)} />
             </div>
           </div>
         </section>

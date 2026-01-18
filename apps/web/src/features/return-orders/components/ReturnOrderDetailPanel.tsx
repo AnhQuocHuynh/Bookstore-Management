@@ -2,10 +2,10 @@ import React from "react";
 import { Spin, Button, Modal } from "antd";
 import { formatCurrency, formatDateTime } from "@/utils";
 import { useReturnOrderDetail, useApproveReturnOrder, useRejectReturnOrder, useRecalculateRefund, useDeleteReturnOrder } from "../hooks/useReturnOrder";
-import { mockReturnOrderDetail, mockReturnOrderDetail2 } from "./mockData";
 
 interface ReturnOrderDetailPanelProps {
   orderId: string | null;
+  onDeleteSuccess?: () => void;
 }
 
 interface InfoRowProps {
@@ -54,11 +54,10 @@ const getStatusColor = (status: string) => {
 
 export const ReturnOrderDetailPanel: React.FC<ReturnOrderDetailPanelProps> = ({
   orderId,
+  onDeleteSuccess,
 }) => {
   const { data: orderData, isLoading } = useReturnOrderDetail(orderId);
-  
-  // Use mock data if no real data is available
-  const order = orderData || (orderId === "a1b2c3d4-5e6f-7g8h-9i0j-k1l2m3n4o5p6" ? mockReturnOrderDetail : mockReturnOrderDetail2);
+  const order = orderData;
   
   const approveMutation = useApproveReturnOrder();
   const rejectMutation = useRejectReturnOrder();
@@ -67,10 +66,18 @@ export const ReturnOrderDetailPanel: React.FC<ReturnOrderDetailPanelProps> = ({
 
   if (!orderId) return null;
 
-  if (isLoading || !order) {
+  if (isLoading) {
     return (
       <div className="flex justify-center items-center h-full">
         <Spin size="large" />
+      </div>
+    );
+  }
+
+  if (!order) {
+    return (
+      <div className="flex justify-center items-center h-full">
+        <div className="text-gray-500">Không tìm thấy dữ liệu đơn trả/đổi</div>
       </div>
     );
   }
@@ -113,12 +120,17 @@ export const ReturnOrderDetailPanel: React.FC<ReturnOrderDetailPanelProps> = ({
       okType: "danger",
       cancelText: "Hủy",
       onOk: () => {
-        deleteMutation.mutate(orderId);
+        deleteMutation.mutate(orderId, {
+          onSuccess: () => {
+            onDeleteSuccess?.();
+          },
+        });
       },
     });
   };
 
   const canApproveOrReject = order.status === "pending";
+  const isPending = order.status === "pending";
 
   return (
     <div className="flex flex-col h-full bg-white">
@@ -218,6 +230,8 @@ export const ReturnOrderDetailPanel: React.FC<ReturnOrderDetailPanelProps> = ({
               className="flex-1 bg-green-600 hover:bg-green-700"
               onClick={handleApprove}
               loading={approveMutation.isPending}
+              disabled={!isPending}
+              title={!isPending ? "Chỉ có thể duyệt đơn ở trạng thái chờ duyệt" : ""}
             >
               Duyệt
             </Button>
@@ -226,6 +240,8 @@ export const ReturnOrderDetailPanel: React.FC<ReturnOrderDetailPanelProps> = ({
               className="flex-1"
               onClick={handleReject}
               loading={rejectMutation.isPending}
+              disabled={!isPending}
+              title={!isPending ? "Chỉ có thể từ chối đơn ở trạng thái chờ duyệt" : ""}
             >
               Từ chối
             </Button>
@@ -235,6 +251,8 @@ export const ReturnOrderDetailPanel: React.FC<ReturnOrderDetailPanelProps> = ({
           block
           onClick={handleRecalculate}
           loading={recalculateMutation.isPending}
+          disabled={!isPending}
+          title={!isPending ? "Chỉ có thể tính lại tiền hoàn của đơn ở trạng thái chờ duyệt" : ""}
         >
           Tính lại tiền hoàn
         </Button>
@@ -244,6 +262,8 @@ export const ReturnOrderDetailPanel: React.FC<ReturnOrderDetailPanelProps> = ({
             danger
             onClick={handleDelete}
             loading={deleteMutation.isPending}
+            disabled={!isPending}
+            title={!isPending ? "Chỉ có thể xóa đơn ở trạng thái chờ duyệt" : ""}
           >
             Xóa
           </Button>

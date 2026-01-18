@@ -1,12 +1,13 @@
-import { useState, useMemo } from "react";
-import { Button, Card, Input, Select, Table, message, Tag, Modal } from "antd";
-import { Plus, Save, Trash2, ArrowLeft } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useState, useMemo, useEffect } from "react";
+import { Button, Card, Input, Select, Table, message, Tag, Modal, DatePicker, Row, Col } from "antd";
+import { Plus, Save, Trash2, ArrowLeft, Search } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useCustomers } from "@/features/customers/hooks/useCustomers";
-import { useCreateReturnOrder } from "../hooks/useReturnOrder";
+import { useCreateReturnOrder, useReturnOrderDetail } from "../hooks/useReturnOrder";
 import { ReturnOrderDetailModal } from "./ReturnOrderDetailModal";
 import { CreateReturnOrderDto } from "../types";
 import { useTransactions } from "@/features/sales/hooks/use-transactions";
+import dayjs, { Dayjs } from "dayjs";
 
 export interface ReturnOrderDetailForm {
   type: "exchange" | "refund";
@@ -22,16 +23,35 @@ export interface ReturnOrderDetailForm {
 
 export const CreateReturnOrderPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const editingOrderId = (location.state as any)?.editingOrderId;
 
   // States
   const [transactionId, setTransactionId] = useState<string | null>(null);
   const [customerId, setCustomerId] = useState<string | null>(null);
   const [note, setNote] = useState("");
   const [details, setDetails] = useState<ReturnOrderDetailForm[]>([]);
+  
+  // Search filter states
+  const [dateRange, setDateRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
+  const [customerNameSearch, setCustomerNameSearch] = useState("");
+  const [customerPhoneSearch, setCustomerPhoneSearch] = useState("");
 
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDetail, setEditingDetail] = useState<ReturnOrderDetailForm | null>(null);
+
+  // Fetch existing order data if editing
+  const { data: existingOrderData, isLoading: loadingOrderData } = useReturnOrderDetail(editingOrderId);
+  
+  // Initialize with existing data when editing
+  useEffect(() => {
+    if (existingOrderData && editingOrderId) {
+      console.log("[CreateReturnOrderPage] Pre-filling form with existing order data:", existingOrderData);
+      setNote(existingOrderData.note || "");
+      // Note: We'll populate transactionId when we have the transaction details
+    }
+  }, [existingOrderData, editingOrderId]);
 
   // Hooks
   const { data: customersResponse, isLoading: loadingCustomers } = useCustomers();
@@ -43,18 +63,54 @@ export const CreateReturnOrderPage = () => {
   const activeCustomers = customers.filter((c: any) => c.status === "active");
 
   const { data: transactionsResponse, isLoading: loadingTransactions } = useTransactions();
-  const transactions = Array.isArray(transactionsResponse) ? transactionsResponse : [];
+  const allTransactions = Array.isArray(transactionsResponse) ? transactionsResponse : [];
+
+  // Filter transactions based on search criteria
+  const filteredTransactions = useMemo(() => {
+    return allTransactions.filter((t: any) => {
+      // Date range filter
+      if (dateRange && dateRange[0] && dateRange[1]) {
+        const transactionDate = dayjs(t.createdAt);
+        if (
+          transactionDate.isBefore(dateRange[0], "day") ||
+          transactionDate.isAfter(dateRange[1], "day")
+        ) {
+          return false;
+        }
+      }
+
+      // Customer name filter
+      if (customerNameSearch.trim()) {
+        const customerName = (t.customer?.fullName || t.customer?.name || "").toLowerCase();
+        if (!customerName.includes(customerNameSearch.toLowerCase())) {
+          return false;
+        }
+      }
+
+      // Customer phone filter
+      if (customerPhoneSearch.trim()) {
+        const phoneNumber = (t.customer?.phoneNumber || "").toLowerCase();
+        if (!phoneNumber.includes(customerPhoneSearch.toLowerCase())) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [allTransactions, dateRange, customerNameSearch, customerPhoneSearch]);
 
   const selectedTransaction = useMemo(
-    () => transactions.find((t: any) => t.id === transactionId),
-    [transactions, transactionId]
+    () => filteredTransactions.find((t: any) => t.id === transactionId),
+    [filteredTransactions, transactionId]
   );
 
   const createMutation = useCreateReturnOrder();
 
   // Computed
   const totalRefundAmount = useMemo(() => {
-    return details.reduce((sum, item) => sum + item.refundAmount, 0);
+    return details
+      .filter((item) => item.type === "refund")
+      .reduce((sum, item) => sum + item.refundAmount, 0);
   }, [details]);
 
   // Handlers
@@ -182,10 +238,14 @@ export const CreateReturnOrderPage = () => {
       title: "Số tiền hoàn",
       dataIndex: "refundAmount",
       width: 150,
-      render: (amount: number) => (
-        <span className="font-semibold text-teal-600">
-          {amount.toLocaleString("vi-VN")} đ
-        </span>
+      render: (amount: number, record: ReturnOrderDetailForm) => (
+        record.type === "refund" ? (
+          <span className="font-semibold text-teal-600">
+            {amount.toLocaleString("vi-VN")} đ
+          </span>
+        ) : (
+          <span className="text-gray-400 text-sm">N/A</span>
+        )
       ),
     },
     {
@@ -234,7 +294,7 @@ export const CreateReturnOrderPage = () => {
               className="border-none bg-transparent shadow-none"
             />
             <h1 className="font-bold text-[#102e3c] text-2xl sm:text-3xl">
-              Tạo Đơn Trả/Đổi Hàng
+              {editingOrderId ? "Sửa Đơn Trả/Đổi Hàng" : "Tạo Đơn Trả/Đổi Hàng"}
             </h1>
           </div>
           <Button
@@ -242,7 +302,7 @@ export const CreateReturnOrderPage = () => {
             size="large"
             icon={<Save size={18} />}
             onClick={handleSubmit}
-            loading={createMutation.isPending}
+            loading={createMutation.isPending || loadingOrderData}
             className="bg-[#1a998f] hover:bg-[#158f85] h-[42px] px-6 font-semibold"
           >
             Lưu Đơn
@@ -254,6 +314,68 @@ export const CreateReturnOrderPage = () => {
       <div className="flex-1 overflow-hidden p-6 flex gap-4">
         {/* LEFT - Form */}
         <div className="w-[400px] flex-shrink-0 flex flex-col gap-4">
+          {/* Search Filters Card */}
+          <Card className="shadow-sm rounded-xl border border-gray-200">
+            <div className="space-y-4">
+              <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+                <Search size={16} />
+                Tìm kiếm hóa đơn
+              </h3>
+
+              {/* Date Range */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Khoảng ngày
+                </label>
+                <DatePicker.RangePicker
+                  className="w-full"
+                  placeholder={["Từ ngày", "Đến ngày"]}
+                  format="DD/MM/YYYY"
+                  value={dateRange}
+                  onChange={(dates) => setDateRange(dates)}
+                />
+              </div>
+
+              {/* Customer Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Tên khách hàng
+                </label>
+                <Input
+                  placeholder="Nhập tên khách hàng..."
+                  value={customerNameSearch}
+                  onChange={(e) => setCustomerNameSearch(e.target.value)}
+                  allowClear
+                />
+              </div>
+
+              {/* Customer Phone */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Số điện thoại
+                </label>
+                <Input
+                  placeholder="Nhập số điện thoại..."
+                  value={customerPhoneSearch}
+                  onChange={(e) => setCustomerPhoneSearch(e.target.value)}
+                  allowClear
+                />
+              </div>
+
+              {/* Clear All */}
+              <Button
+                className="w-full"
+                onClick={() => {
+                  setDateRange(null);
+                  setCustomerNameSearch("");
+                  setCustomerPhoneSearch("");
+                }}
+              >
+                Xóa tất cả bộ lọc
+              </Button>
+            </div>
+          </Card>
+
           <Card className="shadow-sm rounded-xl border border-gray-200">
             <div className="space-y-4">
               <div>
@@ -266,7 +388,7 @@ export const CreateReturnOrderPage = () => {
                   optionFilterProp="label"
                   className="w-full"
                   loading={loadingTransactions}
-                  options={transactions.map((t: any) => ({
+                  options={filteredTransactions.map((t: any) => ({
                     label: `${t.id.slice(0, 8)} - ${t.finalAmount?.toLocaleString("vi-VN")} đ - ${t.customer?.fullName || t.customer?.name || "Chưa có KH"}`,
                     value: t.id,
                   }))}
@@ -274,7 +396,7 @@ export const CreateReturnOrderPage = () => {
                   onChange={(value) => {
                     setTransactionId(value);
                     // Auto-fill customer from selected transaction
-                    const selectedTransaction: any = transactions.find((t: any) => t.id === value);
+                    const selectedTransaction: any = filteredTransactions.find((t: any) => t.id === value);
                     if (selectedTransaction?.customer?.id) {
                       setCustomerId(selectedTransaction.customer.id);
                     }
