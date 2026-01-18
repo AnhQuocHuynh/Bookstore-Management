@@ -4,6 +4,7 @@ import {
   RejectReturnOrderDto,
   UpdateReturnOrderDetailDto,
 } from '@/common/dtos';
+import { GetReturnOrdersQueryDto } from '@/common/dtos/return-orders/get-return-orders-query.dto';
 import {
   InventoryLogAction,
   ReturnExchangeDetailStatus,
@@ -21,7 +22,6 @@ import {
   ReturnOrderDetail,
   Transaction,
 } from '@/database/tenant/entities';
-import { NotificationsService } from '@/modules/notifications/notifications.service';
 import { TenantService } from '@/tenants/tenant.service';
 import {
   BadRequestException,
@@ -29,14 +29,125 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import Decimal from 'decimal.js';
+import { omit } from 'lodash';
 import { EntityManager, FindOptionsRelations } from 'typeorm';
 
 @Injectable()
 export class ReturnOrdersService {
-  constructor(
-    private readonly tenantService: TenantService,
-    private readonly notificationsService: NotificationsService,
-  ) {}
+  constructor(private readonly tenantService: TenantService) {}
+
+  async deleteReturnOrder(bookStoreId: string, id: string) {
+    const dataSource = await this.tenantService.getTenantConnection({
+      bookStoreId,
+    });
+
+    const returnOrderRepo = dataSource.getRepository(ReturnOrder);
+
+    const returnOrder = await returnOrderRepo.findOne({
+      where: {
+        id,
+      },
+    });
+
+    if (!returnOrder) {
+      throw new NotFoundException('Không tìm thấy thông tin đơn trả/đổi hàng.');
+    }
+
+    await returnOrderRepo.delete({ id });
+
+    return {
+      message: 'Đã xoá đơn trả/đổi hàng thành công.',
+    };
+  }
+
+  async getReturnOrders(
+    bookStoreId: string,
+    getReturnOrdersQueryDto: GetReturnOrdersQueryDto,
+  ) {
+    const dataSource = await this.tenantService.getTenantConnection({
+      bookStoreId,
+    });
+
+    const returnOrderRepo = dataSource.getRepository(ReturnOrder);
+
+    const {
+      status,
+      employeeName,
+      employeeEmail,
+      customerName,
+      customerEmail,
+      minTotalRefundAmount,
+      maxTotalRefundAmount,
+      fromCreatedAt,
+      toCreatedAt,
+    } = getReturnOrdersQueryDto;
+
+    const qb = returnOrderRepo
+      .createQueryBuilder('ro')
+      .leftJoinAndSelect('ro.employee', 'employee')
+      .leftJoinAndSelect('ro.customer', 'customer')
+      .leftJoinAndSelect('ro.details', 'details')
+      .leftJoinAndSelect('ro.transaction', 'transaction');
+
+    if (status) {
+      qb.andWhere('ro.status = :status', { status });
+    }
+
+    if (employeeName) {
+      qb.andWhere('employee.fullName ILIKE :employeeName', {
+        employeeName: `%${employeeName}%`,
+      });
+    }
+
+    if (employeeEmail) {
+      qb.andWhere('employee.email ILIKE :employeeEmail', {
+        employeeEmail: `%${employeeEmail}%`,
+      });
+    }
+
+    if (customerName) {
+      qb.andWhere('customer.fullName ILIKE :customerName', {
+        customerName: `%${customerName}%`,
+      });
+    }
+
+    if (customerEmail) {
+      qb.andWhere('customer.email ILIKE :customerEmail', {
+        customerEmail: `%${customerEmail}%`,
+      });
+    }
+
+    if (minTotalRefundAmount) {
+      qb.andWhere('ro.totalRefundAmount >= :minTotalRefundAmount', {
+        minTotalRefundAmount,
+      });
+    }
+
+    if (maxTotalRefundAmount) {
+      qb.andWhere('ro.totalRefundAmount <= :maxTotalRefundAmount', {
+        maxTotalRefundAmount,
+      });
+    }
+
+    if (fromCreatedAt) {
+      qb.andWhere('ro.createdAt >= :fromCreatedAt', {
+        fromCreatedAt: new Date(fromCreatedAt),
+      });
+    }
+
+    if (toCreatedAt) {
+      qb.andWhere('ro.createdAt <= :toCreatedAt', {
+        toCreatedAt: new Date(toCreatedAt),
+      });
+    }
+
+    const result = await qb.orderBy('ro.createdAt', 'DESC').getMany();
+
+    return result.map((r) => ({
+      ...r,
+      employee: omit(r.employee, ['password']),
+    }));
+  }
 
   private async findReturnOrderById(
     manager: EntityManager,
