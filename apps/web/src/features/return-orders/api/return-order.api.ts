@@ -22,6 +22,9 @@ export const returnOrderApi = {
   updateDetail: (id: string, detailId: string, data: unknown) =>
     apiClient.patch(`/return-orders/${id}/details/${detailId}`, data),
 
+  // Cập nhật đơn trả/đổi (note, etc.)
+  update: (id: string, data: unknown) => apiClient.patch(`/return-orders/${id}`, data),
+
   // Xóa chi tiết đơn
   
   delete: (id: string) => apiClient.delete(`/return-orders/${id}`),

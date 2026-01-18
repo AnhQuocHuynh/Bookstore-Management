@@ -30,16 +30,10 @@ export const useCreateReturnOrder = () => {
   return useMutation({
     mutationFn: returnOrderApi.create,
     onSuccess: () => {
-      console.log("[useCreateReturnOrder] Success!");
       message.success("Tạo đơn trả/đổi hàng thành công!");
       queryClient.invalidateQueries({ queryKey: ["return-orders"] });
     },
     onError: (error: any) => {
-      console.error("[useCreateReturnOrder] Error:", error);
-      console.error("[useCreateReturnOrder] Error response:", error?.response);
-      console.error("[useCreateReturnOrder] Error data:", error?.response?.data);
-      console.error("[useCreateReturnOrder] Status:", error?.response?.status);
-      
       const errorMessage = error?.response?.data?.message || "Lỗi khi tạo đơn trả/đổi hàng";
       message.error(errorMessage);
     },
@@ -144,39 +138,23 @@ export const useDeleteReturnOrder = () => {
   return useMutation({
     mutationFn: async (id: string) => {
       try {
-        console.log("[useDeleteReturnOrder] Starting delete for order:", id);
-        
-        // First, fetch the order to get all details
-        console.log("[useDeleteReturnOrder] Fetching order details...");
         const orderResponse = await returnOrderApi.getById(id);
         const order = orderResponse.data;
-        console.log("[useDeleteReturnOrder] Order fetched:", order);
 
         // Delete all details first
         if (order.details && order.details.length > 0) {
-          console.log(`[useDeleteReturnOrder] Deleting ${order.details.length} details...`);
           for (const detail of order.details) {
             try {
-              console.log(`[useDeleteReturnOrder] Deleting detail: ${detail.id}`);
               await returnOrderApi.deleteDetail(id, detail.id);
-              console.log(`[useDeleteReturnOrder] Detail deleted successfully: ${detail.id}`);
             } catch (detailError) {
-              console.error(`[useDeleteReturnOrder] Error deleting detail ${detail.id}:`, detailError);
               throw detailError;
             }
           }
         }
 
-        // Then delete the order itself
-        console.log("[useDeleteReturnOrder] Deleting order...");
         const result = await returnOrderApi.delete(id);
-        console.log("[useDeleteReturnOrder] Order deleted successfully");
         return result;
       } catch (error: any) {
-        console.error("[useDeleteReturnOrder] Full error object:", error);
-        console.error("[useDeleteReturnOrder] Error response:", error?.response);
-        console.error("[useDeleteReturnOrder] Error status:", error?.response?.status);
-        console.error("[useDeleteReturnOrder] Error data:", error?.response?.data);
         throw error;
       }
     },
@@ -186,7 +164,6 @@ export const useDeleteReturnOrder = () => {
       queryClient.invalidateQueries({ queryKey: ["return-order-detail"] });
     },
     onError: (error: any) => {
-      console.error("[useDeleteReturnOrder] onError callback:", error);
       const errorMessage = error?.response?.data?.message || error?.message || "Lỗi khi xóa đơn";
       message.error(errorMessage);
     },

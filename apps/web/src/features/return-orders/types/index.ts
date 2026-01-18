@@ -36,6 +36,7 @@ export interface ReturnOrderDetail {
   orderNumber: string;
   customerId: string;
   customerName: string;
+  transactionId?: string;
   status: ReturnOrderStatus;
   totalRefundAmount: number;
   note?: string;
@@ -44,7 +45,7 @@ export interface ReturnOrderDetail {
   details: ReturnOrderDetailItem[];
 }
 
-// Form data để tạo đơn trả/đổi
+// Form data để tạo đơn trả/đổi (details added separately via addDetail endpoint)
 export interface CreateReturnOrderDto {
   transactionId: string;
   customerId: string;
@@ -53,18 +54,15 @@ export interface CreateReturnOrderDto {
 
 // Form data để thêm chi tiết vào đơn
 export interface AddReturnOrderDetailDto {
-  productId: string;
-  quantity: number;
-  unitPrice: number;
-  detailType: ReturnDetailType;
+  type: 'return' | 'exchange';
+  refundAmount: number;
   reason?: string;
 }
 
 // Form data để cập nhật chi tiết
 export interface UpdateReturnOrderDetailDto {
-  quantity?: number;
-  unitPrice?: number;
-  detailType?: ReturnDetailType;
+  type?: 'return' | 'exchange';
+  refundAmount?: number;
   reason?: string;
 }
 

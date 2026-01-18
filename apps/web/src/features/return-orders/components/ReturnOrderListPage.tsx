@@ -25,8 +25,11 @@ export const ReturnOrderListPage = () => {
     status: statusFilter as any,
   });
 
-  // Use empty array if no real data is available
-  const orders = ordersData || [];
+  // Use empty array if no real data is available and normalize customer name
+  const orders = (ordersData || []).map((o: any) => ({
+    ...o,
+    customerName: o?.customerName || o?.customer?.fullName || o?.customer?.name || "",
+  }));
 
   const isPanelOpen = !!selectedOrder;
 
@@ -51,9 +54,7 @@ export const ReturnOrderListPage = () => {
       message.warning("Chỉ có thể sửa đơn ở trạng thái chờ duyệt");
       return;
     }
-    navigate("/dashboard/products/return-orders/create", { 
-      state: { editingOrderId: selectedOrder.id } 
-    });
+    navigate(`/dashboard/products/return-orders/edit/${selectedOrder.id}`);
   };
 
   const handleDelete = () => {

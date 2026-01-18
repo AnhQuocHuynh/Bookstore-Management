@@ -59,6 +59,19 @@ export const ReturnOrderDetailPanel: React.FC<ReturnOrderDetailPanelProps> = ({
   const { data: orderData, isLoading } = useReturnOrderDetail(orderId);
   const order = orderData;
   
+  React.useEffect(() => {
+    if (order) {
+      console.log("[ReturnOrderDetailPanel][getById] data:", {
+        id: order.id,
+        orderNumber: order.orderNumber,
+        status: order.status,
+        totalRefundAmount: order.totalRefundAmount,
+        detailsCount: order.details?.length,
+        details: order.details,
+      });
+    }
+  }, [order]);
+  
   const approveMutation = useApproveReturnOrder();
   const rejectMutation = useRejectReturnOrder();
   const recalculateMutation = useRecalculateRefund();
@@ -167,7 +180,14 @@ export const ReturnOrderDetailPanel: React.FC<ReturnOrderDetailPanelProps> = ({
             value={<span className="font-mono text-xs">{order.orderNumber || order.id.slice(0, 8)}</span>} 
           />
           <InfoRow label="Ngày tạo" value={formatDateTime(order.createdAt)} />
-          <InfoRow label="Khách hàng" value={<span className="font-semibold">{order.customerName}</span>} />
+          <InfoRow 
+            label="Khách hàng" 
+            value={
+              <span className="font-semibold">
+                {order.customerName || (order as any)?.customer?.fullName || (order as any)?.customer?.name || "--"}
+              </span>
+            } 
+          />
           {order.note && (
             <div className="mt-4 pt-4 border-t border-gray-200">
               <span className="text-gray-500 text-sm block mb-2 font-semibold">Ghi chú:</span>
@@ -192,21 +212,27 @@ export const ReturnOrderDetailPanel: React.FC<ReturnOrderDetailPanelProps> = ({
                   <div className="flex gap-3">
                     {/* Detail Info */}
                     <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-[#102e3c] mb-1 truncate">{detail.productName}</div>
+                      <div className="font-semibold text-[#102e3c] mb-1 truncate">
+                        {detail.productName || detail.product?.name || detail.newProduct?.name || "—"}
+                      </div>
                       <div className="text-xs text-gray-500 mb-2">
-                        <span className="mr-2">Loại: {detail.detailType === "exchange" ? "Đổi hàng" : "Hoàn tiền"}</span>
+                        <span className="mr-2">Loại: {detail.type === "exchange" ? "Đổi hàng" : "Hoàn tiền"}</span>
                       </div>
                       <div className="flex justify-between items-center text-xs">
                         <div>
                           <span className="text-gray-500">SL: </span>
                           <span className="font-semibold">{detail.quantity}</span>
-                          <span className="text-gray-400 mx-1">×</span>
-                          <span className="text-teal-600">{formatCurrency(detail.unitPrice)}</span>
                         </div>
                         <div className="font-bold text-teal-700">
-                          {formatCurrency(detail.quantity * detail.unitPrice)}
+                          {formatCurrency(detail.refundAmount || 0)}
                         </div>
                       </div>
+                      {detail.reason && (
+                        <div className="mt-2 pt-2 border-t border-gray-200">
+                          <span className="text-gray-500 text-xs">Lý do: </span>
+                          <span className="text-xs text-gray-700">{detail.reason}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -256,18 +282,6 @@ export const ReturnOrderDetailPanel: React.FC<ReturnOrderDetailPanelProps> = ({
         >
           Tính lại tiền hoàn
         </Button>
-        <div className="flex gap-2">
-          <Button
-            block
-            danger
-            onClick={handleDelete}
-            loading={deleteMutation.isPending}
-            disabled={!isPending}
-            title={!isPending ? "Chỉ có thể xóa đơn ở trạng thái chờ duyệt" : ""}
-          >
-            Xóa
-          </Button>
-        </div>
       </div>
     </div>
   );

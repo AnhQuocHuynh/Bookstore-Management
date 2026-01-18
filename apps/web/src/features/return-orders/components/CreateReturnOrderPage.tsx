@@ -1,9 +1,9 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { Button, Card, Input, Select, Table, message, Tag, Modal, DatePicker, Row, Col } from "antd";
 import { Plus, Save, Trash2, ArrowLeft, Search } from "lucide-react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useCustomers } from "@/features/customers/hooks/useCustomers";
-import { useCreateReturnOrder, useReturnOrderDetail } from "../hooks/useReturnOrder";
+import { useCreateReturnOrder, useAddReturnOrderDetail, useDeleteReturnOrder } from "../hooks/useReturnOrder";
 import { ReturnOrderDetailModal } from "./ReturnOrderDetailModal";
 import { CreateReturnOrderDto } from "../types";
 import { useTransactions } from "@/features/sales/hooks/use-transactions";
@@ -13,18 +13,15 @@ export interface ReturnOrderDetailForm {
   type: "exchange" | "refund";
   quantity: number;
   refundAmount: number;
-  productId: string; // Must be one of the purchased products
-  productName: string; // For display
-  newProductId?: string;
-  newProductName?: string; // For display
+  productId: string;
+  productName: string;
   reason?: string;
-  tempId?: string; // For local editing
+  tempId?: string;
+  newProductId?: string;
 }
 
 export const CreateReturnOrderPage = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const editingOrderId = (location.state as any)?.editingOrderId;
 
   // States
   const [transactionId, setTransactionId] = useState<string | null>(null);
@@ -40,18 +37,6 @@ export const CreateReturnOrderPage = () => {
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDetail, setEditingDetail] = useState<ReturnOrderDetailForm | null>(null);
-
-  // Fetch existing order data if editing
-  const { data: existingOrderData, isLoading: loadingOrderData } = useReturnOrderDetail(editingOrderId);
-  
-  // Initialize with existing data when editing
-  useEffect(() => {
-    if (existingOrderData && editingOrderId) {
-      console.log("[CreateReturnOrderPage] Pre-filling form with existing order data:", existingOrderData);
-      setNote(existingOrderData.note || "");
-      // Note: We'll populate transactionId when we have the transaction details
-    }
-  }, [existingOrderData, editingOrderId]);
 
   // Hooks
   const { data: customersResponse, isLoading: loadingCustomers } = useCustomers();
@@ -105,6 +90,8 @@ export const CreateReturnOrderPage = () => {
   );
 
   const createMutation = useCreateReturnOrder();
+  const addDetailMutation = useAddReturnOrderDetail();
+  const deleteMutation = useDeleteReturnOrder();
 
   // Computed
   const totalRefundAmount = useMemo(() => {
@@ -122,11 +109,10 @@ export const CreateReturnOrderPage = () => {
       setDetails(details.map(d => d.tempId === editingDetail.tempId ? detailWithId : d));
       message.success("Cập nhật chi tiết thành công");
     } else {
-      // Merge if same product (and same exchange target when applicable)
+      // Merge if same product and same type
       const existingIndex = details.findIndex((d) =>
         d.productId === newDetail.productId &&
-        d.type === newDetail.type &&
-        (d.type !== "exchange" || d.newProductId === newDetail.newProductId)
+        d.type === newDetail.type
       );
 
       if (existingIndex !== -1) {
@@ -136,10 +122,8 @@ export const CreateReturnOrderPage = () => {
           ...target,
           quantity: target.quantity + newDetail.quantity,
           refundAmount: target.refundAmount + newDetail.refundAmount,
-          // keep latest reason/new product naming if provided
+          // keep latest reason if provided
           reason: newDetail.reason ?? target.reason,
-          newProductId: newDetail.newProductId ?? target.newProductId,
-          newProductName: newDetail.newProductName ?? target.newProductName,
         };
         setDetails(updated);
         message.success("Đã gộp vào chi tiết hiện có");
@@ -182,30 +166,55 @@ export const CreateReturnOrderPage = () => {
     if (!customerId) return message.error("Khách hàng không được auto-fill từ hóa đơn. Vui lòng kiểm tra lại.");
     if (details.length === 0) return message.error("Vui lòng thêm ít nhất 1 chi tiết trả/đổi");
 
-    // Validate details
-    for (const detail of details) {
-      if (detail.type === "exchange" && !detail.newProductId) {
-        return message.error("Chi tiết đổi hàng phải có sản phẩm đổi mới");
-      }
-    }
-
     const cleanTransactionId = transactionId.trim();
     const cleanCustomerId = customerId.trim();
 
-    const payload: CreateReturnOrderDto = {
+    // CREATE MODE: Create new order WITHOUT details (add them separately)
+    // Backend doesn't accept details in initial creation - only transactionId, customerId, note
+    const payload = {
       transactionId: cleanTransactionId,
       customerId: cleanCustomerId,
       ...(note.trim() && { note: note.trim() }),
     };
-    
-    
+
     createMutation.mutate(payload, {
-      onSuccess: () => {
-        message.success("Tạo đơn trả/đổi thành công!");
-        navigate("/dashboard/products/return-orders/list");
+      onSuccess: (newOrder: any) => {
+        // React Query returns axios response, so we need to extract .data
+        const orderId = newOrder?.data?.id || newOrder?.id;
+
+        // Now add each detail separately
+        const detailPromises = details.map((d, idx) => {
+          const detailPayload = {
+            type: d.type === 'exchange' ? 'exchange' : 'return',
+            quantity: d.quantity,
+            refundAmount: d.refundAmount,
+            newProductId: d.productId,
+            ...(d.reason && { reason: d.reason }),
+          };
+          return addDetailMutation.mutateAsync({ id: orderId, data: detailPayload });
+        });
+
+        Promise.all(detailPromises)
+          .then((results) => {
+            navigate("/dashboard/products/return-orders/list");
+          })
+          .catch((error) => {
+            // FAILSAFE: If any detail fails, rollback by deleting the order
+            message.error("Lỗi khi thêm chi tiết vào đơn. Đơn hàng đã được hủy bỏ.");
+            
+            deleteMutation.mutate(orderId, {
+              onSuccess: () => {
+                // Order rolled back successfully
+              },
+              onError: (deleteError: any) => {
+                message.error("Cảnh báo: Đơn hàng không thể xóa tự động. Vui lòng xóa thủ công hoặc liên hệ hỗ trợ.");
+              },
+            });
+          });
       },
       onError: (error: any) => {
         const errorMessage = error?.response?.data?.message || "Lỗi khi tạo đơn trả/đổi hàng";
+        message.error(errorMessage);
       },
     });
   };
@@ -249,16 +258,6 @@ export const CreateReturnOrderPage = () => {
       ),
     },
     {
-      title: "Sản phẩm đổi mới",
-      dataIndex: "newProductName",
-      render: (name: string | undefined, record: ReturnOrderDetailForm) =>
-        record.type === "exchange" ? (
-          <span className="text-sm">{name || "Chưa chọn"}</span>
-        ) : (
-          <span className="text-gray-400 text-sm">N/A</span>
-        ),
-    },
-    {
       title: "Lý do",
       dataIndex: "reason",
       render: (reason: string | undefined) => (
@@ -294,7 +293,7 @@ export const CreateReturnOrderPage = () => {
               className="border-none bg-transparent shadow-none"
             />
             <h1 className="font-bold text-[#102e3c] text-2xl sm:text-3xl">
-              {editingOrderId ? "Sửa Đơn Trả/Đổi Hàng" : "Tạo Đơn Trả/Đổi Hàng"}
+              Tạo Đơn Trả/Đổi Hàng
             </h1>
           </div>
           <Button
@@ -302,7 +301,7 @@ export const CreateReturnOrderPage = () => {
             size="large"
             icon={<Save size={18} />}
             onClick={handleSubmit}
-            loading={createMutation.isPending || loadingOrderData}
+            loading={createMutation.isPending}
             className="bg-[#1a998f] hover:bg-[#158f85] h-[42px] px-6 font-semibold"
           >
             Lưu Đơn

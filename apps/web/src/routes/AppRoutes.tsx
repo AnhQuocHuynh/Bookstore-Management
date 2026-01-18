@@ -37,6 +37,7 @@ import { StockReportView } from "@/features/reports/components/StockReportView";
 import { EmployeeReportView } from "@/features/reports/components/EmployeeReportView";
 import { ReturnOrderListPage } from "@/features/return-orders/components";
 import { CreateReturnOrderPage } from "@/features/return-orders/components/CreateReturnOrderPage";
+import { EditReturnOrderPage } from "@/features/return-orders/components/EditReturnOrderPage";
 
 // Select Store Page (Semi-protected: requires token but no store)
 // const SelectStorePage = () => (
@@ -132,6 +133,14 @@ export const AppRoutes = () => {
           element={
               <MainLayout>
                 <CreateReturnOrderPage />
+                </MainLayout>
+          }
+        />
+        <Route
+          path="/dashboard/products/return-orders/edit/:orderId"
+          element={
+              <MainLayout>
+                <EditReturnOrderPage />
                 </MainLayout>
           }
         />
