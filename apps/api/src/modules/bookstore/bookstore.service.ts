@@ -12,6 +12,7 @@ import {
 import { CreateBookStoreDto, UpdateBookStoreDto } from '@/database/main/dto';
 import { MainBookStoreService } from '@/database/main/services/main-bookstore.service';
 import { MainEmployeeMappingService } from '@/database/main/services/main-employee-mapping.service';
+import { MainUserService } from '@/database/main/services/main-user.service';
 import { Employee } from '@/database/tenant/entities';
 import { EmailService } from '@/modules/email/email.service';
 import { UserRole } from '@/modules/users/enums';
@@ -20,7 +21,9 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  GoneException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -37,6 +40,7 @@ export class BookStoreService {
     private readonly emailService: EmailService,
     private readonly configService: ConfigService,
     private readonly jwtService: JwtService,
+    private readonly mainUserService: MainUserService,
   ) {}
 
   async getBookStores(getBookStoresQueryDto: GetBookStoresQueryDto) {
@@ -95,14 +99,39 @@ export class BookStoreService {
     return omit(result, ['user.password']);
   }
 
-  async createBookStore(
-    userSession: TUserSession,
-    createBookStoreDto: CreateBookStoreDto,
-  ) {
+  async createBookStore(token: string, createBookStoreDto: CreateBookStoreDto) {
+    let email: string = '';
+    try {
+      const payload = this.jwtService.verify<{ role: UserRole; email: string }>(
+        token,
+        {
+          secret: this.configService.get('jwt_secret', ''),
+        },
+      );
+
+      email = payload.email;
+    } catch (err) {
+      console.error('Lỗi khi verify token: ', err);
+      throw new GoneException('Token không hợp lệ hoặc đã hết hạn.');
+    }
+
+    if (!email?.trim()) {
+      throw new InternalServerErrorException(
+        'Đã xảy ra lỗi. Vui lòng thử lại.',
+      );
+    }
+
+    const owner = await this.mainUserService.findUserByField('email', email);
+
+    if (!owner) {
+      throw new NotFoundException('Không tìm thấy thông tin của bạn.');
+    }
+
     const bookStore = await this.mainBookStoreService.createNewBookStore(
       createBookStoreDto,
-      userSession.userId,
+      owner.id,
     );
+
     await this.mainBookStoreService.updateBookStore(
       {
         isActive: true,

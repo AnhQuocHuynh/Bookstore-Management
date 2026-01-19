@@ -34,7 +34,7 @@ export class PurchaseOrdersService {
     private readonly tenantService: TenantService,
     private readonly productsService: ProductsService,
     private readonly inventoriesService: InventoriesService,
-  ) { }
+  ) {}
 
   async findPurchaseOrderByField(
     repo: Repository<PurchaseOrder>,
@@ -62,10 +62,12 @@ export class PurchaseOrdersService {
     });
 
     return dataSource.transaction(async (manager) => {
-      const { supplierId, createPurchaseOrderDetailDtos, note } = createPurchaseOrderDto;
+      const { supplierId, createPurchaseOrderDetailDtos, note } =
+        createPurchaseOrderDto;
 
       const purchaseOrderRepo = manager.getRepository(PurchaseOrder);
-      const purchaseOrderDetailRepo = manager.getRepository(PurchaseOrderDetail);
+      const purchaseOrderDetailRepo =
+        manager.getRepository(PurchaseOrderDetail);
       const supplierRepo = manager.getRepository(Supplier);
       const employeeRepo = manager.getRepository(Employee);
 
@@ -99,7 +101,8 @@ export class PurchaseOrdersService {
 
       // 4. Xử lý chi tiết đơn hàng (CHỈ TẠO MỚI SẢN PHẨM)
       for (const createPurchaseOrderDetailDto of createPurchaseOrderDetailDtos) {
-        const { createProductDto, quantity, unitPrice } = createPurchaseOrderDetailDto;
+        const { createProductDto, quantity, unitPrice } =
+          createPurchaseOrderDetailDto;
 
         // Gọi service tạo sản phẩm mới (Service này đã có logic check trùng SKU -> throw ConflictException)
         // [Lưu ý]: Hàm createProduct bên ProductsService cần đảm bảo hoạt động trong transaction `manager` truyền vào
