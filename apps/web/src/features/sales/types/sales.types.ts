@@ -16,6 +16,7 @@ export interface TransactionDetail {
     totalPrice: number;
     productName: string;
     product: ProductDetail;
+    note?: string;
 }
 
 export interface Cashier {
@@ -41,6 +42,8 @@ export interface Transaction {
     paymentMethod: string;
     isCompleted: boolean;
     createdAt: string;
+    discountAmount?: number;
+    note?: string;
 }
 
 export interface TransactionParams {

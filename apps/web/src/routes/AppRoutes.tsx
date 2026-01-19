@@ -23,7 +23,6 @@ import { MainLayout } from "../layouts/MainLayout";
 import { ProtectedRoute } from "./ProtectedRoute";
 import { PublicRoute } from "./PublicRoute";
 import { TokenProtectedRoute } from "./TokenProtectedRoute";
-import RevenuePage from "@/features/reports/pages/RevenuePage";
 import { CategoriesPage } from "@/features/categories/components/CategoriesPage";
 import { PublishersPage } from "@/features/publishers/components/PublishersPage";
 import { AuthorsPage } from "@/features/authors/components/AuthorsPage";
@@ -36,6 +35,7 @@ import { DisplayLogsView } from "@/features/display/components/DisplayLogsView";
 import { RevenueReportView } from "@/features/reports/components/RevenueReportView";
 import { StockReportView } from "@/features/reports/components/StockReportView";
 import { EmployeeReportView } from "@/features/reports/components/EmployeeReportView";
+import { SettingsPage } from "@/features/settings/pages/SettingsPage";
 import { ReturnOrderListPage } from "@/features/return-orders/components";
 import { CreateReturnOrderPage } from "@/features/return-orders/components/CreateReturnOrderPage";
 import { EditReturnOrderPage } from "@/features/return-orders/components/EditReturnOrderPage";
@@ -293,6 +293,15 @@ export const AppRoutes = () => {
                 <InventoryLogsPage />
               </MainLayout>
             </RequireRoles>
+          }
+        />
+
+        <Route
+          path="/settings"
+          element={
+            <MainLayout>
+              <SettingsPage />
+            </MainLayout>
           }
         />
 

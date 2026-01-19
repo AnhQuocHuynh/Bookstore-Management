@@ -24,3 +24,4 @@ export * from './supplier.entity';
 export * from './transaction-detail.entity';
 export * from './transaction.entity';
 export * from './user-notification.entity';
+export * from './store-settings.entity';
