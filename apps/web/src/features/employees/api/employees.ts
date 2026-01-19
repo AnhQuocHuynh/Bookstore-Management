@@ -7,6 +7,11 @@ import {
   ShiftParams,
   WeekSchedule,
   EmployeeRole,
+  UnassignScheduleDto,
+  AssignScheduleDto,
+  WeekScheduleResponse,
+  ShiftTemplate,
+  CreateShiftDto,
 } from '../types';
 
 // ==========================================
@@ -116,11 +121,11 @@ export const employeesApi = {
   /**
    * Get week schedule
    */
-  getWeekSchedule: async (params: ShiftParams): Promise<WeekSchedule> => {
-    const response = await apiClient.get('/employee/schedule', { params });
-    const data = response.data?.data ?? response.data;
-    return data as WeekSchedule;
-  },
+  // getWeekSchedule: async (params: ShiftParams): Promise<WeekSchedule> => {
+  //   const response = await apiClient.get('/employee/schedule', { params });
+  //   const data = response.data?.data ?? response.data;
+  //   return data as WeekSchedule;
+  // },
 
   /**
    * Create or update shift
@@ -133,15 +138,63 @@ export const employeesApi = {
   /**
    * Update shift
    */
-  updateShift: async (id: string, data: any): Promise<any> => {
-    const response = await apiClient.put(`/employee/schedule/${id}`, data);
-    return response.data?.data ?? response.data;
-  },
+  // updateShift: async (id: string, data: any): Promise<any> => {
+  //   const response = await apiClient.put(`/employee/schedule/${id}`, data);
+  //   return response.data?.data ?? response.data;
+  // },
 
   /**
    * Delete shift
    */
-  deleteShift: async (id: string): Promise<void> => {
-    await apiClient.delete(`/employee/schedule/${id}`);
+  // deleteShift: async (id: string): Promise<void> => {
+  //   await apiClient.delete(`/employee/schedule/${id}`);
+  // },
+
+
+
+
+
+
+  // SHIFT TEMPLATES API (Quản lý định nghĩa ca)
+  // ==========================================
+  getShifts: async (): Promise<ShiftTemplate[]> => {
+    const response = await apiClient.get<ShiftTemplate[]>('/shifts');
+    return response.data;
   },
+
+  createShift: async (data: CreateShiftDto) => {
+    const response = await apiClient.post('/shifts', data);
+    return response.data;
+  },
+
+  updateShift: async (id: string, data: Partial<CreateShiftDto>) => {
+    const response = await apiClient.patch(`/shifts/${id}`, data);
+    return response.data;
+  },
+
+  deleteShift: async (id: string) => {
+    const response = await apiClient.delete(`/shifts/${id}`);
+    return response.data;
+  },
+
+  // ==========================================
+  // SCHEDULE API (Lịch làm việc)
+  // ==========================================
+  getWeekSchedule: async (weekDate: string): Promise<WeekScheduleResponse> => {
+    // Backend yêu cầu param weekDate (YYYY-MM-DD)
+    const response = await apiClient.get<WeekScheduleResponse>('/schedule/week', {
+      params: { weekDate }
+    });
+    return response.data;
+  },
+
+  assignEmployee: async (data: AssignScheduleDto) => {
+    const response = await apiClient.post('/schedule/assign', data);
+    return response.data;
+  },
+
+  unassignEmployee: async (data: UnassignScheduleDto) => {
+    const response = await apiClient.patch('/schedule/unassign', data);
+    return response.data;
+  }
 };

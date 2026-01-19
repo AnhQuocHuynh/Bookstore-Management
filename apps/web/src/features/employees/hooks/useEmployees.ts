@@ -9,6 +9,7 @@ import {
   ShiftParams,
   WeekSchedule,
 } from '../types';
+import { message } from 'antd';
 
 // ==========================================
 // QUERY KEYS
@@ -54,13 +55,13 @@ export const useEmployee = (id: string) => {
 /**
  * Hook to fetch week schedule
  */
-export const useWeekSchedule = (params: ShiftParams) => {
-  return useQuery<WeekSchedule, Error>({
-    queryKey: employeeKeys.schedule(params),
-    queryFn: () => employeesApi.getWeekSchedule(params),
-    staleTime: 2 * 60 * 1000, // 2 minutes
-  });
-};
+// export const useWeekSchedule = (params: ShiftParams) => {
+//   return useQuery<WeekSchedule, Error>({
+//     queryKey: employeeKeys.schedule(params),
+//     queryFn: () => employeesApi.getWeekSchedule(params),
+//     staleTime: 2 * 60 * 1000, // 2 minutes
+//   });
+// };
 
 // ==========================================
 // EMPLOYEE MUTATIONS
@@ -173,19 +174,97 @@ export const useUpdateShift = () => {
 /**
  * Hook to delete shift
  */
+// export const useDeleteShift = () => {
+//   const queryClient = useQueryClient();
+
+//   return useMutation<void, Error, string>({
+//     mutationFn: (id) => employeesApi.deleteShift(id),
+//     onSuccess: () => {
+//       // Invalidate and refetch all schedule queries to ensure data is fresh
+//       queryClient.invalidateQueries({ queryKey: employeeKeys.schedules() });
+//       queryClient.refetchQueries({ queryKey: employeeKeys.schedules() });
+//       toast.success('Xóa ca làm việc thành công!');
+//     },
+//     onError: (error) => {
+//       toast.error(`Lỗi khi xóa ca làm việc: ${error.message}`);
+//     },
+//   });
+// };
+
+
+
+// File: hooks/useEmployees.ts
+// ... imports
+
+// Query Keys
+export const scheduleKeys = {
+  all: ['schedule'] as const,
+  shifts: () => [...scheduleKeys.all, 'shifts'] as const,
+  week: (date: string) => [...scheduleKeys.all, 'week', date] as const,
+};
+
+// --- SHIFT HOOKS ---
+export const useShifts = () => {
+  return useQuery({
+    queryKey: scheduleKeys.shifts(),
+    queryFn: employeesApi.getShifts,
+    staleTime: 1000 * 60 * 10, // 10 mins
+  });
+};
+
+export const useCreateShift = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: employeesApi.createShift,
+    onSuccess: () => {
+      message.success("Tạo ca làm việc thành công");
+      queryClient.invalidateQueries({ queryKey: scheduleKeys.shifts() });
+    },
+    onError: (err: any) => message.error(err?.response?.data?.message || "Lỗi tạo ca")
+  });
+};
+
 export const useDeleteShift = () => {
   const queryClient = useQueryClient();
-
-  return useMutation<void, Error, string>({
-    mutationFn: (id) => employeesApi.deleteShift(id),
+  return useMutation({
+    mutationFn: employeesApi.deleteShift,
     onSuccess: () => {
-      // Invalidate and refetch all schedule queries to ensure data is fresh
-      queryClient.invalidateQueries({ queryKey: employeeKeys.schedules() });
-      queryClient.refetchQueries({ queryKey: employeeKeys.schedules() });
-      toast.success('Xóa ca làm việc thành công!');
+      message.success("Đã xóa ca làm việc");
+      queryClient.invalidateQueries({ queryKey: scheduleKeys.shifts() });
     },
-    onError: (error) => {
-      toast.error(`Lỗi khi xóa ca làm việc: ${error.message}`);
+    onError: (err: any) => message.error(err?.response?.data?.message || "Không thể xóa ca này (đang có người làm?)")
+  });
+};
+
+// --- SCHEDULE HOOKS ---
+export const useWeekSchedule = (weekDate: string) => {
+  return useQuery({
+    queryKey: scheduleKeys.week(weekDate),
+    queryFn: () => employeesApi.getWeekSchedule(weekDate),
+    staleTime: 1000 * 60 * 5,
+  });
+};
+
+export const useAssignSchedule = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: employeesApi.assignEmployee,
+    onSuccess: () => {
+      message.success("Phân công thành công");
+      queryClient.invalidateQueries({ queryKey: ['schedule', 'week'] });
     },
+    onError: (err: any) => message.error(err?.response?.data?.message || "Lỗi phân công")
+  });
+};
+
+export const useUnassignSchedule = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: employeesApi.unassignEmployee,
+    onSuccess: () => {
+      message.success("Đã gỡ nhân viên khỏi ca");
+      queryClient.invalidateQueries({ queryKey: ['schedule', 'week'] });
+    },
+    onError: (err: any) => message.error(err?.response?.data?.message || "Lỗi gỡ nhân viên")
   });
 };

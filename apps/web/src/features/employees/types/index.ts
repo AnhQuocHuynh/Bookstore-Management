@@ -185,3 +185,64 @@ export const GENDER_LABELS: Record<Gender, string> = {
   [Gender.FEMALE]: 'Nữ',
   [Gender.OTHER]: 'Khác',
 };
+
+
+
+
+// 1. Shift Template (Định nghĩa ca làm)
+export interface ShiftTemplate {
+  id: string;
+  name: string;
+  startTime: string; // "07:00"
+  endTime: string;   // "11:00"
+  description?: string;
+}
+
+// DTO tạo ca mới
+export interface CreateShiftDto {
+  name: string;
+  startTime: string;
+  endTime: string;
+  description?: string;
+}
+
+// 2. Schedule Data (Dữ liệu lịch làm việc trả về từ API /schedule/week)
+export interface ScheduledEmployee {
+  id: string;
+  fullName: string;
+}
+
+export interface DailyShift {
+  id: string; // Shift ID (Template ID)
+  name: string;
+  startTime: string;
+  endTime: string;
+  employees: ScheduledEmployee[]; // Danh sách nhân viên trong ca này
+}
+
+export interface DailySchedule {
+  date: string; // "2025-12-15"
+  dayOfWeek: string; // "Thứ 2"
+  shifts: DailyShift[];
+}
+
+export interface WeekScheduleResponse {
+  weekStart: string;
+  weekEnd: string;
+  schedule: DailySchedule[];
+}
+
+// Params gọi API Assign
+export interface AssignScheduleDto {
+  shiftId: string;
+  workDate: string;
+  employeeIds: string[];
+  note?: string;
+}
+
+// Params gọi API Unassign
+export interface UnassignScheduleDto {
+  shiftId: string;
+  workDate: string;
+  employeeIds: string[];
+}
