@@ -39,7 +39,7 @@ export class ProductsService {
     private readonly supplierService: SupplierService,
     private readonly categoriesService: CategoriesService,
     private readonly inventoriesService: InventoriesService,
-  ) {}
+  ) { }
 
   async findProductByField(
     field: keyof Product,
@@ -380,12 +380,6 @@ export class ProductsService {
         throw new ConflictException(`Sản phẩm với mã SKU ${sku} đã tồn tại.`);
     }
 
-    if (name?.trim()) {
-      const existing = await this.findProductByField('name', name, productRepo);
-
-      if (existing && existing.id !== product.id)
-        throw new ConflictException(`Sản phẩm với tên ${name} đã tồn tại.`);
-    }
 
     Object.assign(product, updateProductDto);
     await productRepo.save(product);
