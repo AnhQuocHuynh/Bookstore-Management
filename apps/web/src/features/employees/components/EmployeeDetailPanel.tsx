@@ -1,6 +1,6 @@
 import React from "react";
 import { Tag } from "antd";
-import { EmployeeTableRow, EmployeeRole } from "../types";
+import { EmployeeTableRow, EmployeeRole, ROLE_LABELS, STATUS_LABELS } from "../types";
 
 interface EmployeeDetailPanelProps {
     selectedItem: EmployeeTableRow | null;
@@ -20,23 +20,36 @@ const InfoRow: React.FC<InfoRowProps> = ({ label, value }) => (
     </div>
 );
 
-const getRoleLabel = (role: EmployeeRole) => {
+const getRoleLabel = (role: string) => {
+    return ROLE_LABELS[role as EmployeeRole] || role;
+};
+
+const getRoleColor = (role: string) => {
     switch (role) {
-        case 'ADMIN': return 'Quản lý';
-        case 'MANAGER': return 'Trưởng ca';
-        default: return 'Nhân viên';
+        case 'OWNER': return 'red';
+        case 'MANAGER': return 'blue';
+        case 'CASHIER': return 'cyan';
+        case 'WAREHOUSE': return 'orange';
+        case 'SALES': return 'green';
+        default: return 'default';
     }
 };
 
-const getRoleColor = (role: EmployeeRole) => {
-    switch (role) {
-        case 'ADMIN': return 'red';
-        case 'MANAGER': return 'blue';
-        default: return 'green';
+const getStatusColor = (status: string) => {
+    switch (status) {
+        case 'ACTIVE': return 'green';
+        case 'INACTIVE': return 'red';
+        case 'ON_LEAVE': return 'orange';
+        default: return 'default';
     }
+};
+
+const getStatusLabel = (status: string) => {
+    return STATUS_LABELS[status as keyof typeof STATUS_LABELS] || status;
 };
 
 const formatDate = (dateString: string) => {
+    if (!dateString) return "Chưa cập nhật";
     const date = new Date(dateString);
     return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
 };
@@ -66,9 +79,8 @@ export const EmployeeDetailPanel: React.FC<EmployeeDetailPanelProps> = ({ select
                 </div>
 
                 <div className="space-y-1">
-                    <InfoRow label="Mã Nhân Viên" value={selectedItem.id.slice(0, 8).toUpperCase()} />
+                    <InfoRow label="Mã Nhân Viên" value={selectedItem.staffId || selectedItem.id.slice(0, 8).toUpperCase()} />
                     <InfoRow label="Họ và Tên" value={<span className="text-teal-700 font-bold">{selectedItem.fullName}</span>} />
-                    <InfoRow label="Username" value={selectedItem.username} />
 
                     <InfoRow
                         label="Vai trò"
@@ -82,8 +94,8 @@ export const EmployeeDetailPanel: React.FC<EmployeeDetailPanelProps> = ({ select
                     <InfoRow
                         label="Trạng thái"
                         value={
-                            <Tag color={selectedItem.isActive ? 'green' : 'red'}>
-                                {selectedItem.isActive ? 'Hoạt động' : 'Ngừng hoạt động'}
+                            <Tag color={getStatusColor(selectedItem.status)}>
+                                {getStatusLabel(selectedItem.status)}
                             </Tag>
                         }
                     />
@@ -94,14 +106,13 @@ export const EmployeeDetailPanel: React.FC<EmployeeDetailPanelProps> = ({ select
                     <InfoRow label="Số điện thoại" value={selectedItem.phone} />
                     <InfoRow label="Email" value={selectedItem.email} />
                     <InfoRow label="Địa chỉ" value={selectedItem.address || "Chưa cập nhật"} />
-                    <InfoRow label="Ngày sinh" value={selectedItem.dateOfBirth ? formatDate(selectedItem.dateOfBirth) : "Chưa cập nhật"} />
+                    <InfoRow label="Ngày sinh" value={formatDate(selectedItem.dateOfBirth)} />
 
                     <div className="my-4 border-t border-dashed border-gray-300"></div>
                     <h4 className="text-[#1a998f] font-bold mb-2">Thông tin công việc</h4>
 
-                    <InfoRow label="Ngày vào làm" value={formatDate(selectedItem.createdAt)} />
-                    <InfoRow label="Cập nhật lần cuối" value={formatDate(selectedItem.updatedAt)} />
-                    <InfoRow label="Đăng nhập lần đầu" value={selectedItem.isFirstLogin ? 'Chưa' : 'Rồi'} />
+                    <InfoRow label="Ngày vào làm" value={formatDate(selectedItem.startDate)} />
+                    <InfoRow label="Ngày tạo" value={formatDate(selectedItem.createdAt)} />
                 </div>
                 <div className="h-4"></div>
             </div>

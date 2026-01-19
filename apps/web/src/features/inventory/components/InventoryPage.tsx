@@ -106,10 +106,8 @@ export const InventoryPage = () => {
     supplier: selectedItem.supplier,
     author: selectedItem.author,
     publisher: selectedItem.publisher,
-
     // FIX LỖI TYPE: Chuyển đổi number sang string cho Form Input
     releaseYear: selectedItem.releaseYear ? String(selectedItem.releaseYear) : undefined,
-
     releaseVersion: selectedItem.releaseVersion,
     language: selectedItem.language,
   } : undefined;

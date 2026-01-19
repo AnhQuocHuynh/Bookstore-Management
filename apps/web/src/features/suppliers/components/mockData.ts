@@ -1,6 +1,5 @@
-import { Supplier } from "../types";
-
-export const MOCK_SUPPLIERS: Supplier[] = [
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const MOCK_SUPPLIERS: any[] = [
   {
     key: 1,
     id: "1",

@@ -168,6 +168,7 @@ export class TenantService implements OnModuleDestroy {
       await ds.initialize();
       this.logger.log(`Connected to tenant DB: ${tenantKey}`);
 
+      await this.ensureStoreSettingsTable(ds);
       await this.seedNotificationTemplates(ds);
     } catch (err) {
       this.logger.error(
@@ -302,5 +303,32 @@ export class TenantService implements OnModuleDestroy {
         `[NotificationSeed] Inserted ${entities.length} notification templates`,
       );
     });
+  }
+
+  /**
+   * Ensure store_settings table exists in tenant database
+   * This is called on first connection to handle migration for new entity
+   */
+  private async ensureStoreSettingsTable(dataSource: DataSource): Promise<void> {
+    try {
+      // Always run CREATE TABLE IF NOT EXISTS to ensure table is created
+      // This is idempotent and safe to run multiple times
+      await dataSource.query(`
+        CREATE TABLE IF NOT EXISTS store_settings (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          general JSONB NOT NULL DEFAULT '{}',
+          pos JSONB NOT NULL DEFAULT '{}',
+          hr JSONB NOT NULL DEFAULT '{}',
+          inventory JSONB NOT NULL DEFAULT '{}',
+          created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+        );
+      `);
+
+      this.logger.log('[StoreSettings] Table ensured');
+    } catch (err) {
+      this.logger.error(`[StoreSettings] Failed to ensure table: ${err}`);
+      // Don't throw - this shouldn't break the connection
+    }
   }
 }

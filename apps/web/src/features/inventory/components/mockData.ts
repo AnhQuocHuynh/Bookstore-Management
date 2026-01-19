@@ -1,6 +1,5 @@
-import { InventoryItem } from "../types";
-
-export const VPPMockData: InventoryItem[] = [
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const VPPMockData: any[] = [
   {
     key: 1,
     id: "1",

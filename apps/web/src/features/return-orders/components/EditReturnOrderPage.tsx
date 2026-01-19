@@ -9,15 +9,11 @@ import { ReturnOrderDetailModal } from "./ReturnOrderDetailModal";
 import { formatCurrency, formatDateTime } from "@/utils";
 import dayjs, { Dayjs } from "dayjs";
 
-export interface ReturnOrderDetailForm {
-  type: "exchange" | "refund";
-  quantity: number;
-  refundAmount: number;
-  productId: string;
-  productName: string;
-  reason?: string;
-  tempId?: string;
-  newProductId?: string;
+// Import from CreateReturnOrderPage to avoid duplicate export
+import type { ReturnOrderDetailForm } from "./CreateReturnOrderPage";
+
+// Extended interface for Edit page with detailId
+interface EditReturnOrderDetailForm extends ReturnOrderDetailForm {
   detailId?: string; // Store the actual API detail ID for updates
 }
 
@@ -27,9 +23,9 @@ export const EditReturnOrderPage = () => {
   const { orderId } = useParams<{ orderId: string }>();
 
   // States
-  const [details, setDetails] = useState<ReturnOrderDetailForm[]>([]);
+  const [details, setDetails] = useState<EditReturnOrderDetailForm[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingDetail, setEditingDetail] = useState<ReturnOrderDetailForm | null>(null);
+  const [editingDetail, setEditingDetail] = useState<EditReturnOrderDetailForm | null>(null);
   const [note, setNote] = useState("");
 
   // Fetch order data
@@ -105,7 +101,7 @@ export const EditReturnOrderPage = () => {
     return fromList || order?.transaction;
   }, [order?.transaction, order?.transactionId, allTransactions]);
 
-  const handleAddDetail = (newDetail: ReturnOrderDetailForm) => {
+  const handleAddDetail = (newDetail: EditReturnOrderDetailForm) => {
     const detailWithId = { ...newDetail, tempId: editingDetail?.tempId || Date.now().toString() };
     const isEditingExisting = Boolean(editingDetail && editingDetail.tempId);
 
@@ -138,7 +134,7 @@ export const EditReturnOrderPage = () => {
     handleCloseModal();
   };
 
-  const handleEditDetail = (detail: ReturnOrderDetailForm) => {
+  const handleEditDetail = (detail: EditReturnOrderDetailForm) => {
     setEditingDetail(detail);
     setIsModalOpen(true);
   };
@@ -255,7 +251,7 @@ export const EditReturnOrderPage = () => {
       title: "Sản phẩm",
       dataIndex: "productName",
       width: 200,
-      render: (_: any, record: ReturnOrderDetailForm) => {
+      render: (_: any, record: EditReturnOrderDetailForm) => {
         const name =
           record.productName ||
           (record as any).product?.name ||
@@ -274,7 +270,7 @@ export const EditReturnOrderPage = () => {
       title: "Số tiền hoàn",
       dataIndex: "refundAmount",
       width: 150,
-      render: (amount: number, record: ReturnOrderDetailForm) => (
+      render: (amount: number, record: EditReturnOrderDetailForm) => (
         record.type === "refund" ? (
           <span className="font-semibold text-teal-600">
             {amount.toLocaleString("vi-VN")} đ
@@ -294,7 +290,7 @@ export const EditReturnOrderPage = () => {
     {
       title: "",
       width: 80,
-      render: (_: any, record: ReturnOrderDetailForm) => (
+      render: (_: any, record: EditReturnOrderDetailForm) => (
         <div className="flex gap-2">
           <Button
             type="link"

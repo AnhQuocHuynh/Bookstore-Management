@@ -101,12 +101,7 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
         </span>
       }
       styles={{
-        content: {
-          backgroundColor: "#D4E5E4",
-          padding: 0,
-          borderRadius: 12,
-          overflow: "hidden",
-        },
+        mask: { backgroundColor: "rgba(16, 46, 60, 0.5)" },
         body: {
           backgroundColor: "#D4E5E4",
           padding: 0,
@@ -197,7 +192,7 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
                       `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
                     }
                     parser={(v) =>
-                      v!.replace(/,/g, "") as unknown as number
+                      Number(v!.replace(/,/g, "")) as unknown as 0
                     }
                   />
                 </Form.Item>
