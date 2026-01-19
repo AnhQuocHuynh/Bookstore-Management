@@ -76,7 +76,6 @@ export const InventoryPage = () => {
       type: item.type,
 
       description: item.description || "",
-      // Fix lỗi: Giờ InventoryTableRow đã có isActive
       isActive: item.isActive,
 
       author: item.book?.author,
@@ -90,7 +89,6 @@ export const InventoryPage = () => {
     }));
   }, [productsData]);
 
-  // --- Transform Data (Table UI -> Edit Form) ---
   // --- Transform Data (Table UI -> Edit Form) ---
   const selectedFormData: InventoryFormData | undefined = selectedItem ? {
     sku: selectedItem.sku,
@@ -109,12 +107,13 @@ export const InventoryPage = () => {
     author: selectedItem.author,
     publisher: selectedItem.publisher,
 
-    // SỬA LỖI Ở ĐÂY: Chuyển đổi number sang string
+    // FIX LỖI TYPE: Chuyển đổi number sang string cho Form Input
     releaseYear: selectedItem.releaseYear ? String(selectedItem.releaseYear) : undefined,
 
     releaseVersion: selectedItem.releaseVersion,
     language: selectedItem.language,
   } : undefined;
+
   // --- Handlers ---
   const handleSortChange = (key: string, order: 'asc' | 'desc') => {
     setSortBy(key);
@@ -154,12 +153,18 @@ export const InventoryPage = () => {
   const handleUpdate = (formData: InventoryFormData) => {
     if (!selectedItem) return;
 
-    // SỬA: Chỉ gửi những trường cần thiết. 
-    // KHÔNG GỬI 'sku' để tránh lỗi 409 (Conflict) từ backend.
+    // SỬA: Clean dữ liệu trước khi gửi
     const updatePayload = {
-      // sku: formData.sku, // <-- BỎ DÒNG NÀY (Vì SKU không thay đổi, gửi lên sẽ bị check trùng)
+      // KHÔNG gửi 'sku' để tránh lỗi 409 (Conflict)
       name: formData.name,
-      description: formData.description,
+
+      // FIX LỖI DESCRIPTION:
+      // Nếu chuỗi rỗng => gửi undefined (để backend không validate lỗi Empty)
+      // Nếu có nội dung => trim() để xóa khoảng trắng thừa
+      description: formData.description && formData.description.trim() !== ""
+        ? formData.description.trim()
+        : undefined,
+
       price: formData.sellingPrice,
       imageUrl: formData.image,
       isActive: formData.isActive,
@@ -175,7 +180,6 @@ export const InventoryPage = () => {
         setSelectedItem((prev) => prev ? ({
           ...prev,
           name: formData.name,
-          // sku: formData.sku, // Không cần update SKU vì không đổi
           image: formData.image || "",
           sellingPrice: formData.sellingPrice,
           description: formData.description,
