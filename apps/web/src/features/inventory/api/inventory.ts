@@ -1,5 +1,5 @@
 import { apiClient } from "@/lib/axios";
-import { InventoryParams } from "../types";
+import { InventoryLogItem, InventoryLogParams, InventoryLogResponse, InventoryParams } from "../types";
 
 export const inventoryApi = {
 	// Lấy danh sách sản phẩm
@@ -29,4 +29,16 @@ export const inventoryApi = {
 
 	// API lấy nhà cung cấp
 	getSuppliers: () => apiClient.get("/suppliers"),
+
+	getLogs: async (params: InventoryLogParams) => {
+		// Thêm từ khóa async/await và return response.data
+		const response = await apiClient.get<InventoryLogResponse>("/inventories/logs", { params });
+		return response.data;
+	},
+
+	getLogDetail: async (id: string) => {
+		// Tương tự cho chi tiết log
+		const response = await apiClient.get<InventoryLogItem>(`/inventories/logs/${id}`);
+		return response.data;
+	}
 };

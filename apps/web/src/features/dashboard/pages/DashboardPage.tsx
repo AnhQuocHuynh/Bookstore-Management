@@ -119,7 +119,7 @@ export const DashboardPage = () => {
               onChange={setProductType}
               allowClear
               options={[
-                { label: 'Tất cả', value: undefined },
+
                 { label: 'Sách', value: 'book' },
                 { label: 'Văn phòng phẩm', value: 'stationery' },
               ]}

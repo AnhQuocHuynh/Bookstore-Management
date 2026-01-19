@@ -4,11 +4,13 @@ import React, { useState, useMemo, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar as CalendarIcon, Filter, FileText, X, User, ChevronRight, Printer, Loader2, Search } from "lucide-react";
+import { Calendar as CalendarIcon, Filter, FileText, X, User, ChevronRight, Printer, Loader2, Search, Plus } from "lucide-react";
 import { formatCurrency, formatDateTime } from "@/utils";
 import { cn } from "@/lib/utils";
 import { useTransactions } from "../../hooks/use-transactions";
 import { Transaction } from "../../types/sales.types";
+import { useNavigate } from "react-router-dom";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 // --- Imports cho Date Range Picker ---
 import { addDays, format, isValid, parse, isAfter } from "date-fns";
@@ -33,6 +35,8 @@ const getPaymentMethodLabel = (method: string | null) => {
 };
 
 export const SalesListPage = () => {
+    const navigate = useNavigate();
+    const userRole = (useAuthStore((s) => s.user?.role) as "OWNER" | "EMPLOYEE" | "ADMIN" | undefined) || "EMPLOYEE";
     // --- State Date Range ---
     const [date, setDate] = useState<DateRange | undefined>({
         from: addDays(new Date(), -30),
@@ -150,6 +154,17 @@ export const SalesListPage = () => {
                 <div className="flex flex-col gap-4">
                     <div className="flex flex-wrap items-center justify-between gap-4">
                         <h1 className="font-bold text-[#102e3c] text-2xl sm:text-3xl lg:text-4xl">Danh sách giao dịch</h1>
+                        {userRole !== "OWNER" && (
+                            <Button
+                                type="button"
+                                size="lg"
+                                onClick={() => navigate("/sales/create")}
+                                className="bg-[#1a998f] hover:bg-[#158f85] text-white font-semibold h-[42px] px-6"
+                            >
+                                <Plus size={18} className="mr-2" />
+                                Tạo Giao Dịch
+                            </Button>
+                        )}
                     </div>
 
                     {/* --- Filter Bar --- */}

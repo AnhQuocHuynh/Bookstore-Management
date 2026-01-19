@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { inventoryApi } from "../api/inventory";
-import { InventoryParams } from "../types";
+import { InventoryLogParams, InventoryParams } from "../types";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { message } from "antd";
 
@@ -64,25 +64,41 @@ export const useDeleteProduct = () => {
 // --- THÊM MỚI: Hook Cập nhật sản phẩm ---
 export const useUpdateProduct = () => {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => inventoryApi.update(id, data),
     onSuccess: () => {
       message.success("Cập nhật sản phẩm thành công");
-      // Làm mới danh sách để hiển thị dữ liệu mới nhất
       queryClient.invalidateQueries({ queryKey: ["inventory"] });
     },
     onError: (error: any) => {
       const status = error?.response?.status;
+      const serverMessage = error?.response?.data?.message; // Lấy message chi tiết từ Backend
+
       if (status === 409) {
-        message.error("Tên sản phẩm hoặc SKU đã tồn tại");
-      } else if (status === 404) {
-        message.error("Không tìm thấy sản phẩm");
+        // Ưu tiên hiển thị message từ server (VD: "Mã SKU ... đã tồn tại")
+        message.error(serverMessage || "Tên sản phẩm hoặc SKU bị trùng lặp");
+      } else if (status === 400) {
+        // Lỗi validate (VD: Giá phải > 0)
+        message.error(serverMessage || "Dữ liệu không hợp lệ (Kiểm tra giá bán, tên...)");
       } else if (status === 403) {
         message.error("Bạn không có quyền sửa sản phẩm này");
       } else {
-        message.error("Lỗi khi cập nhật sản phẩm");
+        message.error(serverMessage || "Lỗi khi cập nhật sản phẩm");
       }
     },
+  });
+};
+
+export const useInventoryLogs = (params: InventoryLogParams) => {
+  // Clean params
+  const cleanParams = Object.fromEntries(
+    Object.entries(params).filter(([_, v]) => v != null && v !== "")
+  );
+
+  return useQuery({
+    queryKey: ["inventory-logs", cleanParams],
+    queryFn: () => inventoryApi.getLogs(cleanParams),
+    staleTime: 1000 * 60, // 1 phút
+    placeholderData: (prev) => prev, // Giữ data cũ khi loading trang mới
   });
 };

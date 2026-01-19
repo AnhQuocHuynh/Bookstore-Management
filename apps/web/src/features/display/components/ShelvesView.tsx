@@ -4,8 +4,10 @@ import { Plus, MoreVertical, Edit, Trash2, Box, X } from "lucide-react";
 import { useShelves, useDisplayMutations } from "../hooks/useDisplay";
 import { ShelfModal } from "./modals/ShelfModal";
 import { ShelfDetailPanel } from "./ShelfDetailPanel";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 export const ShelvesView = () => {
+    const userRole = (useAuthStore((s) => s.user?.role) as "OWNER" | "EMPLOYEE" | "ADMIN" | undefined) || "EMPLOYEE";
     const { data: shelves, isLoading } = useShelves();
     const { deleteShelf, createShelf, updateShelf } = useDisplayMutations();
 
@@ -47,9 +49,11 @@ export const ShelvesView = () => {
 
             <div className="flex justify-between items-center mb-4 px-2">
                 <h3 className="font-bold text-lg text-[#102e3c]">Sơ đồ kệ hàng</h3>
-                <Button type="primary" icon={<Plus size={16} />} className="bg-[#1a998f]" onClick={() => { setEditingShelf(null); setIsModalOpen(true); }}>
-                    Thêm Kệ Mới
-                </Button>
+                {userRole !== "OWNER" && (
+                  <Button type="primary" icon={<Plus size={16} />} className="bg-[#1a998f]" onClick={() => { setEditingShelf(null); setIsModalOpen(true); }}>
+                      Thêm Kệ Mới
+                  </Button>
+                )}
             </div>
 
             <div className="relative flex-1 overflow-hidden">
@@ -75,16 +79,18 @@ export const ShelvesView = () => {
                                     <div key="view" className="text-teal-600 font-medium">Xem chi tiết</div>
                                 ]}
                             >
-                                <div className="absolute top-4 right-4" onClick={e => e.stopPropagation()}>
-                                    <Dropdown menu={{
-                                        items: [
-                                            { key: 'edit', label: 'Sửa thông tin', icon: <Edit size={14} />, onClick: () => { setEditingShelf(shelf); setIsModalOpen(true); } },
-                                            { key: 'delete', label: 'Xóa kệ', icon: <Trash2 size={14} />, danger: true, onClick: () => handleDelete(shelf.id) }
-                                        ]
-                                    }} trigger={['click']}>
-                                        <Button type="text" size="small" icon={<MoreVertical size={16} className="text-gray-500" />} />
-                                    </Dropdown>
-                                </div>
+                                {userRole !== "OWNER" && (
+                                  <div className="absolute top-4 right-4" onClick={e => e.stopPropagation()}>
+                                      <Dropdown menu={{
+                                          items: [
+                                              { key: 'edit', label: 'Sửa thông tin', icon: <Edit size={14} />, onClick: () => { setEditingShelf(shelf); setIsModalOpen(true); } },
+                                              { key: 'delete', label: 'Xóa kệ', icon: <Trash2 size={14} />, danger: true, onClick: () => handleDelete(shelf.id) }
+                                          ]
+                                      }} trigger={['click']}>
+                                          <Button type="text" size="small" icon={<MoreVertical size={16} className="text-gray-500" />} />
+                                      </Dropdown>
+                                  </div>
+                                )}
 
                                 <div className="flex flex-col items-center py-2">
                                     <div className="w-12 h-12 bg-teal-50 rounded-full flex items-center justify-center mb-3 text-teal-600">
@@ -112,13 +118,15 @@ export const ShelvesView = () => {
                 </div>
             </div>
 
-            <ShelfModal
-                open={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                onSubmit={editingShelf ? handleUpdate : handleCreate}
-                initialValues={editingShelf}
-                loading={createShelf.isPending || updateShelf.isPending}
-            />
+            {userRole !== "OWNER" && (
+              <ShelfModal
+                  open={isModalOpen}
+                  onClose={() => setIsModalOpen(false)}
+                  onSubmit={editingShelf ? handleUpdate : handleCreate}
+                  initialValues={editingShelf}
+                  loading={createShelf.isPending || updateShelf.isPending}
+              />
+            )}
         </div>
     );
 };

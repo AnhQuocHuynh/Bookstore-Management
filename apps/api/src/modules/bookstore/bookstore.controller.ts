@@ -3,6 +3,7 @@ import { TUserSession } from '@/common/utils';
 import { CreateBookStoreDto, UpdateBookStoreDto } from '@/database/main/dto';
 import { UserRole } from '@/modules/users/enums';
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -24,6 +25,7 @@ import {
   ApiBody,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
@@ -203,17 +205,22 @@ export class BookStoreController {
   @ApiBody({
     type: CreateBookStoreDto,
   })
-  @ApiBearerAuth()
+  @ApiQuery({
+    name: 'token',
+    description: 'Token gửi kèm',
+    example:
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiT1dORVIiLCJlbWFpbCI6ImxlbmdvY2FuaHB5bmUzNjNAZ21haWwuY29tIiwiaWF0IjoxNzY4ODM5NTg2LCJleHAiOjE3Njg4NDAxODZ9.exzBn7oIOzOc_S66296QPvAa4GSuVRGLpd4qUY0jz_A',
+  })
+  @Public()
   @Post()
-  @Roles(UserRole.OWNER)
   async createBookStore(
-    @UserSession() userSession: TUserSession,
     @Body() createBookStoreDto: CreateBookStoreDto,
+    @Query('token') token: string,
   ) {
-    return this.bookStoreService.createBookStore(
-      userSession,
-      createBookStoreDto,
-    );
+    if (!token?.trim()) {
+      throw new BadRequestException('Thiếu token gửi kèm.');
+    }
+    return this.bookStoreService.createBookStore(token, createBookStoreDto);
   }
 
   @ApiOperation({

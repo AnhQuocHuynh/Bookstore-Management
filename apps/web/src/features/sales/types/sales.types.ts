@@ -24,9 +24,17 @@ export interface Cashier {
     fullName: string;
 }
 
+export interface Customer {
+    id: string;
+    name: string;
+    fullName?: string;
+    phoneNumber?: string;
+}
+
 export interface Transaction {
     id: string;
     cashier: Cashier;
+    customer?: Customer;
     details: TransactionDetail[];
     totalAmount: number;
     taxAmount: number;

@@ -2,7 +2,7 @@ import React, { useState, useMemo } from "react";
 import { Button, Card, Input, Select, Table, message, Typography, Tag, Divider, Tooltip } from "antd";
 import { Plus, Save, Trash2, ArrowLeft, Edit } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-
+import { useAuthStore } from "@/stores/useAuthStore";
 import { useSuppliers } from "@/features/suppliers/hooks/useSuppliers";
 import { useCreatePurchaseOrder } from "../hooks/usePurchaseOrder";
 import { ProductEntryModal } from "./ProductEntryModal";
@@ -12,23 +12,27 @@ const { Title } = Typography;
 
 export const CreatePurchaseOrderPage = () => {
   const navigate = useNavigate();
-  
+
+  // 1. Gọi tất cả các Hooks trước (Luôn luôn gọi ở đầu component)
+  const userRole = (useAuthStore((s) => s.user?.role) as "OWNER" | "EMPLOYEE" | "ADMIN" | undefined) || "EMPLOYEE";
+
   // --- States ---
   const [supplierId, setSupplierId] = useState<string | null>(null);
   const [note, setNote] = useState("");
   const [items, setItems] = useState<PurchaseOrderItemForm[]>([]);
-  
+
   // State Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<PurchaseOrderItemForm | null>(null);
 
   // --- Hooks ---
   const { data: responseData, isLoading: loadingSuppliers } = useSuppliers();
-  const suppliers = Array.isArray(responseData) 
-      ? responseData 
-      : (Array.isArray(responseData?.data) ? responseData.data : []);
 
-  // Lọc Active (Vẫn nên giữ để trải nghiệm UX tốt hơn, dù Backend không chặn)
+  // Xử lý dữ liệu suppliers (Move logic ra khỏi conditional rendering)
+  const suppliers = Array.isArray(responseData)
+    ? responseData
+    : (Array.isArray(responseData?.data) ? responseData.data : []);
+
   const activeSuppliers = suppliers.filter((s: any) => s.status === 'active');
 
   const { mutate: createOrder, isPending: isSubmitting } = useCreatePurchaseOrder();
@@ -38,24 +42,34 @@ export const CreatePurchaseOrderPage = () => {
     return items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
   }, [items]);
 
-  // --- Handlers ---
-  
+  // 2. Sau khi đã gọi hết Hooks, mới thực hiện kiểm tra điều kiện để Return sớm (Early Return)
+  if (userRole === "OWNER") {
+    return (
+      <div className="p-6 max-w-4xl mx-auto text-center">
+        <h1 className="text-2xl font-bold text-[#102e3c] mb-3">Tạo phiếu nhập</h1>
+        <p className="text-gray-600">Chỉ nhân viên mới được tạo phiếu nhập.</p>
+        <Button className="mt-4" type="primary" onClick={() => navigate(-1)}>Quay lại</Button>
+      </div>
+    );
+  }
+
+  // --- Handlers (Các hàm xử lý sự kiện) ---
   const handleAddItem = (newItem: PurchaseOrderItemForm) => {
     const existingIndex = items.findIndex(i => i.sku === newItem.sku);
-    
+
     if (existingIndex > -1) {
-        const updatedItems = [...items];
-        updatedItems[existingIndex] = newItem; 
-        setItems(updatedItems);
-        
-        if (editingItem) {
-          message.success("Cập nhật thông tin sản phẩm thành công");
-        } else {
-          message.info(`Đã cập nhật thông tin cho sản phẩm SKU: ${newItem.sku}`);
-        }
+      const updatedItems = [...items];
+      updatedItems[existingIndex] = newItem;
+      setItems(updatedItems);
+
+      if (editingItem) {
+        message.success("Cập nhật thông tin sản phẩm thành công");
+      } else {
+        message.info(`Đã cập nhật thông tin cho sản phẩm SKU: ${newItem.sku}`);
+      }
     } else {
-        setItems([...items, newItem]);
-        message.success("Đã thêm sản phẩm vào danh sách");
+      setItems([...items, newItem]);
+      message.success("Đã thêm sản phẩm vào danh sách");
     }
   };
 
@@ -76,9 +90,8 @@ export const CreatePurchaseOrderPage = () => {
   const handleSubmit = () => {
     // 1. Validate và Clean dữ liệu SupplierId
     if (!supplierId) return message.error("Vui lòng chọn nhà cung cấp");
-    
-    // --- FIX QUAN TRỌNG THEO BACKEND: TRIM WHITESPACE ---
-    const cleanSupplierId = supplierId.trim(); 
+
+    const cleanSupplierId = supplierId.trim();
 
     if (items.length === 0) return message.error("Vui lòng thêm ít nhất 1 sản phẩm");
 
@@ -93,11 +106,8 @@ export const CreatePurchaseOrderPage = () => {
 
     // 3. Transform Payload
     const payload: CreatePurchaseOrderDto = {
-      // Đảm bảo key chính xác là supplierId và giá trị đã được trim
       supplierId: cleanSupplierId,
-      
       note: note && note.trim() !== "" ? note.trim() : undefined,
-      
       createPurchaseOrderDetailDtos: items.map(item => {
         const cleanTaxRate = (item.taxRate && item.taxRate > 0) ? item.taxRate : undefined;
         const cleanImageUrl = (item.imageUrl && item.imageUrl.trim() !== "") ? item.imageUrl.trim() : undefined;
@@ -111,7 +121,7 @@ export const CreatePurchaseOrderPage = () => {
             price: item.price,
             imageUrl: cleanImageUrl,
             type: item.type,
-            categoryIds: item.categoryIds, // Array UUID thì thường không cần trim từng cái nếu Select trả về đúng
+            categoryIds: item.categoryIds,
             taxRate: cleanTaxRate,
             description: item.description?.trim(),
             createInventoryDto: {
@@ -121,21 +131,20 @@ export const CreatePurchaseOrderPage = () => {
             ...(item.type === 'book' ? {
               createBookDto: {
                 isbn: item.isbn!.trim(),
-                authorId: item.authorId!.trim(), // Trim UUID
-                publisherId: item.publisherId!.trim(), // Trim UUID
+                authorId: item.authorId!.trim(),
+                publisherId: item.publisherId!.trim(),
                 publicationDate: item.publicationDate || undefined,
+                coverImageUrl: cleanImageUrl,
                 edition: item.edition?.trim() || undefined,
                 language: item.language?.trim() || undefined,
-              } as any 
+              } as any
             } : { createBookDto: undefined })
           }
         };
       })
     };
 
-    // Log payload để debug nếu cần
     console.log("Submitting Payload:", JSON.stringify(payload, null, 2));
-
     createOrder(payload);
   };
 
@@ -151,8 +160,8 @@ export const CreatePurchaseOrderPage = () => {
       title: 'Tên Sản Phẩm',
       dataIndex: 'name',
       render: (text: string, record: PurchaseOrderItemForm) => (
-        <div 
-          className="cursor-pointer hover:text-teal-600 group" 
+        <div
+          className="cursor-pointer hover:text-teal-600 group"
           onClick={() => handleEditItem(record)}
         >
           <div className="font-medium group-hover:underline">{text}</div>
@@ -195,19 +204,19 @@ export const CreatePurchaseOrderPage = () => {
       render: (_: any, record: PurchaseOrderItemForm) => (
         <div className="flex justify-center gap-1">
           <Tooltip title="Sửa thông tin">
-            <Button 
-              type="text" 
+            <Button
+              type="text"
               className="text-blue-600 hover:bg-blue-50"
-              icon={<Edit size={16} />} 
-              onClick={() => handleEditItem(record)} 
+              icon={<Edit size={16} />}
+              onClick={() => handleEditItem(record)}
             />
           </Tooltip>
           <Tooltip title="Xóa">
-            <Button 
-              type="text" 
-              danger 
-              icon={<Trash2 size={16} />} 
-              onClick={() => handleRemoveItem(record.sku)} 
+            <Button
+              type="text"
+              danger
+              icon={<Trash2 size={16} />}
+              onClick={() => handleRemoveItem(record.sku)}
             />
           </Tooltip>
         </div>
@@ -217,7 +226,6 @@ export const CreatePurchaseOrderPage = () => {
 
   return (
     <div className="p-6 h-full flex flex-col font-['Inter'] bg-gray-50 overflow-hidden">
-      
       {/* HEADER */}
       <div className="flex justify-between items-center mb-6 flex-shrink-0">
         <div className="flex items-center gap-3">
@@ -226,10 +234,10 @@ export const CreatePurchaseOrderPage = () => {
         </div>
         <div className="flex gap-3">
           <Button size="large" onClick={() => navigate(-1)}>Hủy bỏ</Button>
-          <Button 
-            type="primary" 
-            size="large" 
-            icon={<Save size={18} />} 
+          <Button
+            type="primary"
+            size="large"
+            icon={<Save size={18} />}
             className="bg-[#1a998f] hover:bg-[#158f85]"
             loading={isSubmitting}
             onClick={handleSubmit}
@@ -257,12 +265,12 @@ export const CreatePurchaseOrderPage = () => {
                   onChange={setSupplierId}
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Ghi chú</label>
-                <Input.TextArea 
-                  rows={4} 
-                  placeholder="VD: Nhập hàng phục vụ khai giảng..." 
+                <Input.TextArea
+                  rows={4}
+                  placeholder="VD: Nhập hàng phục vụ khai giảng..."
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                 />
@@ -291,29 +299,29 @@ export const CreatePurchaseOrderPage = () => {
 
         {/* RIGHT */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          <Card 
+          <Card
             className="flex-1 shadow-sm rounded-xl flex flex-col border border-gray-200"
             styles={{ body: { padding: 0, height: '100%', display: 'flex', flexDirection: 'column' } }}
           >
             <div className="p-4 border-b border-gray-100 flex justify-between items-center flex-shrink-0">
               <h3 className="font-bold text-lg text-[#102e3c]">Danh sách sản phẩm</h3>
-              <Button 
-                type="primary" 
-                icon={<Plus size={18} />} 
+              <Button
+                type="primary"
+                icon={<Plus size={18} />}
                 className="bg-[#1a998f]"
                 onClick={() => {
-                  setEditingItem(null); 
+                  setEditingItem(null);
                   setIsModalOpen(true);
                 }}
               >
                 Thêm Sản Phẩm
               </Button>
             </div>
-            
+
             <div className="flex-1 overflow-y-auto custom-scrollbar">
-              <Table 
-                dataSource={items} 
-                columns={columns} 
+              <Table
+                dataSource={items}
+                columns={columns}
                 rowKey="sku"
                 pagination={false}
                 sticky
@@ -328,8 +336,8 @@ export const CreatePurchaseOrderPage = () => {
         </div>
       </div>
 
-      <ProductEntryModal 
-        isOpen={isModalOpen} 
+      <ProductEntryModal
+        isOpen={isModalOpen}
         onClose={handleCloseModal}
         onSubmit={handleAddItem}
         initialValues={editingItem}
