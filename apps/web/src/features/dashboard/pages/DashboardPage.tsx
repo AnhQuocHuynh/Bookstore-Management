@@ -40,9 +40,10 @@ export const DashboardPage = () => {
 
   // API Overview: Lấy KPI (Doanh thu, Lợi nhuận...)
   // Truyền thêm productType để lọc theo Sách/VPP 
+  // Chỉ gửi productType khi có giá trị thực (không phải empty string)
   const { data: overviewData, isLoading: loadOverview } = useDashboardOverview({
     ...queryParams,
-    productType: productType
+    ...(productType && { productType })
   });
 
   // API Financial Chart: Biểu đồ tài chính
@@ -120,6 +121,7 @@ export const DashboardPage = () => {
               allowClear
               options={[
 
+                { label: 'Tất cả', value: '' },
                 { label: 'Sách', value: 'book' },
                 { label: 'Văn phòng phẩm', value: 'stationery' },
               ]}

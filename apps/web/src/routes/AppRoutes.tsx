@@ -4,7 +4,7 @@ import RegisterPage from "@/features/auth/pages/RegisterPage";
 import { Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { ForgotPasswordPage } from "../features/auth/pages/ForgotPasswordPage";
 import { DashboardPage } from "../features/dashboard/pages/DashboardPage";
-import { EmployeeListPage } from "../features/employees/pages/EmployeeListPage";
+import { EmployeeListPage } from "../features/employees/components/EmployeeListPage";
 import { EmployeeSchedulePage } from "../features/employees/pages/EmployeeSchedulePage";
 import { ProductsPage } from "../features/products/components/ProductsPage";
 import { SuppliersPage } from "../features/suppliers/components/SuppliersPage";
