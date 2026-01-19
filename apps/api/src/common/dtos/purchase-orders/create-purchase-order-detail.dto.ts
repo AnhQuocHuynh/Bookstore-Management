@@ -1,16 +1,15 @@
+// === File: ./common/dtos/purchase-orders/create-purchase-order-detail.dto.ts ===
+
 import { CreateProductDto } from '@/common/dtos/products';
-import { ProductType } from '@/common/enums';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger'; // Bỏ ApiPropertyOptional
 import { Type } from 'class-transformer';
 import {
   IsInt,
   IsNotEmpty,
   IsNumber,
-  IsOptional,
   IsPositive,
-  IsUUID,
   ValidateNested,
-} from 'class-validator';
+} from 'class-validator'; // Bỏ IsOptional, IsUUID
 
 export class CreatePurchaseOrderDetailDto {
   @ApiProperty({
@@ -39,45 +38,15 @@ export class CreatePurchaseOrderDetailDto {
   })
   readonly unitPrice: number;
 
-  @ApiPropertyOptional({
-    description: 'Mã định danh sản phẩm (nếu có)',
-    example: 'id-1',
-  })
-  @IsOptional()
-  @IsUUID('4', {
-    message: 'Mã định danh sản phẩm không hợp lệ',
-  })
-  readonly productId?: string;
+  // --- ĐÃ XÓA productId ---
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     type: CreateProductDto,
-    description: 'Thông tin tạo sản phẩm (nếu có)',
-    example: {
-      name: 'Clean Architecture',
-      description: 'Sách về kiến trúc phần mềm',
-      sku: '8938505974192',
-      price: 200000,
-      type: ProductType.BOOK,
-      categoryIds: ['cat-book'],
-      createBookDto: {
-        isbn: '9780134494166',
-        edition: 'Tái bản lần 1',
-        language: 'Tiếng Việt',
-        coverImage: 'https://cdn.example.com/books/clean-architecture.jpg',
-        publicationDate: '2023-05-01',
-        authorId: '550e8400-e29b-41d4-a716-446655440000',
-        publisherId: '660e8400-e29b-41d4-a716-446655440111',
-      },
-      createInventoryDto: {
-        stockQuantity: 5,
-        costPrice: 120000,
-      },
-      taxRate: 0.03,
-    },
+    description: 'Thông tin tạo sản phẩm mới (Bắt buộc)',
+    // ... (Giữ nguyên example cũ)
   })
-  @IsOptional()
-  @IsNotEmpty()
+  @IsNotEmpty({ message: 'Thông tin sản phẩm là bắt buộc.' }) // Thêm thông báo lỗi rõ ràng
   @Type(() => CreateProductDto)
   @ValidateNested()
-  readonly createProductDto?: CreateProductDto;
+  readonly createProductDto: CreateProductDto; // Xóa dấu ? (optional)
 }

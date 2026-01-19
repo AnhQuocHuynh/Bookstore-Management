@@ -105,3 +105,52 @@ export interface InventoryFormData {
   releaseVersion?: string;
   language?: string;
 }
+
+// file: types/index.ts (Thêm vào cuối file)
+
+export type InventoryLogAction = 'purchase' | 'sale' | 'return' | 'adjustment';
+
+export interface InventoryLogItem {
+  id: string;
+  quantityChange: number;
+  action: InventoryLogAction;
+  note: string;
+  createdAt: string;
+  updatedAt: string;
+  inventory: {
+    id: string;
+    stockQuantity: number;
+    costPrice: number;
+    // Backend trả về inventory, nhưng để hiển thị tên SP cần relation product
+    // Nếu backend chưa join product, ta tạm dùng ID hoặc yêu cầu backend update sau.
+    // Tạm thời giả định UI sẽ hiển thị SKU hoặc thông tin có sẵn.
+    product?: {
+      name: string;
+      sku: string;
+    }
+  };
+  employee: {
+    id: string;
+    fullName: string;
+    email: string;
+    role: string;
+  } | null;
+}
+
+export interface InventoryLogParams {
+  page?: number;
+  limit?: number;
+  inventoryId?: string;
+  employeeId?: string;
+  action?: InventoryLogAction;
+  fromDate?: string;
+  toDate?: string;
+}
+
+export interface InventoryLogResponse {
+  data: InventoryLogItem[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}

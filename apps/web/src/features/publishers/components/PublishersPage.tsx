@@ -16,8 +16,10 @@ import {
 } from "../hooks/usePublishers";
 
 import { Publisher, PublisherTableRow, PublisherFormData } from "../types";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 export const PublishersPage = () => {
+    const userRole = (useAuthStore((s) => s.user?.role) as "OWNER" | "EMPLOYEE" | "ADMIN" | undefined) || "EMPLOYEE";
     // --- States ---
     const [keyword, setKeyword] = useState("");
     const debouncedKeyword = useDebounce(keyword, 300);
@@ -122,22 +124,24 @@ export const PublishersPage = () => {
                         <h1 className="font-bold text-[#102e3c] text-2xl sm:text-3xl lg:text-4xl">
                             Nhà Xuất Bản
                         </h1>
-                        <div className="flex items-center gap-2.5">
-                            <Button onClick={handleDelete} danger disabled={!selectedPublisher} className="h-10 rounded-xl font-semibold">
-                                Xóa
-                            </Button>
-                            <Button onClick={() => selectedPublisher ? setIsEditOpen(true) : message.warning("Chọn NXB để sửa")} disabled={!selectedPublisher} className="h-10 rounded-xl font-semibold border-teal-600 text-teal-700">
-                                Sửa
-                            </Button>
-                            <Button
-                                type="primary"
-                                icon={<Plus size={18} />}
-                                className="bg-[#1a998f] hover:bg-[#158f85] h-10 px-4 rounded-xl font-bold border-none"
-                                onClick={() => setIsAddOpen(true)}
-                            >
-                                Tạo Mới
-                            </Button>
-                        </div>
+                        {userRole === "OWNER" && (
+                          <div className="flex items-center gap-2.5">
+                              <Button onClick={handleDelete} danger disabled={!selectedPublisher} className="h-10 rounded-xl font-semibold">
+                                  Xóa
+                              </Button>
+                              <Button onClick={() => selectedPublisher ? setIsEditOpen(true) : message.warning("Chọn NXB để sửa")} disabled={!selectedPublisher} className="h-10 rounded-xl font-semibold border-teal-600 text-teal-700">
+                                  Sửa
+                              </Button>
+                              <Button
+                                  type="primary"
+                                  icon={<Plus size={18} />}
+                                  className="bg-[#1a998f] hover:bg-[#158f85] h-10 px-4 rounded-xl font-bold border-none"
+                                  onClick={() => setIsAddOpen(true)}
+                              >
+                                  Tạo Mới
+                              </Button>
+                          </div>
+                        )}
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3 mt-2 bg-white p-3 rounded-xl border border-[#102e3c]/10 shadow-sm">
@@ -201,18 +205,22 @@ export const PublishersPage = () => {
             </main>
 
             {/* --- MODALS --- */}
-            <PublisherAddPanel
-                isOpen={isAddOpen}
-                onClose={() => setIsAddOpen(false)}
-                onSubmit={handleCreate}
-            />
+            {userRole === "OWNER" && (
+              <PublisherAddPanel
+                  isOpen={isAddOpen}
+                  onClose={() => setIsAddOpen(false)}
+                  onSubmit={handleCreate}
+              />
+            )}
 
-            <PublisherEditPanel
-                isOpen={isEditOpen}
-                onClose={() => setIsEditOpen(false)}
-                onSubmit={handleUpdate}
-                initialData={selectedFormData}
-            />
+            {userRole === "OWNER" && (
+              <PublisherEditPanel
+                  isOpen={isEditOpen}
+                  onClose={() => setIsEditOpen(false)}
+                  onSubmit={handleUpdate}
+                  initialData={selectedFormData}
+              />
+            )}
         </div>
     );
 };

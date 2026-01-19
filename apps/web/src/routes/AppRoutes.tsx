@@ -1,3 +1,4 @@
+import React from "react";
 import LoginPage from "@/features/auth/pages/LoginPage";
 import RegisterPage from "@/features/auth/pages/RegisterPage";
 import { Navigate, Outlet, Route, Routes } from "react-router-dom";
@@ -38,6 +39,8 @@ import { EmployeeReportView } from "@/features/reports/components/EmployeeReport
 import { ReturnOrderListPage } from "@/features/return-orders/components";
 import { CreateReturnOrderPage } from "@/features/return-orders/components/CreateReturnOrderPage";
 import { EditReturnOrderPage } from "@/features/return-orders/components/EditReturnOrderPage";
+import { useAuthStore } from "@/stores/useAuthStore";
+import { InventoryLogsPage } from "@/features/inventory/components/InventoryLogsPage";
 
 // Select Store Page (Semi-protected: requires token but no store)
 // const SelectStorePage = () => (
@@ -54,6 +57,12 @@ const SalesPage = () => (
     <p>Trang bán hàng đang được phát triển...</p>
   </div>
 );
+
+const RequireRoles = ({ roles, children }: { roles: Array<"OWNER" | "EMPLOYEE" | "ADMIN">; children: React.ReactElement }) => {
+  const userRole = (useAuthStore((s) => s.user?.role) as "OWNER" | "EMPLOYEE" | "ADMIN" | undefined) || "EMPLOYEE";
+  if (!roles.includes(userRole)) return <Navigate to="/dashboard" replace />;
+  return children;
+};
 
 export const AppRoutes = () => {
   return (
@@ -123,33 +132,39 @@ export const AppRoutes = () => {
         <Route
           path="/dashboard/products/return-orders/list"
           element={
-              <MainLayout>
-                <ReturnOrderListPage />
-                </MainLayout>
+            <MainLayout>
+              <ReturnOrderListPage />
+            </MainLayout>
           }
         />
         <Route
           path="/dashboard/products/return-orders/create"
           element={
+            <RequireRoles roles={["EMPLOYEE"]}>
               <MainLayout>
                 <CreateReturnOrderPage />
-                </MainLayout>
+              </MainLayout>
+            </RequireRoles>
           }
         />
         <Route
           path="/dashboard/products/return-orders/edit/:orderId"
           element={
+            <RequireRoles roles={["EMPLOYEE"]}>
               <MainLayout>
                 <EditReturnOrderPage />
-                </MainLayout>
+              </MainLayout>
+            </RequireRoles>
           }
         />
         <Route
           path="/sales/create"
           element={
-            <MainLayout>
-              <CreateSalesPage />
-            </MainLayout>
+            <RequireRoles roles={["EMPLOYEE"]}>
+              <MainLayout>
+                <CreateSalesPage />
+              </MainLayout>
+            </RequireRoles>
           }
         />
         <Route
@@ -203,17 +218,21 @@ export const AppRoutes = () => {
         <Route
           path="/dashboard/employees/list"
           element={
-            <MainLayout>
-              <EmployeeListPage />
-            </MainLayout>
+            <RequireRoles roles={["OWNER"]}>
+              <MainLayout>
+                <EmployeeListPage />
+              </MainLayout>
+            </RequireRoles>
           }
         />
         <Route
           path="/dashboard/employees/schedule"
           element={
-            <MainLayout>
-              <EmployeeSchedulePage />
-            </MainLayout>
+            <RequireRoles roles={["OWNER"]}>
+              <MainLayout>
+                <EmployeeSchedulePage />
+              </MainLayout>
+            </RequireRoles>
           }
         />
         <Route
@@ -258,9 +277,22 @@ export const AppRoutes = () => {
         <Route
           path="/reports/employees"
           element={
-            <MainLayout>
-              <EmployeeReportView />
-            </MainLayout>
+            <RequireRoles roles={["OWNER"]}>
+              <MainLayout>
+                <EmployeeReportView />
+              </MainLayout>
+            </RequireRoles>
+          }
+        />
+
+        <Route
+          path="/inventory/logs"
+          element={
+            <RequireRoles roles={["OWNER"]}>
+              <MainLayout>
+                <InventoryLogsPage />
+              </MainLayout>
+            </RequireRoles>
           }
         />
 
@@ -271,9 +303,11 @@ export const AppRoutes = () => {
 
       <Route path="/purchase-orders/create"
         element={
-          <MainLayout>
-            <CreatePurchaseOrderPage />
-          </MainLayout>
+          <RequireRoles roles={["EMPLOYEE"]}>
+            <MainLayout>
+              <CreatePurchaseOrderPage />
+            </MainLayout>
+          </RequireRoles>
         }
       />
       <Route path="purchase-orders/list" element={<MainLayout><PurchaseOrderListPage /></MainLayout>} />

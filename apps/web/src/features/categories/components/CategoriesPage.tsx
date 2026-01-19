@@ -16,8 +16,10 @@ import {
 } from "../hooks/useCategories";
 
 import { Category, CategoryTableRow, CategoryFormData } from "../types";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 export const CategoriesPage = () => {
+    const userRole = (useAuthStore((s) => s.user?.role) as "OWNER" | "EMPLOYEE" | "ADMIN" | undefined) || "EMPLOYEE";
     // --- States ---
     const [keyword, setKeyword] = useState("");
     const debouncedKeyword = useDebounce(keyword, 300);
@@ -119,22 +121,24 @@ export const CategoriesPage = () => {
                         <h1 className="font-bold text-[#102e3c] text-2xl sm:text-3xl lg:text-4xl">
                             Danh Mục Sản Phẩm
                         </h1>
-                        <div className="flex items-center gap-2.5">
-                            <Button onClick={handleDelete} danger disabled={!selectedCategory} className="h-10 rounded-xl font-semibold">
-                                Xóa
-                            </Button>
-                            <Button onClick={() => selectedCategory ? setIsEditOpen(true) : message.warning("Chọn danh mục để sửa")} disabled={!selectedCategory} className="h-10 rounded-xl font-semibold border-teal-600 text-teal-700">
-                                Sửa
-                            </Button>
-                            <Button
-                                type="primary"
-                                icon={<Plus size={18} />}
-                                className="bg-[#1a998f] hover:bg-[#158f85] h-10 px-4 rounded-xl font-bold border-none"
-                                onClick={() => setIsAddOpen(true)}
-                            >
-                                Tạo Mới
-                            </Button>
-                        </div>
+                        {userRole === "OWNER" && (
+                          <div className="flex items-center gap-2.5">
+                              <Button onClick={handleDelete} danger disabled={!selectedCategory} className="h-10 rounded-xl font-semibold">
+                                  Xóa
+                              </Button>
+                              <Button onClick={() => selectedCategory ? setIsEditOpen(true) : message.warning("Chọn danh mục để sửa")} disabled={!selectedCategory} className="h-10 rounded-xl font-semibold border-teal-600 text-teal-700">
+                                  Sửa
+                              </Button>
+                              <Button
+                                  type="primary"
+                                  icon={<Plus size={18} />}
+                                  className="bg-[#1a998f] hover:bg-[#158f85] h-10 px-4 rounded-xl font-bold border-none"
+                                  onClick={() => setIsAddOpen(true)}
+                              >
+                                  Tạo Mới
+                              </Button>
+                          </div>
+                        )}
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3 mt-2 bg-white p-3 rounded-xl border border-[#102e3c]/10 shadow-sm">
@@ -198,18 +202,22 @@ export const CategoriesPage = () => {
             </main>
 
             {/* --- MODALS --- */}
-            <CategoryAddPanel
-                isOpen={isAddOpen}
-                onClose={() => setIsAddOpen(false)}
-                onSubmit={handleCreate}
-            />
+            {userRole === "OWNER" && (
+              <CategoryAddPanel
+                  isOpen={isAddOpen}
+                  onClose={() => setIsAddOpen(false)}
+                  onSubmit={handleCreate}
+              />
+            )}
 
-            <CategoryEditPanel
-                isOpen={isEditOpen}
-                onClose={() => setIsEditOpen(false)}
-                onSubmit={handleUpdate}
-                initialData={selectedFormData}
-            />
+            {userRole === "OWNER" && (
+              <CategoryEditPanel
+                  isOpen={isEditOpen}
+                  onClose={() => setIsEditOpen(false)}
+                  onSubmit={handleUpdate}
+                  initialData={selectedFormData}
+              />
+            )}
         </div>
     );
 };

@@ -1,12 +1,12 @@
 import React, { useState, useMemo } from "react";
 import { message, Select, Input, Modal, Button } from "antd";
-import { Search, X, Plus } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
 import { InventoryTable, TableHeader } from "./InventoryTable";
 import { InventoryDetailPanel } from "./InventoryDetailPanel";
 import { SorterButton } from "./SorterButton";
-import { InventoryAddPanel } from "./InventoryAddPanel";
 import { InventoryEditPanel } from "./InventoryEditPanel";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 import {
   useInventory,
@@ -21,6 +21,7 @@ import { InventoryItem, InventoryTableRow, InventoryFormData } from "../types";
 const { Option } = Select;
 
 export const InventoryPage = () => {
+  const userRole = (useAuthStore((s) => s.user?.role) as "OWNER" | "EMPLOYEE" | "ADMIN" | undefined) || "EMPLOYEE";
   // --- States ---
   const [keyword, setKeyword] = useState("");
   const debouncedKeyword = useDebounce(keyword, 500);
@@ -90,6 +91,7 @@ export const InventoryPage = () => {
   }, [productsData]);
 
   // --- Transform Data (Table UI -> Edit Form) ---
+  // --- Transform Data (Table UI -> Edit Form) ---
   const selectedFormData: InventoryFormData | undefined = selectedItem ? {
     sku: selectedItem.sku,
     name: selectedItem.name,
@@ -106,11 +108,13 @@ export const InventoryPage = () => {
     supplier: selectedItem.supplier,
     author: selectedItem.author,
     publisher: selectedItem.publisher,
-    releaseYear: selectedItem.releaseYear,
+
+    // SỬA LỖI Ở ĐÂY: Chuyển đổi number sang string
+    releaseYear: selectedItem.releaseYear ? String(selectedItem.releaseYear) : undefined,
+
     releaseVersion: selectedItem.releaseVersion,
     language: selectedItem.language,
   } : undefined;
-
   // --- Handlers ---
   const handleSortChange = (key: string, order: 'asc' | 'desc') => {
     setSortBy(key);
@@ -150,12 +154,13 @@ export const InventoryPage = () => {
   const handleUpdate = (formData: InventoryFormData) => {
     if (!selectedItem) return;
 
-    // Map dữ liệu từ Form (sellingPrice) -> API (price)
+    // SỬA: Chỉ gửi những trường cần thiết. 
+    // KHÔNG GỬI 'sku' để tránh lỗi 409 (Conflict) từ backend.
     const updatePayload = {
-      sku: formData.sku,
+      // sku: formData.sku, // <-- BỎ DÒNG NÀY (Vì SKU không thay đổi, gửi lên sẽ bị check trùng)
       name: formData.name,
       description: formData.description,
-      price: formData.sellingPrice, // Đổi tên cho đúng API
+      price: formData.sellingPrice,
       imageUrl: formData.image,
       isActive: formData.isActive,
     };
@@ -166,11 +171,11 @@ export const InventoryPage = () => {
     }, {
       onSuccess: () => {
         setIsEditPanelOpen(false);
-        // Cập nhật lại UI tạm thời
+        // Cập nhật Optimistic UI
         setSelectedItem((prev) => prev ? ({
           ...prev,
           name: formData.name,
-          sku: formData.sku,
+          // sku: formData.sku, // Không cần update SKU vì không đổi
           image: formData.image || "",
           sellingPrice: formData.sellingPrice,
           description: formData.description,
@@ -190,23 +195,26 @@ export const InventoryPage = () => {
             <h1 className="font-bold text-[#102e3c] text-2xl sm:text-3xl lg:text-4xl">Tồn Kho</h1>
             <div className="flex items-center gap-2.5 flex-wrap">
               <SorterButton onSortChange={handleSortChange} currentSort={sortBy} currentSortOrder={sortOrder} />
+              {userRole !== "OWNER" && (
+                <>
+                  <Button
+                    onClick={handleDelete}
+                    danger
+                    disabled={!selectedItem}
+                    className="h-10 rounded-xl font-semibold"
+                  >
+                    Xóa
+                  </Button>
 
-              <Button 
-                onClick={handleDelete} 
-                danger 
-                disabled={!selectedItem} 
-                className="h-10 rounded-xl font-semibold"
-              >
-                Xóa
-              </Button>
-
-              <Button 
-                onClick={() => selectedItem ? setIsEditPanelOpen(true) : message.warning("Vui lòng chọn sản phẩm")} 
-                disabled={!selectedItem} 
-                className="h-10 rounded-xl font-semibold border-teal-600 text-teal-700"
-              >
-                Sửa
-              </Button>
+                  <Button
+                    onClick={() => selectedItem ? setIsEditPanelOpen(true) : message.warning("Vui lòng chọn sản phẩm")}
+                    disabled={!selectedItem}
+                    className="h-10 rounded-xl font-semibold border-teal-600 text-teal-700"
+                  >
+                    Sửa
+                  </Button>
+                </>
+              )}
             </div>
           </div>
 
@@ -215,21 +223,19 @@ export const InventoryPage = () => {
             <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-lg">
               <button
                 onClick={() => setActiveCategory("Sách")}
-                className={`px-6 py-2 rounded-md font-semibold transition-all ${
-                  activeCategory === "Sách"
-                    ? "bg-[#1a998f] text-white"
-                    : "bg-transparent text-[#102e3c] hover:bg-gray-200"
-                }`}
+                className={`px-6 py-2 rounded-md font-semibold transition-all ${activeCategory === "Sách"
+                  ? "bg-[#1a998f] text-white"
+                  : "bg-transparent text-[#102e3c] hover:bg-gray-200"
+                  }`}
               >
                 Sách
               </button>
               <button
                 onClick={() => setActiveCategory("Văn phòng phẩm")}
-                className={`px-6 py-2 rounded-md font-semibold transition-all ${
-                  activeCategory === "Văn phòng phẩm"
-                    ? "bg-[#1a998f] text-white"
-                    : "bg-transparent text-[#102e3c] hover:bg-gray-200"
-                }`}
+                className={`px-6 py-2 rounded-md font-semibold transition-all ${activeCategory === "Văn phòng phẩm"
+                  ? "bg-[#1a998f] text-white"
+                  : "bg-transparent text-[#102e3c] hover:bg-gray-200"
+                  }`}
               >
                 Văn phòng phẩm
               </button>
@@ -288,12 +294,14 @@ export const InventoryPage = () => {
       </main>
 
       {/* --- Modals --- */}
-      <InventoryEditPanel
-        isOpen={isEditPanelOpen}
-        onClose={() => setIsEditPanelOpen(false)}
-        onSubmit={handleUpdate}
-        initialData={selectedFormData}
-      />
+      {userRole !== "OWNER" && (
+        <InventoryEditPanel
+          isOpen={isEditPanelOpen}
+          onClose={() => setIsEditPanelOpen(false)}
+          onSubmit={handleUpdate}
+          initialData={selectedFormData}
+        />
+      )}
     </div>
   );
 };
