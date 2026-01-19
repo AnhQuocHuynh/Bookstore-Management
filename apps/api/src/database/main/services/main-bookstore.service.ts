@@ -66,11 +66,33 @@ export class MainBookStoreService {
         'Tất cả các cơ sở dữ liệu của hệ thống đã được sử dụng. Liên hệ với quản trị viên để được tư vấn.',
       );
 
-    const { name } = createBookStoreDto;
+    const { name, phoneNumber } = createBookStoreDto;
 
     const bookStoreRepo = manager
       ? manager.getRepository(BookStore)
       : this.bookStoreRepo;
+
+    const existingName = await bookStoreRepo.findOne({
+      where: {
+        name,
+      },
+    });
+
+    if (existingName) {
+      throw new ConflictException(`Nhà sách '${name}' đã tồn tại.`);
+    }
+
+    const existingPhoneNumber = await bookStoreRepo.findOne({
+      where: {
+        phoneNumber,
+      },
+    });
+
+    if (existingPhoneNumber) {
+      throw new ConflictException(
+        `Đã có nhà sách sử dụng số điện thoại '${phoneNumber}' rồi.`,
+      );
+    }
 
     const newBookStore = bookStoreRepo.create({
       ...createBookStoreDto,
