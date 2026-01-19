@@ -133,36 +133,6 @@ export class HrSettingsDto {
   @Min(1)
   @Max(31)
   standardWorkDays?: number;
-
-  @ApiPropertyOptional({ description: 'Giờ bắt đầu ca sáng', example: '07:30' })
-  @IsOptional()
-  @IsString()
-  morningShiftStart?: string;
-
-  @ApiPropertyOptional({ description: 'Giờ kết thúc ca sáng', example: '12:00' })
-  @IsOptional()
-  @IsString()
-  morningShiftEnd?: string;
-
-  @ApiPropertyOptional({ description: 'Giờ bắt đầu ca chiều', example: '13:00' })
-  @IsOptional()
-  @IsString()
-  afternoonShiftStart?: string;
-
-  @ApiPropertyOptional({ description: 'Giờ kết thúc ca chiều', example: '17:30' })
-  @IsOptional()
-  @IsString()
-  afternoonShiftEnd?: string;
-
-  @ApiPropertyOptional({ description: 'Giờ bắt đầu ca tối', example: '17:30' })
-  @IsOptional()
-  @IsString()
-  eveningShiftStart?: string;
-
-  @ApiPropertyOptional({ description: 'Giờ kết thúc ca tối', example: '21:30' })
-  @IsOptional()
-  @IsString()
-  eveningShiftEnd?: string;
 }
 
 export class InventorySettingsDto {

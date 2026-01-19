@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -27,7 +27,6 @@ import { useSaveShift, useUpdateShift, useDeleteShift, useEmployees } from '../h
 import { ShiftType, SHIFT_LABELS, ROLE_LABELS, EmployeeRole, Shift } from '../types';
 import { format, addDays } from 'date-fns';
 import { toast } from 'sonner';
-import { useShiftTimes } from '@/features/settings';
 
 // ==========================================
 // HELPER: GET ROLE BADGE COLORS
@@ -104,10 +103,10 @@ const shiftFormSchema = z.object({
 type ShiftFormData = z.infer<typeof shiftFormSchema>;
 
 // ==========================================
-// SHIFT TIME PRESETS (Fallback)
+// SHIFT TIME PRESETS
 // ==========================================
 
-const DEFAULT_SHIFT_TIMES = {
+const SHIFT_TIMES = {
   [ShiftType.MORNING]: { start: '07:30', end: '12:00' },
   [ShiftType.AFTERNOON]: { start: '13:00', end: '17:30' },
   [ShiftType.EVENING]: { start: '17:30', end: '21:30' },
@@ -139,21 +138,6 @@ export const ShiftModal = ({ isOpen, onClose, defaultDate, editingShift }: Shift
   const { mutateAsync: updateShift, isPending: isUpdating } = useUpdateShift();
   const { mutateAsync: deleteShift, isPending: isDeleting } = useDeleteShift();
   
-  // Fetch shift times from settings
-  const { data: shiftTimesData } = useShiftTimes();
-  
-  // Dynamic shift times from settings
-  const SHIFT_TIMES = useMemo(() => {
-    if (!shiftTimesData) return DEFAULT_SHIFT_TIMES;
-    
-    return {
-      [ShiftType.MORNING]: { start: shiftTimesData.morning.startTime, end: shiftTimesData.morning.endTime },
-      [ShiftType.AFTERNOON]: { start: shiftTimesData.afternoon.startTime, end: shiftTimesData.afternoon.endTime },
-      [ShiftType.EVENING]: { start: shiftTimesData.evening.startTime, end: shiftTimesData.evening.endTime },
-      [ShiftType.FULL_DAY]: { start: shiftTimesData.fullDay.startTime, end: shiftTimesData.fullDay.endTime },
-    };
-  }, [shiftTimesData]);
-  
   const isPending = isSaving || isUpdating || isDeleting;
   const isEditing = !!editingShift;
 
@@ -171,19 +155,11 @@ export const ShiftModal = ({ isOpen, onClose, defaultDate, editingShift }: Shift
       employeeIds: [],
       date: getDefaultDate(),
       shiftType: ShiftType.MORNING,
-      startTime: DEFAULT_SHIFT_TIMES[ShiftType.MORNING].start,
-      endTime: DEFAULT_SHIFT_TIMES[ShiftType.MORNING].end,
+      startTime: SHIFT_TIMES[ShiftType.MORNING].start,
+      endTime: SHIFT_TIMES[ShiftType.MORNING].end,
       notes: '',
     },
   });
-  
-  // Update default times when shiftTimesData loads
-  useEffect(() => {
-    if (shiftTimesData && !isOpen) {
-      form.setValue('startTime', SHIFT_TIMES[ShiftType.MORNING].start);
-      form.setValue('endTime', SHIFT_TIMES[ShiftType.MORNING].end);
-    }
-  }, [shiftTimesData, SHIFT_TIMES, form, isOpen]);
 
   // Pre-fill form when editingShift changes
   useEffect(() => {
@@ -214,7 +190,7 @@ export const ShiftModal = ({ isOpen, onClose, defaultDate, editingShift }: Shift
         notes: '',
       });
     }
-  }, [isOpen, editingShift, defaultDate, form, SHIFT_TIMES]);
+  }, [isOpen, editingShift, defaultDate, form]);
 
   // Update times when shift type changes (only when not in custom time mode)
   useEffect(() => {

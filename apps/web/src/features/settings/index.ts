@@ -13,7 +13,7 @@ export type { SettingsTab } from "./components/SettingsLayout";
 export type * from "./types";
 
 // Hooks
-export { useSettings, useUpdateSettings, useUploadFile, useShiftTimes, SHIFT_TIMES_QUERY_KEY } from "./hooks/useSettings";
+export { useSettings, useUpdateSettings, useUploadFile } from "./hooks/useSettings";
 
 // API
 export { settingsApi } from "./api/settings.api";

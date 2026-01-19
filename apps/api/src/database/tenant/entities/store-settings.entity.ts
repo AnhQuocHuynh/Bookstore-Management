@@ -36,12 +36,6 @@ export interface HrSettings {
   overtimeMultiplier?: number;
   latePenalty?: number;
   standardWorkDays?: number;
-  morningShiftStart?: string;
-  morningShiftEnd?: string;
-  afternoonShiftStart?: string;
-  afternoonShiftEnd?: string;
-  eveningShiftStart?: string;
-  eveningShiftEnd?: string;
 }
 
 export interface InventorySettings {

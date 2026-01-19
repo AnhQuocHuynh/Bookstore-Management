@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from 'antd';
@@ -9,7 +9,6 @@ import { Shift, SHIFT_LABELS, SHIFT_COLORS, ShiftType } from '../types';
 import { format, startOfWeek, endOfWeek, addWeeks, subWeeks, eachDayOfInterval } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { ShiftModal } from '../components/ShiftModal';
-import { useShiftTimes } from '@/features/settings';
 
 // ==========================================
 // EMPLOYEE SCHEDULE PAGE
@@ -30,9 +29,6 @@ export const EmployeeSchedulePage = () => {
     weekStart: format(weekStart, 'yyyy-MM-dd'),
     weekEnd: format(weekEnd, 'yyyy-MM-dd'),
   });
-
-  // Fetch shift times from settings
-  const { data: shiftTimesData, isLoading: isLoadingShiftTimes } = useShiftTimes();
 
   // ==========================================
   // HANDLERS
@@ -81,41 +77,13 @@ export const EmployeeSchedulePage = () => {
     return data.shifts.filter((shift: Shift) => shift.date === dateStr && shift.shiftType === shiftType);
   };
 
-  // Define shift schedule structure - động từ settings
-  const shiftSchedule = useMemo(() => {
-    if (!shiftTimesData) {
-      // Fallback khi chưa có data từ settings
-      return [
-        { type: ShiftType.MORNING, label: 'Ca Sáng', time: '07:30 - 12:00' },
-        { type: ShiftType.AFTERNOON, label: 'Ca Chiều', time: '13:00 - 17:30' },
-        { type: ShiftType.EVENING, label: 'Ca Tối', time: '17:30 - 21:30' },
-        { type: ShiftType.FULL_DAY, label: 'Ca Cả Ngày', time: '07:30 - 21:30' },
-      ];
-    }
-
-    return [
-      { 
-        type: ShiftType.MORNING, 
-        label: shiftTimesData.morning.name, 
-        time: `${shiftTimesData.morning.startTime} - ${shiftTimesData.morning.endTime}` 
-      },
-      { 
-        type: ShiftType.AFTERNOON, 
-        label: shiftTimesData.afternoon.name, 
-        time: `${shiftTimesData.afternoon.startTime} - ${shiftTimesData.afternoon.endTime}` 
-      },
-      { 
-        type: ShiftType.EVENING, 
-        label: shiftTimesData.evening.name, 
-        time: `${shiftTimesData.evening.startTime} - ${shiftTimesData.evening.endTime}` 
-      },
-      { 
-        type: ShiftType.FULL_DAY, 
-        label: shiftTimesData.fullDay.name, 
-        time: `${shiftTimesData.fullDay.startTime} - ${shiftTimesData.fullDay.endTime}` 
-      },
-    ];
-  }, [shiftTimesData]);
+  // Define shift schedule structure
+  const shiftSchedule = [
+    { type: ShiftType.MORNING, label: 'Ca Sáng', time: '07:30 - 12:00' },
+    { type: ShiftType.AFTERNOON, label: 'Ca Chiều', time: '13:00 - 17:30' },
+    { type: ShiftType.EVENING, label: 'Ca Tối', time: '17:30 - 21:30' },
+    { type: ShiftType.FULL_DAY, label: 'Ca Cả Ngày', time: '07:30 - 21:30' },
+  ];
 
   // ==========================================
   // RENDER
@@ -187,7 +155,7 @@ export const EmployeeSchedulePage = () => {
       {/* MAIN CONTENT */}
       <main className="flex-1 px-6 pb-6 overflow-hidden mt-4 relative">
         <section className="relative w-full h-full bg-white rounded-[20px] overflow-hidden border border-solid border-[#102e3c] shadow-sm">
-          {(isLoading || isLoadingShiftTimes) ? (
+          {isLoading ? (
             <div className="flex justify-center items-center h-full">
               <div className="text-center">
                 <Loader2 className="h-10 w-10 animate-spin text-[#1a998f] mx-auto mb-3" />

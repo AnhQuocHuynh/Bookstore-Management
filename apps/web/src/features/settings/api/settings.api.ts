@@ -1,5 +1,5 @@
 import { apiClient } from "@/lib/axios";
-import type { StoreSettings, UpdateSettingsDto, ShiftTimesResponse } from "../types";
+import type { StoreSettings, UpdateSettingsDto } from "../types";
 
 export const settingsApi = {
   // Lấy toàn bộ cài đặt cửa hàng
@@ -11,12 +11,6 @@ export const settingsApi = {
   // Cập nhật cài đặt (partial update)
   updateSettings: async (data: UpdateSettingsDto): Promise<StoreSettings> => {
     const response = await apiClient.patch<StoreSettings>("/settings", data);
-    return response.data;
-  },
-
-  // Lấy thời gian các ca làm việc từ settings
-  getShiftTimes: async (): Promise<ShiftTimesResponse> => {
-    const response = await apiClient.get<ShiftTimesResponse>("/settings/shift-times");
     return response.data;
   },
 
