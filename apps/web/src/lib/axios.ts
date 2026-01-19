@@ -46,6 +46,22 @@ apiClient.interceptors.request.use(
       console.error("Error reading auth token:", error);
     }
 
+    // Debug: log Return Order-related requests
+    try {
+      const url = config.url || "";
+      const method = (config.method || "").toUpperCase();
+      if (url.includes("/return-orders") && ["POST", "PATCH", "DELETE"].includes(method)) {
+        console.log("[axios][ReturnOrders] Request", {
+          method,
+          url: `${config.baseURL || ""}${url}`,
+          data: config.data,
+          headers: config.headers,
+        });
+      }
+    } catch (logErr) {
+      console.warn("[axios] Debug logging failed:", logErr);
+    }
+
     return config;
   },
   (error) => {
@@ -55,8 +71,39 @@ apiClient.interceptors.request.use(
 
 // Response interceptor: Handle 401 errors
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    try {
+      const url = response.config?.url || "";
+      const method = (response.config?.method || "").toUpperCase();
+      if (url.includes("/return-orders") && ["POST", "PATCH", "DELETE"].includes(method)) {
+        console.log("[axios][ReturnOrders] Response", {
+          method,
+          url: `${response.config?.baseURL || ""}${url}`,
+          status: response.status,
+          data: response.data,
+        });
+      }
+    } catch (logErr) {
+      console.warn("[axios] Debug response logging failed:", logErr);
+    }
+    return response;
+  },
   (error: AxiosError) => {
+    try {
+      const url = error.config?.url || "";
+      const method = (error.config?.method || "").toUpperCase();
+      if (url.includes("/return-orders") && ["POST", "PATCH", "DELETE"].includes(method)) {
+        console.error("[axios][ReturnOrders] Error Response", {
+          method,
+          url: `${error.config?.baseURL || ""}${url}`,
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message,
+        });
+      }
+    } catch (logErr) {
+      console.warn("[axios] Debug error response logging failed:", logErr);
+    }
     if (error.response?.status === 401) {
       if (
         window.location.pathname !== "/auth/login" &&

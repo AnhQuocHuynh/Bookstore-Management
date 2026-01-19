@@ -323,14 +323,14 @@ export class ReturnOrdersService {
       this.ensureEditable(order);
 
       let newProduct: Product | null = null;
-      if (dto.type === ReturnExchangeDetailType.EXCHANGE) {
+      if (dto.newProductId) {
         newProduct = await productRepo.findOne({
           where: { id: dto.newProductId },
           relations: { inventory: true },
         });
 
         if (!newProduct) {
-          throw new NotFoundException('Không tìm thấy sản phẩm đổi.');
+          throw new NotFoundException('Không tìm thấy sản phẩm.');
         }
       }
 
