@@ -91,7 +91,7 @@ export default function Step3Security({ onBack }: Step3SecurityProps) {
                   <Button
                     type="button"
                     variant="ghost"
-                    className="absolute inset-y-0 right-3 flex items-center p-0
+                    className="absolute inset-y-1 right-3 flex items-center p-0
              bg-transparent hover:bg-transparent focus:bg-transparent active:bg-transparent"
                     onClick={() => setShowPassword(!showPassword)}
                   >
@@ -129,7 +129,7 @@ export default function Step3Security({ onBack }: Step3SecurityProps) {
                   <Button
                     type="button"
                     variant="ghost"
-                    className="absolute inset-y-0 right-3 flex items-center p-0
+                    className="absolute inset-y-1 right-3 flex items-center p-0
              bg-transparent hover:bg-transparent focus:bg-transparent active:bg-transparent"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   >
