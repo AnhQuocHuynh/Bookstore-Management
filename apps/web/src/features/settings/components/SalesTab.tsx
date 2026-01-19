@@ -1,6 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Receipt, Percent, CreditCard } from "lucide-react";
+import { Receipt, Percent, CreditCard, Loader2 } from "lucide-react";
+import { useEffect } from "react";
 import {
   Form,
   FormControl,
@@ -18,30 +19,77 @@ import {
   salesSettingsSchema,
   type SalesSettingsFormData,
 } from "../schema/sales.schema";
+import { useSettings, useUpdateSettings } from "../hooks/useSettings";
 import { toast } from "sonner";
 
-// Default values - sau này có thể lưu vào localStorage hoặc backend
-const DEFAULT_SALES_SETTINGS: SalesSettingsFormData = {
-  taxRate: 8, // 8% VAT tiêu chuẩn
-  receiptFooter: "Cảm ơn quý khách đã ủng hộ văn hóa đọc!\nHẹn gặp lại!",
-  enableCash: true,
-  enableCard: true,
-  enableBankTransfer: true,
-  enableMomo: true,
-  enableZaloPay: true,
-};
-
 export function SalesTab() {
+  const { data: settings, isLoading, error } = useSettings();
+  const updateMutation = useUpdateSettings();
+
   const form = useForm<SalesSettingsFormData>({
     resolver: zodResolver(salesSettingsSchema),
-    defaultValues: DEFAULT_SALES_SETTINGS,
+    defaultValues: {
+      taxRate: 8,
+      receiptFooter: "",
+      enableCash: true,
+      enableCard: true,
+      enableBankTransfer: true,
+      enableMomo: true,
+      enableZaloPay: true,
+    },
   });
 
-  const onSubmit = (data: SalesSettingsFormData) => {
-    // TODO: Khi backend có API, gọi API ở đây
-    console.log("Sales Settings:", data);
-    toast.success("Đã lưu cài đặt bán hàng thành công!");
+  // Populate form khi có data từ API
+  useEffect(() => {
+    if (settings?.pos) {
+      form.reset({
+        taxRate: settings.pos.vatRate ?? 8,
+        receiptFooter: settings.pos.receiptFooter ?? "",
+        enableCash: settings.pos.enableCash ?? true,
+        enableCard: settings.pos.enableCard ?? true,
+        enableBankTransfer: settings.pos.enableBankTransfer ?? true,
+        enableMomo: settings.pos.enableMomo ?? true,
+        enableZaloPay: settings.pos.enableZaloPay ?? true,
+      });
+    }
+  }, [settings, form]);
+
+  const onSubmit = async (data: SalesSettingsFormData) => {
+    try {
+      await updateMutation.mutateAsync({
+        pos: {
+          vatRate: data.taxRate,
+          receiptFooter: data.receiptFooter,
+          enableCash: data.enableCash,
+          enableCard: data.enableCard,
+          enableBankTransfer: data.enableBankTransfer,
+          enableMomo: data.enableMomo,
+          enableZaloPay: data.enableZaloPay,
+        },
+      });
+      toast.success("Đã lưu cài đặt bán hàng thành công!");
+    } catch (err) {
+      toast.error("Có lỗi xảy ra khi lưu cài đặt!");
+      console.error(err);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+        <span className="ml-2 text-muted-foreground">Đang tải...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12 text-red-500">
+        Không thể tải cài đặt. Vui lòng thử lại sau.
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -61,14 +109,14 @@ export function SalesTab() {
               <FormItem>
                 <FormLabel className="flex items-center gap-2">
                   <Percent className="h-4 w-4" />
-                  Thuế suất (%)
+                  Thuế VAT (%)
                 </FormLabel>
                 <FormControl>
                   <Input
                     type="number"
                     placeholder="8"
                     {...field}
-                    onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                   />
                 </FormControl>
                 <FormDescription>
@@ -218,15 +266,32 @@ export function SalesTab() {
             />
           </div>
 
-          <div className="flex justify-end gap-4">
+          <div className="flex justify-end gap-4 pt-4">
             <Button
               type="button"
               variant="outline"
-              onClick={() => form.reset()}
+              onClick={() => {
+                if (settings?.pos) {
+                  form.reset({
+                    taxRate: settings.pos.vatRate ?? 8,
+                    receiptFooter: settings.pos.receiptFooter ?? "",
+                    enableCash: settings.pos.enableCash ?? true,
+                    enableCard: settings.pos.enableCard ?? true,
+                    enableBankTransfer: settings.pos.enableBankTransfer ?? true,
+                    enableMomo: settings.pos.enableMomo ?? true,
+                    enableZaloPay: settings.pos.enableZaloPay ?? true,
+                  });
+                }
+              }}
             >
               Đặt lại
             </Button>
-            <Button type="submit">Lưu thay đổi</Button>
+            <Button type="submit" disabled={updateMutation.isPending}>
+              {updateMutation.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Lưu thay đổi
+            </Button>
           </div>
         </form>
       </Form>

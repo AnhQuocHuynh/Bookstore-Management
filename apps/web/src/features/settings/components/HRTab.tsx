@@ -1,6 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { DollarSign, Clock } from "lucide-react";
+import { DollarSign, Clock, Loader2 } from "lucide-react";
+import { useEffect } from "react";
 import {
   Form,
   FormControl,
@@ -17,30 +18,77 @@ import {
   hrSettingsSchema,
   type HRSettingsFormData,
 } from "../schema/hr.schema";
+import { useSettings, useUpdateSettings } from "../hooks/useSettings";
 import { toast } from "sonner";
 
-// Default values - sau này có thể lưu vào localStorage hoặc backend
-const DEFAULT_HR_SETTINGS: HRSettingsFormData = {
-  baseSalary: 4500000, // 4.5 triệu/tháng
-  morningShiftStart: "07:30",
-  morningShiftEnd: "12:00",
-  afternoonShiftStart: "13:00",
-  afternoonShiftEnd: "17:30",
-  eveningShiftStart: "17:30",
-  eveningShiftEnd: "21:30",
-};
-
 export function HRTab() {
+  const { data: settings, isLoading, error } = useSettings();
+  const updateMutation = useUpdateSettings();
+
   const form = useForm<HRSettingsFormData>({
     resolver: zodResolver(hrSettingsSchema),
-    defaultValues: DEFAULT_HR_SETTINGS,
+    defaultValues: {
+      baseSalary: 4500000,
+      morningShiftStart: "07:30",
+      morningShiftEnd: "12:00",
+      afternoonShiftStart: "13:00",
+      afternoonShiftEnd: "17:30",
+      eveningShiftStart: "17:30",
+      eveningShiftEnd: "21:30",
+    },
   });
 
-  const onSubmit = (data: HRSettingsFormData) => {
-    // TODO: Khi backend có API, gọi API ở đây
-    console.log("HR Settings:", data);
-    toast.success("Đã lưu cài đặt nhân sự thành công!");
+  // Populate form khi có data từ API
+  useEffect(() => {
+    if (settings?.hr) {
+      form.reset({
+        baseSalary: settings.hr.baseSalary ?? 4500000,
+        morningShiftStart: settings.hr.morningShiftStart ?? "07:30",
+        morningShiftEnd: settings.hr.morningShiftEnd ?? "12:00",
+        afternoonShiftStart: settings.hr.afternoonShiftStart ?? "13:00",
+        afternoonShiftEnd: settings.hr.afternoonShiftEnd ?? "17:30",
+        eveningShiftStart: settings.hr.eveningShiftStart ?? "17:30",
+        eveningShiftEnd: settings.hr.eveningShiftEnd ?? "21:30",
+      });
+    }
+  }, [settings, form]);
+
+  const onSubmit = async (data: HRSettingsFormData) => {
+    try {
+      await updateMutation.mutateAsync({
+        hr: {
+          baseSalary: data.baseSalary,
+          morningShiftStart: data.morningShiftStart,
+          morningShiftEnd: data.morningShiftEnd,
+          afternoonShiftStart: data.afternoonShiftStart,
+          afternoonShiftEnd: data.afternoonShiftEnd,
+          eveningShiftStart: data.eveningShiftStart,
+          eveningShiftEnd: data.eveningShiftEnd,
+        },
+      });
+      toast.success("Đã lưu cài đặt nhân sự thành công!");
+    } catch (err) {
+      toast.error("Có lỗi xảy ra khi lưu cài đặt!");
+      console.error(err);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+        <span className="ml-2 text-muted-foreground">Đang tải...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12 text-red-500">
+        Không thể tải cài đặt. Vui lòng thử lại sau.
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -67,7 +115,7 @@ export function HRTab() {
                     type="number"
                     placeholder="4500000"
                     {...field}
-                    onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                   />
                 </FormControl>
                 <FormDescription>
@@ -186,15 +234,32 @@ export function HRTab() {
             </div>
           </div>
 
-          <div className="flex justify-end gap-4">
+          <div className="flex justify-end gap-4 pt-4">
             <Button
               type="button"
               variant="outline"
-              onClick={() => form.reset()}
+              onClick={() => {
+                if (settings?.hr) {
+                  form.reset({
+                    baseSalary: settings.hr.baseSalary ?? 4500000,
+                    morningShiftStart: settings.hr.morningShiftStart ?? "07:30",
+                    morningShiftEnd: settings.hr.morningShiftEnd ?? "12:00",
+                    afternoonShiftStart: settings.hr.afternoonShiftStart ?? "13:00",
+                    afternoonShiftEnd: settings.hr.afternoonShiftEnd ?? "17:30",
+                    eveningShiftStart: settings.hr.eveningShiftStart ?? "17:30",
+                    eveningShiftEnd: settings.hr.eveningShiftEnd ?? "21:30",
+                  });
+                }
+              }}
             >
               Đặt lại
             </Button>
-            <Button type="submit">Lưu thay đổi</Button>
+            <Button type="submit" disabled={updateMutation.isPending}>
+              {updateMutation.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Lưu thay đổi
+            </Button>
           </div>
         </form>
       </Form>

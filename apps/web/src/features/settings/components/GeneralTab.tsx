@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Store, Phone, MapPin, Image, Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Store, Phone, MapPin, Mail, Globe, Loader2 } from "lucide-react";
+import { useEffect } from "react";
 import {
   Form,
   FormControl,
@@ -18,15 +18,12 @@ import {
   generalSettingsSchema,
   type GeneralSettingsFormData,
 } from "../schema/general.schema";
-import { useBookStoreSettings, useUpdateBookStore, useUploadLogo } from "../hooks/useSettings";
+import { useSettings, useUpdateSettings } from "../hooks/useSettings";
 import { toast } from "sonner";
 
 export function GeneralTab() {
-  const { data: bookStore, isLoading, error } = useBookStoreSettings();
-  const updateMutation = useUpdateBookStore();
-  const uploadLogoMutation = useUploadLogo();
-  const [logoPreview, setLogoPreview] = useState<string>("");
-  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const { data: settings, isLoading, error } = useSettings();
+  const updateMutation = useUpdateSettings();
 
   const form = useForm<GeneralSettingsFormData>({
     resolver: zodResolver(generalSettingsSchema),
@@ -41,46 +38,27 @@ export function GeneralTab() {
 
   // Populate form khi có data từ API
   useEffect(() => {
-    if (bookStore) {
+    if (settings?.general) {
       form.reset({
-        storeName: bookStore.name || "",
-        logo: bookStore.logoUrl || "",
-        contactPhone: bookStore.phoneNumber || "",
-        contactEmail: "", // Backend chưa có field này
-        address: bookStore.address || "",
+        storeName: settings.general.storeName || "",
+        logo: "",
+        contactPhone: settings.general.phone || "",
+        contactEmail: settings.general.email || "",
+        address: settings.general.address || "",
       });
-      setLogoPreview(bookStore.logoUrl || "");
     }
-  }, [bookStore, form]);
-
-  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setLogoFile(file);
-      const preview = URL.createObjectURL(file);
-      setLogoPreview(preview);
-    }
-  };
+  }, [settings, form]);
 
   const onSubmit = async (data: GeneralSettingsFormData) => {
     try {
-      let logoUrl = bookStore?.logoUrl;
-
-      // Upload logo nếu có file mới
-      if (logoFile) {
-        const uploadResult = await uploadLogoMutation.mutateAsync(logoFile);
-        logoUrl = uploadResult.url;
-      }
-
-      // Cập nhật thông tin cửa hàng
       await updateMutation.mutateAsync({
-        name: data.storeName,
-        phoneNumber: data.contactPhone,
-        address: data.address,
-        logoUrl: logoUrl,
+        general: {
+          storeName: data.storeName,
+          phone: data.contactPhone,
+          email: data.contactEmail,
+          address: data.address,
+        },
       });
-
-      setLogoFile(null);
       toast.success("Đã lưu thông tin cửa hàng thành công!");
     } catch (err) {
       toast.error("Có lỗi xảy ra khi lưu thông tin!");
@@ -100,7 +78,7 @@ export function GeneralTab() {
   if (error) {
     return (
       <div className="text-center py-12 text-red-500">
-        Không thể tải thông tin cửa hàng. Vui lòng thử lại sau.
+        Không thể tải cài đặt. Vui lòng thử lại sau.
       </div>
     );
   }
@@ -115,46 +93,7 @@ export function GeneralTab() {
       </div>
       <Separator />
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-          {/* Logo Preview */}
-          <div className="flex items-start gap-6">
-            <div className="flex-shrink-0">
-              <div className="w-24 h-24 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden bg-gray-50">
-                {logoPreview ? (
-                  <img
-                    src={logoPreview}
-                    alt="Logo"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <Image className="w-8 h-8 text-gray-400" />
-                )}
-              </div>
-            </div>
-            <div className="flex-1">
-              <FormField
-                control={form.control}
-                name="logo"
-                render={() => (
-                  <FormItem>
-                    <FormLabel>Logo cửa hàng</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleLogoChange}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Định dạng: JPG, PNG. Kích thước tối đa: 2MB
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-          </div>
-
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <FormField
             control={form.control}
             name="storeName"
@@ -197,6 +136,28 @@ export function GeneralTab() {
 
           <FormField
             control={form.control}
+            name="contactEmail"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="flex items-center gap-2">
+                  <Mail className="h-4 w-4" />
+                  Email
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    type="email"
+                    placeholder="contact@bookstore.com"
+                    {...field}
+                  />
+                </FormControl>
+                <FormDescription>Email chính thức của cửa hàng</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
             name="address"
             render={({ field }) => (
               <FormItem>
@@ -216,31 +177,26 @@ export function GeneralTab() {
             )}
           />
 
-          <div className="flex justify-end gap-4">
+          <div className="flex justify-end gap-4 pt-4">
             <Button
               type="button"
               variant="outline"
               onClick={() => {
-                if (bookStore) {
+                if (settings?.general) {
                   form.reset({
-                    storeName: bookStore.name || "",
-                    logo: bookStore.logoUrl || "",
-                    contactPhone: bookStore.phoneNumber || "",
-                    contactEmail: "",
-                    address: bookStore.address || "",
+                    storeName: settings.general.storeName || "",
+                    logo: "",
+                    contactPhone: settings.general.phone || "",
+                    contactEmail: settings.general.email || "",
+                    address: settings.general.address || "",
                   });
-                  setLogoPreview(bookStore.logoUrl || "");
-                  setLogoFile(null);
                 }
               }}
             >
               Đặt lại
             </Button>
-            <Button
-              type="submit"
-              disabled={updateMutation.isPending || uploadLogoMutation.isPending}
-            >
-              {(updateMutation.isPending || uploadLogoMutation.isPending) && (
+            <Button type="submit" disabled={updateMutation.isPending}>
+              {updateMutation.isPending && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
               Lưu thay đổi

@@ -1,50 +1,46 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { settingsApi } from "../api/settings.api";
-import { UpdateBookStoreDto } from "../types";
-import { useAuthStore } from "@/stores/useAuthStore";
+import type { UpdateSettingsDto } from "../types";
 
-// Query key
-export const SETTINGS_QUERY_KEY = "bookstore-settings";
+// Query keys
+export const SETTINGS_QUERY_KEY = ["store-settings"];
+export const SHIFT_TIMES_QUERY_KEY = ["shift-times"];
 
-// Hook lấy thông tin cửa hàng
-export function useBookStoreSettings() {
-  const currentStore = useAuthStore((state) => state.currentStore);
-
+// Hook lấy settings
+export function useSettings() {
   return useQuery({
-    queryKey: [SETTINGS_QUERY_KEY, currentStore?.id],
-    queryFn: () => {
-      if (!currentStore?.id) {
-        throw new Error("No store selected");
-      }
-      return settingsApi.getBookStoreDetail(currentStore.id);
-    },
-    enabled: !!currentStore?.id,
+    queryKey: SETTINGS_QUERY_KEY,
+    queryFn: () => settingsApi.getSettings(),
     staleTime: 5 * 60 * 1000, // 5 phút
   });
 }
 
-// Hook cập nhật thông tin cửa hàng
-export function useUpdateBookStore() {
+// Hook cập nhật settings
+export function useUpdateSettings() {
   const queryClient = useQueryClient();
-  const currentStore = useAuthStore((state) => state.currentStore);
 
   return useMutation({
-    mutationFn: (data: UpdateBookStoreDto) => {
-      if (!currentStore?.id) {
-        throw new Error("No store selected");
-      }
-      return settingsApi.updateBookStore(currentStore.id, data);
-    },
+    mutationFn: (data: UpdateSettingsDto) => settingsApi.updateSettings(data),
     onSuccess: () => {
-      // Invalidate cache để refetch data mới
-      queryClient.invalidateQueries({ queryKey: [SETTINGS_QUERY_KEY] });
+      // Invalidate cả settings và shift times vì HR settings ảnh hưởng đến shifts
+      queryClient.invalidateQueries({ queryKey: SETTINGS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: SHIFT_TIMES_QUERY_KEY });
     },
   });
 }
 
-// Hook upload logo
-export function useUploadLogo() {
+// Hook lấy thời gian các ca làm việc từ settings
+export function useShiftTimes() {
+  return useQuery({
+    queryKey: SHIFT_TIMES_QUERY_KEY,
+    queryFn: () => settingsApi.getShiftTimes(),
+    staleTime: 5 * 60 * 1000, // 5 phút
+  });
+}
+
+// Hook upload file
+export function useUploadFile() {
   return useMutation({
-    mutationFn: (file: File) => settingsApi.uploadLogo(file),
+    mutationFn: (file: File) => settingsApi.uploadFile(file),
   });
 }

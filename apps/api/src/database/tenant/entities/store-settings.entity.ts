@@ -1,5 +1,12 @@
-// Types matching backend entity
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
+// JSON types cho từng section
 export interface GeneralSettings {
   storeName?: string;
   slogan?: string;
@@ -43,35 +50,26 @@ export interface InventorySettings {
   enableEmailAlert?: boolean;
 }
 
-// Full settings object from API
-export interface StoreSettings {
-  id: string;
+@Entity('store_settings')
+export class StoreSettings {
+  @PrimaryGeneratedColumn('uuid')
+  readonly id: string;
+
+  @Column({ type: 'jsonb', default: {} })
   general: GeneralSettings;
+
+  @Column({ type: 'jsonb', default: {} })
   pos: PosSettings;
+
+  @Column({ type: 'jsonb', default: {} })
   hr: HrSettings;
+
+  @Column({ type: 'jsonb', default: {} })
   inventory: InventorySettings;
-  createdAt: string;
-  updatedAt: string;
-}
 
-// DTO for partial updates
-export interface UpdateSettingsDto {
-  general?: Partial<GeneralSettings>;
-  pos?: Partial<PosSettings>;
-  hr?: Partial<HrSettings>;
-  inventory?: Partial<InventorySettings>;
-}
+  @CreateDateColumn({ type: 'timestamp' })
+  readonly createdAt: Date;
 
-// Shift times from settings
-export interface ShiftTimeInfo {
-  name: string;
-  startTime: string;
-  endTime: string;
-}
-
-export interface ShiftTimesResponse {
-  morning: ShiftTimeInfo;
-  afternoon: ShiftTimeInfo;
-  evening: ShiftTimeInfo;
-  fullDay: ShiftTimeInfo;
+  @UpdateDateColumn({ type: 'timestamp' })
+  readonly updatedAt: Date;
 }

@@ -27,6 +27,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { PublishersModule } from './modules/publishers/publishers.module';
+import { SettingsModule } from './modules/settings/settings.module';
 
 @Module({
   imports: [
@@ -78,6 +79,7 @@ import { PublishersModule } from './modules/publishers/publishers.module';
     ReportsModule,
     CustomersModule,
     NotificationsModule,
+    SettingsModule,
   ],
 })
 export class AppModule {}
