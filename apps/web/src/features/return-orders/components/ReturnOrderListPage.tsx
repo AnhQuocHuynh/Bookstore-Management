@@ -7,11 +7,13 @@ import { useReturnOrders, useDeleteReturnOrder } from "../hooks/useReturnOrder";
 import { ReturnOrderTable, TableHeader } from "./ReturnOrderTable";
 import { ReturnOrderDetailPanel } from "./ReturnOrderDetailPanel";
 import { ReturnOrderListItem } from "../types";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 const { Option } = Select;
 
 export const ReturnOrderListPage = () => {
   const navigate = useNavigate();
+  const userRole = (useAuthStore((s) => s.user?.role) as "OWNER" | "EMPLOYEE" | "ADMIN" | undefined) || "EMPLOYEE";
   
   // --- States ---
   const [searchText, setSearchText] = useState("");
@@ -82,31 +84,35 @@ export const ReturnOrderListPage = () => {
               Đơn Trả/Đổi Hàng
             </h1>
             <div className="flex items-center gap-2 flex-wrap">
-              <Button
-                onClick={handleDelete}
-                danger
-                disabled={!selectedOrder || selectedOrder.status !== "pending"}
-                className="h-10 rounded-xl font-semibold"
-                title={selectedOrder && selectedOrder.status !== "pending" ? "Chỉ có thể xóa đơn ở trạng thái chờ duyệt" : ""}
-              >
-                Xóa
-              </Button>
-              <Button
-                onClick={handleEdit}
-                disabled={!selectedOrder || selectedOrder.status !== "pending"}
-                className="h-10 rounded-xl font-semibold border-teal-600 text-teal-700"
-                title={selectedOrder && selectedOrder.status !== "pending" ? "Chỉ có thể sửa đơn ở trạng thái chờ duyệt" : ""}
-              >
-                Sửa
-              </Button>
-              <Button
-                type="primary"
-                icon={<Plus size={18} />}
-                className="bg-[#1a998f] hover:bg-[#158f85] h-10 px-4 rounded-xl font-bold border-none"
-                onClick={handleOpenCreateModal}
-              >
-                Tạo Mới
-              </Button>
+              {userRole !== "OWNER" && (
+                <>
+                  <Button
+                    onClick={handleDelete}
+                    danger
+                    disabled={!selectedOrder || selectedOrder.status !== "pending"}
+                    className="h-10 rounded-xl font-semibold"
+                    title={selectedOrder && selectedOrder.status !== "pending" ? "Chỉ có thể xóa đơn ở trạng thái chờ duyệt" : ""}
+                  >
+                    Xóa
+                  </Button>
+                  <Button
+                    onClick={handleEdit}
+                    disabled={!selectedOrder || selectedOrder.status !== "pending"}
+                    className="h-10 rounded-xl font-semibold border-teal-600 text-teal-700"
+                    title={selectedOrder && selectedOrder.status !== "pending" ? "Chỉ có thể sửa đơn ở trạng thái chờ duyệt" : ""}
+                  >
+                    Sửa
+                  </Button>
+                  <Button
+                    type="primary"
+                    icon={<Plus size={18} />}
+                    className="bg-[#1a998f] hover:bg-[#158f85] h-10 px-4 rounded-xl font-bold border-none"
+                    onClick={handleOpenCreateModal}
+                  >
+                    Tạo Mới
+                  </Button>
+                </>
+              )}
             </div>
           </div>
 

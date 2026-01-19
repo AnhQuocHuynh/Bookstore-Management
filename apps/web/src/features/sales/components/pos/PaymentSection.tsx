@@ -9,7 +9,7 @@ import { Banknote, CreditCard, QrCode, X, Printer, Loader2 } from "lucide-react"
 import { formatCurrency, formatDateTime } from "@/utils";
 import { PaymentMethod } from "@/features/sales/types/pos.types";
 
-const QUICK_MONEY = [10000, 20000, 50000, 100000, 200000, 500000];
+const QUICK_MONEY = [1000, 2000, 5000, 10000, 20000, 50000, 100000, 200000, 500000];
 
 interface PaymentSectionProps {
     currentTime: Date;
@@ -156,7 +156,7 @@ export const PaymentSection = ({
                 </div>
                 <Button
                     disabled={isCalculating || isPaying || finalAmount <= 0}
-                    className="w-full h-12 text-lg font-bold bg-cyan-950 hover:bg-cyan-900 shadow-lg flex items-center gap-2 uppercase disabled:opacity-70 disabled:cursor-not-allowed"
+                    className="w-full h-12 text-lg font-bold text-white bg-cyan-950 hover:bg-cyan-900 shadow-lg flex items-center gap-2 uppercase disabled:opacity-70 disabled:cursor-not-allowed"
                     onClick={onPayment}
                 >
                     {isPaying ? (

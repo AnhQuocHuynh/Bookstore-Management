@@ -18,8 +18,10 @@ import {
 
 import { Supplier, SupplierTableRow, SupplierFormData } from "../types";
 import { ActionButton } from "@/features/inventory/components/ActionButton"; // Tái sử dụng ActionButton nếu muốn
+import { useAuthStore } from "@/stores/useAuthStore";
 
 export const SuppliersPage = () => {
+  const userRole = (useAuthStore((s) => s.user?.role) as "OWNER" | "EMPLOYEE" | "ADMIN" | undefined) || "EMPLOYEE";
   // --- States ---
   const [keyword, setKeyword] = useState("");
   const debouncedKeyword = useDebounce(keyword, 300);
@@ -127,24 +129,24 @@ export const SuppliersPage = () => {
             <h1 className="font-bold text-[#102e3c] text-2xl sm:text-3xl lg:text-4xl">
               Nhà Cung Cấp
             </h1>
-            <div className="flex items-center gap-2.5">
-              {/* Các nút chức năng */}
-              {/* Bạn có thể dùng ActionButton tái sử dụng hoặc Button thường của AntD */}
-              <Button onClick={handleDelete} danger disabled={!selectedSupplier} className="h-10 rounded-xl font-semibold">
-                Xóa
-              </Button>
-              <Button onClick={() => selectedSupplier ? setIsEditOpen(true) : message.warning("Chọn NCC để sửa")} disabled={!selectedSupplier} className="h-10 rounded-xl font-semibold border-teal-600 text-teal-700">
-                Sửa
-              </Button>
-              <Button
-                type="primary"
-                icon={<Plus size={18} />}
-                className="bg-[#1a998f] hover:bg-[#158f85] h-10 px-4 rounded-xl font-bold border-none"
-                onClick={() => setIsAddOpen(true)}
-              >
-                Tạo Mới
-              </Button>
-            </div>
+            {userRole === "OWNER" && (
+              <div className="flex items-center gap-2.5">
+                <Button onClick={handleDelete} danger disabled={!selectedSupplier} className="h-10 rounded-xl font-semibold">
+                  Xóa
+                </Button>
+                <Button onClick={() => selectedSupplier ? setIsEditOpen(true) : message.warning("Chọn NCC để sửa")} disabled={!selectedSupplier} className="h-10 rounded-xl font-semibold border-teal-600 text-teal-700">
+                  Sửa
+                </Button>
+                <Button
+                  type="primary"
+                  icon={<Plus size={18} />}
+                  className="bg-[#1a998f] hover:bg-[#158f85] h-10 px-4 rounded-xl font-bold border-none"
+                  onClick={() => setIsAddOpen(true)}
+                >
+                  Tạo Mới
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Filter Bar */}
@@ -209,18 +211,22 @@ export const SuppliersPage = () => {
       </main>
 
       {/* --- MODALS --- */}
-      <SupplierAddPanel
-        isOpen={isAddOpen}
-        onClose={() => setIsAddOpen(false)}
-        onSubmit={handleCreate}
-      />
+      {userRole === "OWNER" && (
+        <SupplierAddPanel
+          isOpen={isAddOpen}
+          onClose={() => setIsAddOpen(false)}
+          onSubmit={handleCreate}
+        />
+      )}
 
-      <SupplierEditPanel
-        isOpen={isEditOpen}
-        onClose={() => setIsEditOpen(false)}
-        onSubmit={handleUpdate}
-        initialData={selectedFormData}
-      />
+      {userRole === "OWNER" && (
+        <SupplierEditPanel
+          isOpen={isEditOpen}
+          onClose={() => setIsEditOpen(false)}
+          onSubmit={handleUpdate}
+          initialData={selectedFormData}
+        />
+      )}
     </div>
   );
 };
