@@ -34,12 +34,13 @@ const menuItems: MenuItem[] = [
       },
       {
         path: "/dashboard/products/return-orders", label: "Trả/Đổi hàng",
-        children: 
-        [
-          { path: "/dashboard/products/return-orders/list", label: "Danh sách trả/đổi hàng" },
-          { path: "/dashboard/products/return-orders/create", label: "Tạo trả/đổi hàng" }
-        ]
-      }
+        children:
+          [
+            { path: "/dashboard/products/return-orders/list", label: "Danh sách trả/đổi hàng" },
+            { path: "/dashboard/products/return-orders/create", label: "Tạo trả/đổi hàng" }
+          ]
+      },
+      { path: "/inventory/logs", label: "Nhật ký tồn kho" }
     ],
   },
   {

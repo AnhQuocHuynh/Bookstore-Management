@@ -38,6 +38,7 @@ import { EmployeeReportView } from "@/features/reports/components/EmployeeReport
 import { ReturnOrderListPage } from "@/features/return-orders/components";
 import { CreateReturnOrderPage } from "@/features/return-orders/components/CreateReturnOrderPage";
 import { EditReturnOrderPage } from "@/features/return-orders/components/EditReturnOrderPage";
+import { InventoryLogsPage } from "@/features/inventory/components/InventoryLogsPage";
 
 // Select Store Page (Semi-protected: requires token but no store)
 // const SelectStorePage = () => (
@@ -123,25 +124,25 @@ export const AppRoutes = () => {
         <Route
           path="/dashboard/products/return-orders/list"
           element={
-              <MainLayout>
-                <ReturnOrderListPage />
-                </MainLayout>
+            <MainLayout>
+              <ReturnOrderListPage />
+            </MainLayout>
           }
         />
         <Route
           path="/dashboard/products/return-orders/create"
           element={
-              <MainLayout>
-                <CreateReturnOrderPage />
-                </MainLayout>
+            <MainLayout>
+              <CreateReturnOrderPage />
+            </MainLayout>
           }
         />
         <Route
           path="/dashboard/products/return-orders/edit/:orderId"
           element={
-              <MainLayout>
-                <EditReturnOrderPage />
-                </MainLayout>
+            <MainLayout>
+              <EditReturnOrderPage />
+            </MainLayout>
           }
         />
         <Route
@@ -263,6 +264,16 @@ export const AppRoutes = () => {
             </MainLayout>
           }
         />
+
+        <Route
+          path="/inventory/logs"
+          element={
+            <MainLayout>
+              <InventoryLogsPage />
+            </MainLayout>
+          }
+        />
+
 
       </Route>
 

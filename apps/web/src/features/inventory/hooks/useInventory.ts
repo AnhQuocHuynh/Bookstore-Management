@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { inventoryApi } from "../api/inventory";
-import { InventoryParams } from "../types";
+import { InventoryLogParams, InventoryParams } from "../types";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { message } from "antd";
 
@@ -84,5 +84,19 @@ export const useUpdateProduct = () => {
         message.error("Lỗi khi cập nhật sản phẩm");
       }
     },
+  });
+};
+
+export const useInventoryLogs = (params: InventoryLogParams) => {
+  // Clean params
+  const cleanParams = Object.fromEntries(
+    Object.entries(params).filter(([_, v]) => v != null && v !== "")
+  );
+
+  return useQuery({
+    queryKey: ["inventory-logs", cleanParams],
+    queryFn: () => inventoryApi.getLogs(cleanParams),
+    staleTime: 1000 * 60, // 1 phút
+    placeholderData: (prev) => prev, // Giữ data cũ khi loading trang mới
   });
 };
