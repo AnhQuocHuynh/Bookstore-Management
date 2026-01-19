@@ -217,10 +217,15 @@ export const EmployeeListPage = () => {
                 open={isAddOpen}
                 onCancel={() => setIsAddOpen(false)}
                 footer={null}
-                width={1100}
+                width={800}
                 destroyOnClose
                 centered
-                bodyStyle={{ padding: 0, backgroundColor: "#f7f9fa" }}
+                closeIcon={<span className="text-3xl text-[#102e3c] cursor-pointer hover:opacity-70">×</span>}
+                styles={{
+                    body: { backgroundColor: "#D4E5E4", padding: 0 },
+                    mask: { backgroundColor: "rgba(16, 46, 60, 0.5)" },
+                }}
+                title={null}
             >
                 <EmployeeAddPage
                     isModal

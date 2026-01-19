@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Modal, Form, Input, DatePicker, Button, message, Spin, Select, Switch } from "antd";
+import { Modal, Form, Input, DatePicker, Button, message, Select, Switch } from "antd";
 import { EmployeeFormData } from "../types";
-import { uploadApi } from "@/api/upload";
 import dayjs from "dayjs";
 
 interface EmployeeEditPanelProps {
@@ -18,8 +17,6 @@ export const EmployeeEditPanel: React.FC<EmployeeEditPanelProps> = ({
     initialData,
 }) => {
     const [form] = Form.useForm();
-    const [avatarUrl, setAvatarUrl] = useState<string>("");
-    const [rawFile, setRawFile] = useState<File | null>(null);
     const [isUploading, setIsUploading] = useState(false);
     const [isDirty, setIsDirty] = useState(false);
 
@@ -34,19 +31,15 @@ export const EmployeeEditPanel: React.FC<EmployeeEditPanelProps> = ({
                 role: initialData.role,
                 isActive: initialData.isActive,
             });
-            setAvatarUrl(initialData.avatarUrl || "");
-            setRawFile(null);
             setIsDirty(false);
         } else if (!isOpen) {
             form.resetFields();
-            setAvatarUrl("");
-            setRawFile(null);
             setIsDirty(false);
         }
     }, [isOpen, initialData, form]);
 
     const handleClose = () => {
-        if (isDirty || rawFile) {
+        if (isDirty) {
             Modal.confirm({
                 title: "Bạn có chắc muốn hủy những thay đổi?",
                 okText: "Có",
@@ -58,31 +51,10 @@ export const EmployeeEditPanel: React.FC<EmployeeEditPanelProps> = ({
         }
     };
 
-    const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            setRawFile(file);
-            const previewUrl = URL.createObjectURL(file);
-            setAvatarUrl(previewUrl);
-            setIsDirty(true);
-        }
-    };
-
     const handleSubmit = async () => {
         try {
             const values = await form.validateFields();
             setIsUploading(true);
-
-            let finalAvatarUrl = avatarUrl;
-            if (rawFile) {
-                try {
-                    finalAvatarUrl = await uploadApi.uploadFile(rawFile);
-                } catch (error) {
-                    message.error("Upload ảnh thất bại. Vui lòng thử lại.");
-                    setIsUploading(false);
-                    return;
-                }
-            }
 
             const formData: Partial<EmployeeFormData> = {
                 fullName: values.fullName,
@@ -90,7 +62,6 @@ export const EmployeeEditPanel: React.FC<EmployeeEditPanelProps> = ({
                 phone: values.phone,
                 address: values.address,
                 dateOfBirth: values.dateOfBirth ? values.dateOfBirth.toISOString() : undefined,
-                avatarUrl: finalAvatarUrl || undefined,
             };
 
             // Include role and isActive so parent can handle them separately
@@ -103,7 +74,6 @@ export const EmployeeEditPanel: React.FC<EmployeeEditPanelProps> = ({
             onSubmit(completeData);
 
             setIsDirty(false);
-            setRawFile(null);
         } catch (error) {
             message.error("Vui lòng kiểm tra lại thông tin");
         } finally {
@@ -115,7 +85,7 @@ export const EmployeeEditPanel: React.FC<EmployeeEditPanelProps> = ({
         <Modal
             open={isOpen}
             onCancel={handleClose}
-            width={1000}
+            width={800}
             centered
             footer={null}
             destroyOnClose={true}
@@ -131,30 +101,8 @@ export const EmployeeEditPanel: React.FC<EmployeeEditPanelProps> = ({
             <div className="bg-[#D4E5E4] rounded-xl p-8 relative" style={{ zIndex: 1 }}>
                 <h2 className="text-center text-3xl font-bold text-[#102e3c] mb-8">Cập Nhật Thông Tin Nhân Viên</h2>
 
-                <div className="flex gap-8 justify-center">
-                    {/* Avatar Upload Area */}
-                    <div className="flex-shrink-0 w-[280px] flex flex-col items-center">
-                        <div className="relative w-64 h-64 bg-gray-300 rounded-full border-4 border-[#102e3c] flex items-center justify-center overflow-hidden group cursor-pointer hover:border-[#1a998f] transition-colors">
-                            {avatarUrl ? (
-                                <img src={avatarUrl} alt="Preview" className="w-full h-full object-cover" />
-                            ) : (
-                                <svg className="w-20 h-20 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                                </svg>
-                            )}
-                            <input type="file" accept="image/*" onChange={handleAvatarChange} className="absolute inset-0 opacity-0 cursor-pointer" />
-
-                            {/* Loading overlay khi đang upload */}
-                            {isUploading && (
-                                <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
-                                    <Spin size="large" />
-                                </div>
-                            )}
-                        </div>
-                        <p className="text-center text-sm text-[#102e3c] mt-4">Chọn ảnh đại diện</p>
-                    </div>
-
-                    <div className="flex-1">
+                <div className="flex justify-center">
+                    <div className="w-full max-w-md">
                         <Form form={form} layout="vertical" requiredMark={false} className="space-y-4" onValuesChange={() => setIsDirty(true)}>
                             <Form.Item
                                 name="fullName"
