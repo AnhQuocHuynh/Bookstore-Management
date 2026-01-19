@@ -6,8 +6,8 @@ import {
   IsArray,
   IsEnum,
   IsNumber,
+  Min,
   IsOptional,
-  IsPositive,
   IsUUID,
   ValidateNested,
 } from 'class-validator';
@@ -60,8 +60,8 @@ export class CreateTransactionDto {
       message: 'Số tiền khách trả phải là dạng số',
     },
   )
-  @IsPositive({
-    message: 'Số tiền khách trả phải là số dương',
+  @Min(0, {
+    message: 'Số tiền khách trả phải là số không âm',
   })
   readonly paidAmount: number;
 
@@ -75,8 +75,8 @@ export class CreateTransactionDto {
       message: 'Số tiền trả cho khách phải là dạng số',
     },
   )
-  @IsPositive({
-    message: 'Số tiền trả cho khách phải là số dương',
+  @Min(0, {
+    message: 'Số tiền trả cho khách phải là số không âm',
   })
   readonly changeAmount?: number;
 
@@ -101,8 +101,8 @@ export class CreateTransactionDto {
       message: 'Tổng số tiền phải trả phải là dạng số',
     },
   )
-  @IsPositive({
-    message: 'Tổng số tiền phải trả phải là số dương',
+  @Min(0, {
+    message: 'Tổng số tiền phải trả phải là số không âm',
   })
   readonly finalAmount: number;
 
@@ -117,8 +117,8 @@ export class CreateTransactionDto {
       message: 'Tổng số tiền tax phải là dạng số',
     },
   )
-  @IsPositive({
-    message: 'Tổng số tiền tax phải là số dương',
+  @Min(0, {
+    message: 'Tổng số tiền tax phải là số không âm',
   })
   readonly taxAmount: number;
 
@@ -133,8 +133,8 @@ export class CreateTransactionDto {
       message: 'Tổng số tiền ban đầu phải là dạng số',
     },
   )
-  @IsPositive({
-    message: 'Tổng số tiền ban đầu phải là số dương',
+  @Min(0, {
+    message: 'Tổng số tiền ban đầu phải là số không âm',
   })
   readonly totalAmount: number;
 
@@ -143,7 +143,7 @@ export class CreateTransactionDto {
     example: 'id-1',
   })
   @IsOptional()
-  @IsUUID('4', {
+  @IsUUID('all', {
     message: 'Mã khách hàng không hợp lệ',
   })
   readonly customerId?: string;

@@ -2,6 +2,7 @@ import React, { useState, useMemo } from "react";
 import { Button, Card, Input, Select, Table, message, Typography, Tag, Divider, Tooltip } from "antd";
 import { Plus, Save, Trash2, ArrowLeft, Edit } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 import { useSuppliers } from "@/features/suppliers/hooks/useSuppliers";
 import { useCreatePurchaseOrder } from "../hooks/usePurchaseOrder";
@@ -12,6 +13,17 @@ const { Title } = Typography;
 
 export const CreatePurchaseOrderPage = () => {
   const navigate = useNavigate();
+  const userRole = (useAuthStore((s) => s.user?.role) as "OWNER" | "EMPLOYEE" | "ADMIN" | undefined) || "EMPLOYEE";
+
+  if (userRole === "OWNER") {
+    return (
+      <div className="p-6 max-w-4xl mx-auto text-center">
+        <h1 className="text-2xl font-bold text-[#102e3c] mb-3">Tạo phiếu nhập</h1>
+        <p className="text-gray-600">Chỉ nhân viên mới được tạo phiếu nhập.</p>
+        <Button className="mt-4" type="primary" onClick={() => navigate(-1)}>Quay lại</Button>
+      </div>
+    );
+  }
   
   // --- States ---
   const [supplierId, setSupplierId] = useState<string | null>(null);
@@ -121,9 +133,10 @@ export const CreatePurchaseOrderPage = () => {
             ...(item.type === 'book' ? {
               createBookDto: {
                 isbn: item.isbn!.trim(),
-                authorId: item.authorId!.trim(), // Trim UUID
-                publisherId: item.publisherId!.trim(), // Trim UUID
+                authorId: item.authorId!.trim(),
+                publisherId: item.publisherId!.trim(),
                 publicationDate: item.publicationDate || undefined,
+                coverImageUrl: cleanImageUrl,
                 edition: item.edition?.trim() || undefined,
                 language: item.language?.trim() || undefined,
               } as any 

@@ -50,6 +50,7 @@ export interface CreatePurchaseOrderDto {
                 authorId: string;
                 publisherId: string;
                 publicationDate?: string;
+                coverImageUrl?: string;
                 edition?: string;
                 language?: string;
             };

@@ -1,12 +1,12 @@
 import React, { useState, useMemo } from "react";
 import { message, Select, Input, Modal, Button } from "antd";
-import { Search, X, Plus } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
 import { InventoryTable, TableHeader } from "./InventoryTable";
 import { InventoryDetailPanel } from "./InventoryDetailPanel";
 import { SorterButton } from "./SorterButton";
-import { InventoryAddPanel } from "./InventoryAddPanel";
 import { InventoryEditPanel } from "./InventoryEditPanel";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 import {
   useInventory,
@@ -21,6 +21,7 @@ import { InventoryItem, InventoryTableRow, InventoryFormData } from "../types";
 const { Option } = Select;
 
 export const InventoryPage = () => {
+  const userRole = (useAuthStore((s) => s.user?.role) as "OWNER" | "EMPLOYEE" | "ADMIN" | undefined) || "EMPLOYEE";
   // --- States ---
   const [keyword, setKeyword] = useState("");
   const debouncedKeyword = useDebounce(keyword, 500);
@@ -190,23 +191,26 @@ export const InventoryPage = () => {
             <h1 className="font-bold text-[#102e3c] text-2xl sm:text-3xl lg:text-4xl">Tồn Kho</h1>
             <div className="flex items-center gap-2.5 flex-wrap">
               <SorterButton onSortChange={handleSortChange} currentSort={sortBy} currentSortOrder={sortOrder} />
+              {userRole !== "OWNER" && (
+                <>
+                  <Button 
+                    onClick={handleDelete} 
+                    danger 
+                    disabled={!selectedItem} 
+                    className="h-10 rounded-xl font-semibold"
+                  >
+                    Xóa
+                  </Button>
 
-              <Button 
-                onClick={handleDelete} 
-                danger 
-                disabled={!selectedItem} 
-                className="h-10 rounded-xl font-semibold"
-              >
-                Xóa
-              </Button>
-
-              <Button 
-                onClick={() => selectedItem ? setIsEditPanelOpen(true) : message.warning("Vui lòng chọn sản phẩm")} 
-                disabled={!selectedItem} 
-                className="h-10 rounded-xl font-semibold border-teal-600 text-teal-700"
-              >
-                Sửa
-              </Button>
+                  <Button 
+                    onClick={() => selectedItem ? setIsEditPanelOpen(true) : message.warning("Vui lòng chọn sản phẩm")} 
+                    disabled={!selectedItem} 
+                    className="h-10 rounded-xl font-semibold border-teal-600 text-teal-700"
+                  >
+                    Sửa
+                  </Button>
+                </>
+              )}
             </div>
           </div>
 
@@ -288,12 +292,14 @@ export const InventoryPage = () => {
       </main>
 
       {/* --- Modals --- */}
-      <InventoryEditPanel
-        isOpen={isEditPanelOpen}
-        onClose={() => setIsEditPanelOpen(false)}
-        onSubmit={handleUpdate}
-        initialData={selectedFormData}
-      />
+      {userRole !== "OWNER" && (
+        <InventoryEditPanel
+          isOpen={isEditPanelOpen}
+          onClose={() => setIsEditPanelOpen(false)}
+          onSubmit={handleUpdate}
+          initialData={selectedFormData}
+        />
+      )}
     </div>
   );
 };

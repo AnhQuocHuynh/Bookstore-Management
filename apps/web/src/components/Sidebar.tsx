@@ -1,6 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { useState } from "react";
 import StoreModal from "@/components/StoreModal"; // Đảm bảo đường dẫn import đúng
+import { useAuthStore } from "@/stores/useAuthStore";
 
 interface SidebarProps {
   onItemClick?: () => void;
@@ -12,77 +13,84 @@ interface MenuItem {
   label: string;
   icon?: string;
   children?: MenuItem[];
+  visibleFor?: ("OWNER" | "EMPLOYEE" | "ADMIN")[];
 }
 
 const menuItems: MenuItem[] = [
-  { path: "/dashboard", label: "Tổng quan", icon: "dashboard" },
+  { path: "/dashboard", label: "Tổng quan", icon: "dashboard", visibleFor: ["OWNER", "EMPLOYEE"] },
   {
     path: "/dashboard/products",
     label: "Sản phẩm",
     icon: "menu_book",
+    visibleFor: ["OWNER", "EMPLOYEE"],
     children: [
-      { path: "/dashboard/products/inventories", label: "Tồn kho" },
+      { path: "/dashboard/products/inventories", label: "Tồn kho", visibleFor: ["OWNER", "EMPLOYEE"] },
       // Mục này có children -> Cần logic đệ quy để hiển thị
       {
         path: "/dashboard/products/display",
         label: "Hàng trưng bày",
+        visibleFor: ["OWNER", "EMPLOYEE"],
         children: [
-          { path: "/dashboard/products/display/list", label: "Danh sách kệ" },
-          { path: "/dashboard/products/display/filter", label: "Tìm kiếm SP" },
-          { path: "/dashboard/products/display/history", label: "Lịch sử" },
+          { path: "/dashboard/products/display/list", label: "Danh sách kệ", visibleFor: ["OWNER", "EMPLOYEE"] },
+          { path: "/dashboard/products/display/filter", label: "Tìm kiếm SP", visibleFor: ["OWNER", "EMPLOYEE"] },
+          { path: "/dashboard/products/display/history", label: "Lịch sử", visibleFor: ["OWNER", "EMPLOYEE"] },
         ]
       },
       {
         path: "/dashboard/products/return-orders", label: "Trả/Đổi hàng",
+        visibleFor: ["OWNER", "EMPLOYEE"],
         children:
           [
-            { path: "/dashboard/products/return-orders/list", label: "Danh sách trả/đổi hàng" },
-            { path: "/dashboard/products/return-orders/create", label: "Tạo trả/đổi hàng" }
+            { path: "/dashboard/products/return-orders/list", label: "Danh sách trả/đổi hàng", visibleFor: ["OWNER", "EMPLOYEE"] },
+            { path: "/dashboard/products/return-orders/create", label: "Tạo trả/đổi hàng", visibleFor: ["EMPLOYEE"] }
           ]
-      },
-      { path: "/inventory/logs", label: "Nhật ký tồn kho" }
+      }
     ],
   },
   {
     path: "/purchase-orders",
     label: "Nhập hàng",
     icon: "inventory",
+    visibleFor: ["OWNER", "EMPLOYEE"],
     children: [
-      { path: "/purchase-orders/create", label: "Tạo phiếu nhập" },
-      { path: "/purchase-orders/list", label: "Danh sách phiếu nhập" },
+      { path: "/purchase-orders/create", label: "Tạo phiếu nhập", visibleFor: ["EMPLOYEE"] },
+      { path: "/purchase-orders/list", label: "Danh sách phiếu nhập", visibleFor: ["OWNER", "EMPLOYEE"] },
     ],
   },
   {
     path: "/sales",
     label: "Giao dịch",
     icon: "receipt_long",
+    visibleFor: ["OWNER", "EMPLOYEE"],
     children: [
-      { path: "/sales/create", label: "Tạo giao dịch" },
-      { path: "/sales/list", label: "Danh sách giao dịch" },
+      { path: "/sales/create", label: "Tạo giao dịch", visibleFor: ["EMPLOYEE"] },
+      { path: "/sales/list", label: "Danh sách giao dịch", visibleFor: ["OWNER", "EMPLOYEE"] },
     ],
   },
-  { path: "/dashboard/customers", label: "Khách hàng", icon: "groups" },
+  { path: "/dashboard/customers", label: "Khách hàng", icon: "groups", visibleFor: ["OWNER", "EMPLOYEE"] },
   {
     path: "/dashboard/employees",
     label: "Nhân viên",
     icon: "badge",
+    visibleFor: ["OWNER"],
     children: [
-      { path: "/dashboard/employees/schedule", label: "Thời gian biểu" },
-      { path: "/dashboard/employees/list", label: "Danh sách nhân viên" },
+      { path: "/dashboard/employees/schedule", label: "Thời gian biểu", visibleFor: ["OWNER"] },
+      { path: "/dashboard/employees/list", label: "Danh sách nhân viên", visibleFor: ["OWNER"] },
     ],
   },
-  { path: "/dashboard/suppliers", label: "Nhà cung cấp", icon: "local_shipping" },
-  { path: "/dashboard/categories", label: "Danh mục", icon: "category" },
-  { path: "/dashboard/publishers", label: "Nhà xuất bản", icon: "public" },
-  { path: "/dashboard/authors", label: "Tác giả", icon: "person" },
+  { path: "/dashboard/suppliers", label: "Nhà cung cấp", icon: "local_shipping", visibleFor: ["OWNER", "EMPLOYEE"] },
+  { path: "/dashboard/categories", label: "Danh mục", icon: "category", visibleFor: ["OWNER", "EMPLOYEE"] },
+  { path: "/dashboard/publishers", label: "Nhà xuất bản", icon: "public", visibleFor: ["OWNER", "EMPLOYEE"] },
+  { path: "/dashboard/authors", label: "Tác giả", icon: "person", visibleFor: ["OWNER", "EMPLOYEE"] },
   {
     path: "/reports",
     label: "Thống kê",
     icon: "pie_chart",
+    visibleFor: ["OWNER", "EMPLOYEE"],
     children: [
-      { path: "/reports/revenue", label: "Doanh thu" },
-      { path: "/reports/stocks", label: "Tồn kho" },
-      { path: "/reports/employees", label: "Nhân viên" },
+      { path: "/reports/revenue", label: "Doanh thu", visibleFor: ["OWNER", "EMPLOYEE"] },
+      { path: "/reports/stocks", label: "Tồn kho", visibleFor: ["OWNER", "EMPLOYEE"] },
+      { path: "/reports/employees", label: "Nhân viên", visibleFor: ["OWNER"] },
     ],
   },
 ];
@@ -90,6 +98,14 @@ const menuItems: MenuItem[] = [
 const Sidebar = ({ onItemClick }: SidebarProps) => {
   const location = useLocation();
   const [openMenus, setOpenMenus] = useState<string[]>([]);
+  const user = useAuthStore((state) => state.user);
+
+  const userRole = (user?.role as "OWNER" | "EMPLOYEE" | "ADMIN") || "EMPLOYEE";
+
+  const isItemVisible = (item: MenuItem): boolean => {
+    if (!item.visibleFor) return true;
+    return item.visibleFor.includes(userRole);
+  };
 
   // Kiểm tra xem path hiện tại có active không (bao gồm cả logic cho con)
   const isActive = (path: string) => location.pathname === path;
@@ -105,6 +121,8 @@ const Sidebar = ({ onItemClick }: SidebarProps) => {
 
   // --- HÀM RENDER ĐỆ QUY (QUAN TRỌNG) ---
   const renderMenuItem = (item: MenuItem, level: number = 0) => {
+    if (!isItemVisible(item)) return null;
+
     const hasChildren = item.children && item.children.length > 0;
     const isOpen = openMenus.includes(item.path);
 
