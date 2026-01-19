@@ -1,6 +1,7 @@
 // src/features/auth/api/bookstore.api.ts
 import { apiClient } from "@/lib/axios";
 import { BookStore } from "../types/bookstore.types";
+import type { CreateBookStoreDto } from "../types";
 
 // export const bookstoreApi = {
 //     getAll: async (): Promise<BookStore[]> => {
@@ -15,6 +16,11 @@ export const bookstoreApi = {
     const response = await apiClient.get<BookStore[]>("/bookstores", {
       params: { token },
     });
+    return response.data;
+  },
+
+  create: async (payload: CreateBookStoreDto) => {
+    const response = await apiClient.post("/bookstores", payload);
     return response.data;
   },
 };

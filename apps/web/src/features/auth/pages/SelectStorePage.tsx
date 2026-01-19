@@ -19,6 +19,8 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { z } from "zod";
 import { authApi } from "../api/auth.api";
+import { CreateStoreModal } from "../components/CreateStoreModal";
+import { CreateStoreCard } from "../components/CreateStoreCard";
 import { SelectStoreCard } from "../components/SelectStoreCard";
 import { useBookStores } from "../hooks/useBookStores";
 import { BookStore } from "../types/bookstore.types";
@@ -45,6 +47,7 @@ const SelectStorePage = () => {
   const [selectedStoreId, setSelectedStoreId] = useState<string>("");
   const [isLoginLoading, setIsLoginLoading] = useState<boolean>(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isCreateStoreOpen, setIsCreateStoreOpen] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -259,6 +262,9 @@ const SelectStorePage = () => {
         {/* Stores Grid */}
         {!isLoading && stores && (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 w-full max-w-6xl">
+            {tempCredentials?.role === "OWNER" && (
+              <CreateStoreCard onClick={() => setIsCreateStoreOpen(true)} />
+            )}
             {stores.map((store) => (
               <SelectStoreCard
                 key={store.id}
@@ -269,6 +275,11 @@ const SelectStorePage = () => {
           </div>
         )}
       </div>
+
+      <CreateStoreModal
+        open={isCreateStoreOpen}
+        onClose={() => setIsCreateStoreOpen(false)}
+      />
 
       {/* Modal nhập Password */}
       <Modal
