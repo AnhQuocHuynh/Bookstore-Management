@@ -126,24 +126,6 @@ export const useUpdateEmployee = () => {
 };
 
 /**
- * Hook to delete an employee
- */
-export const useDeleteEmployee = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation<void, Error, string>({
-    mutationFn: (id) => employeesApi.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: employeeKeys.lists() });
-      toast.success('Xóa nhân viên thành công!');
-    },
-    onError: (error) => {
-      toast.error(`Lỗi khi xóa nhân viên: ${error.message}`);
-    },
-  });
-};
-
-/**
  * Hook to save shift
  */
 export const useSaveShift = (options?: { showToast?: boolean }) => {

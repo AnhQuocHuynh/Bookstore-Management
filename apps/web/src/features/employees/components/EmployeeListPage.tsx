@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { message, Input, Button, Modal } from "antd";
 import { Search, Plus, X } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
@@ -6,8 +6,9 @@ import { useDebounce } from "@/hooks/use-debounce";
 import { TableHeader, EmployeeTable } from "./EmployeeTable";
 import { EmployeeDetailPanel } from "./EmployeeDetailPanel";
 import { EmployeeEditPanel } from "./EmployeeEditPanel";
+import { EmployeeAddPage } from "./EmployeeAddPage";
 
-import { useEmployees, useDeleteEmployee, useUpdateEmployee } from "../hooks/useEmployees";
+import { useEmployees, useUpdateEmployee } from "../hooks/useEmployees";
 import { Employee, EmployeeTableRow, EmployeeFormData } from "../types";
 
 export const EmployeeListPage = () => {
@@ -16,12 +17,16 @@ export const EmployeeListPage = () => {
     const debouncedKeyword = useDebounce(keyword, 300);
     const [selectedEmployee, setSelectedEmployee] = useState<EmployeeTableRow | null>(null);
     const [isEditOpen, setIsEditOpen] = useState(false);
+    const [isAddOpen, setIsAddOpen] = useState(false);
 
     // --- Fetching ---
     const { data: responseData, isLoading, isError } = useEmployees();
     
+    useEffect(() => {
+        console.log('selectedEmployee state changed:', selectedEmployee);
+    }, [selectedEmployee]);
+    
     // --- Mutations ---
-    const deleteMutation = useDeleteEmployee();
     const updateMutation = useUpdateEmployee();
     const employeesList: Employee[] = useMemo(() => {
         if (!responseData) return [];
@@ -51,36 +56,16 @@ export const EmployeeListPage = () => {
 
     // --- Handlers ---
     const handleRowClick = (record: EmployeeTableRow) => {
+        console.log('handleRowClick called with:', {
+            recordId: record.id,
+            recordKey: record.key,
+            fullRecord: record
+        });
         if (selectedEmployee?.key === record.key) {
             setSelectedEmployee(null);
         } else {
             setSelectedEmployee(record);
         }
-    };
-
-    const handleDelete = () => {
-        if (!selectedEmployee) {
-            message.warning("Chọn nhân viên để xóa");
-            return;
-        }
-
-        Modal.confirm({
-            title: "Xác nhận xóa nhân viên",
-            content: (
-                <div>
-                    <p>Bạn có chắc chắn muốn xóa <strong>{selectedEmployee.fullName}</strong>?</p>
-                    <p className="text-red-500 text-xs mt-1">Lưu ý: Không thể xóa nếu nhân viên đã có lịch sử làm việc.</p>
-                </div>
-            ),
-            okText: "Xóa",
-            okType: "danger",
-            cancelText: "Hủy",
-            onOk: () => {
-                deleteMutation.mutate(selectedEmployee.id, {
-                    onSuccess: () => setSelectedEmployee(null),
-                });
-            }
-        });
     };
 
     const handleUpdate = (data: EmployeeFormData) => {
@@ -98,8 +83,20 @@ export const EmployeeListPage = () => {
     const selectedFormData: EmployeeFormData | undefined = useMemo(() => {
         if (!selectedEmployee) return undefined;
         
+        console.log('selectedFormData computation:', {
+            selectedEmployeeId: selectedEmployee.id,
+            employeesListLength: employeesList.length,
+            employeesList: employeesList
+        });
+        
         // Tìm employee đầy đủ từ employeesList
-        const fullEmployee = employeesList.find(emp => emp.id === selectedEmployee.id);
+        const fullEmployee = employeesList.find(emp => {
+            console.log('Comparing:', emp.id, '===', selectedEmployee.id, '?', emp.id === selectedEmployee.id);
+            return emp.id === selectedEmployee.id;
+        });
+        
+        console.log('Found fullEmployee:', fullEmployee);
+        
         if (!fullEmployee) return undefined;
         
         return {
@@ -133,13 +130,15 @@ export const EmployeeListPage = () => {
                             Nhân Viên
                         </h1>
                         <div className="flex items-center gap-2.5">
-                            <Button onClick={handleDelete} danger disabled={!selectedEmployee} className="h-10 rounded-xl font-semibold">
-                                Xóa
-                            </Button>
                             <Button onClick={() => selectedEmployee ? setIsEditOpen(true) : message.warning("Chọn nhân viên để sửa")} disabled={!selectedEmployee} className="bg-[#1a998f] hover:bg-[#158f85] h-10 px-4 rounded-xl font-semibold border-none text-white">
                                 Sửa
                             </Button>
-                            <Button type="primary" icon={<Plus size={18} />} className="bg-[#1a998f] hover:bg-[#158f85] h-10 px-4 rounded-xl font-bold border-none">
+                            <Button
+                                type="primary"
+                                icon={<Plus size={18} />}
+                                className="bg-[#1a998f] hover:bg-[#158f85] h-10 px-4 rounded-xl font-bold border-none"
+                                onClick={() => setIsAddOpen(true)}
+                            >
                                 Tạo Mới
                             </Button>
                         </div>
@@ -213,6 +212,23 @@ export const EmployeeListPage = () => {
                 onSubmit={handleUpdate}
                 initialData={selectedFormData}
             />
+
+            {/* --- ADD MODAL --- */}
+            <Modal
+                open={isAddOpen}
+                onCancel={() => setIsAddOpen(false)}
+                footer={null}
+                width={1100}
+                destroyOnClose
+                centered
+                bodyStyle={{ padding: 0, backgroundColor: "#f7f9fa" }}
+            >
+                <EmployeeAddPage
+                    isModal
+                    onClose={() => setIsAddOpen(false)}
+                    onSuccess={() => setIsAddOpen(false)}
+                />
+            </Modal>
         </div>
     );
 };

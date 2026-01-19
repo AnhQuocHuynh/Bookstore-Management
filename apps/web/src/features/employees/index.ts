@@ -8,6 +8,7 @@ export * from './types';
 // Pages
 export { EmployeeListPage } from './pages/EmployeeListPage';
 export { EmployeeSchedulePage } from './pages/EmployeeSchedulePage';
+export { EmployeeAddPage } from './pages/EmployeeAddPage';
 
 // Components
 export { EmployeeModal } from './components/EmployeeModal';
@@ -19,9 +20,6 @@ export * from './hooks/useEmployees';
 
 // API
 export * from './api/employees';
-
-// Constants
-export * from './constants/sampleEmployees';
 
 // Schema
 export * from './schema/employee.schema';
