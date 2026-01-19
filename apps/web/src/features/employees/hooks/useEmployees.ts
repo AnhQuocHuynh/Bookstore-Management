@@ -127,6 +127,50 @@ export const useUpdateEmployee = () => {
 };
 
 /**
+ * Hook to update employee status
+ */
+export const useUpdateEmployeeStatus = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    Employee,
+    Error,
+    { id: string; isActive: boolean }
+  >({
+    mutationFn: ({ id, isActive }) => employeesApi.updateStatus(id, isActive),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: employeeKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: employeeKeys.detail(data.id) });
+    },
+    onError: (error) => {
+      toast.error(`Lỗi khi cập nhật trạng thái: ${error.message}`);
+    },
+  });
+};
+
+/**
+ * Hook to update employee role
+ */
+export const useUpdateEmployeeRole = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    Employee,
+    Error,
+    { id: string; role: any }
+  >({
+    mutationFn: ({ id, role }) => employeesApi.updateRole(id, role),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: employeeKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: employeeKeys.detail(data.id) });
+    },
+    onError: (error) => {
+      toast.error(`Lỗi khi cập nhật vai trò: ${error.message}`);
+    },
+  });
+};
+
+/**
  * Hook to save shift
  */
 export const useSaveShift = (options?: { showToast?: boolean }) => {

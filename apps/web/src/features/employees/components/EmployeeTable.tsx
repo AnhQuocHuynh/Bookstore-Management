@@ -21,20 +21,20 @@ const getRoleColor = (role: string) => {
 const getRoleLabel = (role: string) => {
     switch (role) {
         case 'OWNER': return 'Chủ cửa hàng';
-        case 'MANAGER': return 'Quản lý';
+        case 'STORE_MANAGER': return 'Quản lý cửa hàng';
         case 'CASHIER': return 'Thu ngân';
-        case 'WAREHOUSE': return 'Kho hàng';
-        case 'SALES': return 'Bán hàng';
+        case 'INVENTORY': return 'Kho hàng';
+        case 'ACCOUNTANT': return 'Kế toán';
         default: return 'Nhân viên';
     }
 };
 
-const getStatusColor = (status: string) => {
-    return status === 'ACTIVE' ? 'green' : 'red';
+const getStatusColor = (isActive: boolean) => {
+    return isActive ? 'green' : 'red';
 };
 
-const getStatusLabel = (status: string) => {
-    return status === 'ACTIVE' ? 'Hoạt động' : 'Ngừng hoạt động';
+const getStatusLabel = (isActive: boolean) => {
+    return isActive ? 'Hoạt động' : 'Ngừng hoạt động';
 };
 
 export const TableHeader: React.FC<{ isPanelOpen: boolean }> = ({ isPanelOpen }) => {
@@ -100,8 +100,8 @@ export const EmployeeTable: React.FC<EmployeeTableProps> = ({
 
                     {!isPanelOpen && (
                         <div className="w-24 text-center">
-                            <Tag color={getStatusColor(item.status)} className="m-0">
-                                {getStatusLabel(item.status)}
+                            <Tag color={getStatusColor(item.isActive)} className="m-0">
+                                {getStatusLabel(item.isActive)}
                             </Tag>
                         </div>
                     )}

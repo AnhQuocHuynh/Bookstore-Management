@@ -23,7 +23,10 @@ const InfoRow: React.FC<InfoRowProps> = ({ label, value }) => (
 const getRoleLabel = (role: EmployeeRole) => {
     switch (role) {
         case 'ADMIN': return 'Quản lý';
-        case 'MANAGER': return 'Trưởng ca';
+        case 'STORE_MANAGER': return 'Quản lý cửa hàng';
+        case 'CASHIER': return 'Thu ngân';
+        case 'INVENTORY': return 'Nhân viên kho';
+        case 'ACCOUNTANT': return 'Kế toán';
         default: return 'Nhân viên';
     }
 };

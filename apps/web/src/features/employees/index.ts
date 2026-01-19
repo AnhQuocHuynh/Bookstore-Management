@@ -8,7 +8,7 @@ export * from './types';
 // Pages
 export { EmployeeListPage } from './pages/EmployeeListPage';
 export { EmployeeSchedulePage } from './pages/EmployeeSchedulePage';
-export { EmployeeAddPage } from './pages/EmployeeAddPage';
+export { EmployeeAddPage } from './components/EmployeeAddPage';
 
 // Components
 export { EmployeeModal } from './components/EmployeeModal';

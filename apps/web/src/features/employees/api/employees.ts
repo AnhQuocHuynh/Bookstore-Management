@@ -37,6 +37,13 @@ export const employeesApi = {
   getAll: async (params?: EmployeeParams): Promise<EmployeeResponse> => {
     const response = await apiClient.get('/employee', { params });
 
+    console.log('[Employee API] GetAll Response:', {
+      fullResponse: response,
+      data: response.data,
+      nestedData: response.data?.data,
+      pagination: response.data?.pagination,
+    });
+
     const rawData = response.data?.data ?? response.data?.data?.data ?? response.data?.results ?? [];
     const pagination = response.data?.pagination ?? response.data;
 

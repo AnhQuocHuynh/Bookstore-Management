@@ -8,7 +8,7 @@ import { EmployeeDetailPanel } from "./EmployeeDetailPanel";
 import { EmployeeEditPanel } from "./EmployeeEditPanel";
 import { EmployeeAddPage } from "./EmployeeAddPage";
 
-import { useEmployees, useUpdateEmployee } from "../hooks/useEmployees";
+import { useEmployees, useUpdateEmployee, useUpdateEmployeeStatus, useUpdateEmployeeRole } from "../hooks/useEmployees";
 import { Employee, EmployeeTableRow, EmployeeFormData } from "../types";
 
 export const EmployeeListPage = () => {
@@ -20,14 +20,12 @@ export const EmployeeListPage = () => {
     const [isAddOpen, setIsAddOpen] = useState(false);
 
     // --- Fetching ---
-    const { data: responseData, isLoading, isError } = useEmployees();
-    
-    useEffect(() => {
-        console.log('selectedEmployee state changed:', selectedEmployee);
-    }, [selectedEmployee]);
+    const { data: responseData, isLoading, isError } = useEmployees({ limit: 1000 });
     
     // --- Mutations ---
     const updateMutation = useUpdateEmployee();
+    const updateStatusMutation = useUpdateEmployeeStatus();
+    const updateRoleMutation = useUpdateEmployeeRole();
     const employeesList: Employee[] = useMemo(() => {
         if (!responseData) return [];
         if (Array.isArray(responseData)) return responseData;
@@ -56,11 +54,6 @@ export const EmployeeListPage = () => {
 
     // --- Handlers ---
     const handleRowClick = (record: EmployeeTableRow) => {
-        console.log('handleRowClick called with:', {
-            recordId: record.id,
-            recordKey: record.key,
-            fullRecord: record
-        });
         if (selectedEmployee?.key === record.key) {
             setSelectedEmployee(null);
         } else {
@@ -68,34 +61,40 @@ export const EmployeeListPage = () => {
         }
     };
 
-    const handleUpdate = (data: EmployeeFormData) => {
+    const handleUpdate = async (data: Partial<EmployeeFormData>) => {
         if (!selectedEmployee) return;
-        updateMutation.mutate({ id: selectedEmployee.id, data }, {
-            onSuccess: () => {
-                setIsEditOpen(false);
-                // Update local state
-                setSelectedEmployee(prev => prev ? ({ ...prev, ...data }) : null);
+
+        // Extract role and isActive from data
+        const { role, isActive, ...employeeData } = data;
+
+        try {
+            // Update employee basic info (excluding role and isActive)
+            await updateMutation.mutateAsync({ id: selectedEmployee.id, data: employeeData });
+
+            // Update role if changed
+            if (role !== undefined && role !== selectedEmployee.role) {
+                await updateRoleMutation.mutateAsync({ id: selectedEmployee.id, role });
             }
-        });
+
+            // Update status if changed
+            if (isActive !== undefined && isActive !== selectedEmployee.isActive) {
+                await updateStatusMutation.mutateAsync({ id: selectedEmployee.id, isActive });
+            }
+
+            setIsEditOpen(false);
+            // Update local state
+            setSelectedEmployee(prev => prev ? ({ ...prev, ...data }) : null);
+        } catch (error) {
+            // Error handling is done in the hooks
+        }
     };
 
     // --- Mapping Data for Edit Form ---
     const selectedFormData: EmployeeFormData | undefined = useMemo(() => {
         if (!selectedEmployee) return undefined;
         
-        console.log('selectedFormData computation:', {
-            selectedEmployeeId: selectedEmployee.id,
-            employeesListLength: employeesList.length,
-            employeesList: employeesList
-        });
-        
         // Tìm employee đầy đủ từ employeesList
-        const fullEmployee = employeesList.find(emp => {
-            console.log('Comparing:', emp.id, '===', selectedEmployee.id, '?', emp.id === selectedEmployee.id);
-            return emp.id === selectedEmployee.id;
-        });
-        
-        console.log('Found fullEmployee:', fullEmployee);
+        const fullEmployee = employeesList.find(emp => emp.id === selectedEmployee.id);
         
         if (!fullEmployee) return undefined;
         
@@ -109,7 +108,7 @@ export const EmployeeListPage = () => {
             address: fullEmployee.address,
             avatarUrl: fullEmployee.avatarUrl || undefined,
             role: fullEmployee.role,
-            status: fullEmployee.status,
+            isActive: fullEmployee.isActive,
             startDate: fullEmployee.startDate,
             salary: fullEmployee.salary,
             identityCard: fullEmployee.identityCard,

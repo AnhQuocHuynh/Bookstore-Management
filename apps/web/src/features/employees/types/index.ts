@@ -44,7 +44,7 @@ export interface Employee {
   address: string;
   avatarUrl?: string;
   role: EmployeeRole;
-  status: EmployeeStatus;
+  isActive: boolean;
   startDate: string; // Ngày vào làm
   salary: number;
   identityCard: string; // CMND/CCCD
@@ -88,7 +88,7 @@ export interface EmployeeFormData {
   address: string;
   avatarUrl?: string;
   role: EmployeeRole;
-  status: EmployeeStatus;
+  isActive: boolean;
   startDate: string;
   salary: number;
   identityCard: string;
@@ -105,7 +105,7 @@ export interface EmployeeTableRow {
   email: string;
   phone: string;
   role: string;
-  status: string;
+  isActive: boolean;
   startDate: string;
   address: string;
   dateOfBirth: string;
@@ -185,9 +185,6 @@ export const GENDER_LABELS: Record<Gender, string> = {
   [Gender.FEMALE]: 'Nữ',
   [Gender.OTHER]: 'Khác',
 };
-
-
-
 
 // 1. Shift Template (Định nghĩa ca làm)
 export interface ShiftTemplate {

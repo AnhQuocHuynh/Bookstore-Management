@@ -5,12 +5,11 @@ import { EmployeeRole } from "../types";
 import { useInviteEmployee } from "../hooks/useEmployees";
 
 const roleOptions = [
-  { label: "Quản lý cửa hàng", value: "STORE_MANAGER" as EmployeeRole },
-  { label: "Chủ cửa hàng", value: EmployeeRole.OWNER },
-  { label: "Quản lý", value: EmployeeRole.MANAGER },
-  { label: "Thu ngân", value: EmployeeRole.CASHIER },
-  { label: "Kho hàng", value: EmployeeRole.WAREHOUSE },
-  { label: "Bán hàng", value: EmployeeRole.SALES },
+  { label: "Quản lý cửa hàng", value: "STORE_MANAGER"},
+  { label: "Nhân viên", value: 'STAFF' },
+  { label: "Thu ngân", value:'CASHIER' },
+  { label: "Kho hàng", value: "INVENTORY"},
+  { label: "Kế toán", value: "ACCOUNTANT"},
 ];
 
 interface EmployeeAddPageProps {

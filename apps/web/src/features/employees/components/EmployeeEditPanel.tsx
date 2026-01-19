@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Modal, Form, Input, DatePicker, Button, message, Spin } from "antd";
+import { Modal, Form, Input, DatePicker, Button, message, Spin, Select, Switch } from "antd";
 import { EmployeeFormData } from "../types";
 import { uploadApi } from "@/api/upload";
 import dayjs from "dayjs";
@@ -7,7 +7,7 @@ import dayjs from "dayjs";
 interface EmployeeEditPanelProps {
     isOpen: boolean;
     onClose: () => void;
-    onSubmit: (data: EmployeeFormData) => void;
+    onSubmit: (data: Partial<EmployeeFormData>) => void;
     initialData?: EmployeeFormData;
 }
 
@@ -31,6 +31,8 @@ export const EmployeeEditPanel: React.FC<EmployeeEditPanelProps> = ({
                 phone: initialData.phone,
                 address: initialData.address,
                 dateOfBirth: initialData.dateOfBirth ? dayjs(initialData.dateOfBirth) : null,
+                role: initialData.role,
+                isActive: initialData.isActive,
             });
             setAvatarUrl(initialData.avatarUrl || "");
             setRawFile(null);
@@ -82,22 +84,23 @@ export const EmployeeEditPanel: React.FC<EmployeeEditPanelProps> = ({
                 }
             }
 
-            const formData: EmployeeFormData = {
+            const formData: Partial<EmployeeFormData> = {
                 fullName: values.fullName,
                 email: values.email,
                 phone: values.phone,
                 address: values.address,
-                // SỬA: Backend yêu cầu ISO 8601. 
-                // Nếu Backend dùng NestJS/Java strict, dùng .toISOString().
-                // Nếu Backend linh động xử lý ngày, giữ format YYYY-MM-DD cũng được nhưng cần thống nhất.
-                // Dưới đây là cách convert sang ISO chuẩn (đặt giờ về 00:00:00 UTC để tránh lệch ngày):
                 dateOfBirth: values.dateOfBirth ? values.dateOfBirth.toISOString() : undefined,
-
                 avatarUrl: finalAvatarUrl || undefined,
-                // Đảm bảo KHÔNG gửi role hay isActive (Code cũ đã làm đúng việc này)
             };
 
-            onSubmit(formData);
+            // Include role and isActive so parent can handle them separately
+            const completeData = {
+                ...formData,
+                role: values.role,
+                isActive: values.isActive,
+            };
+
+            onSubmit(completeData);
 
             setIsDirty(false);
             setRawFile(null);
@@ -197,6 +200,36 @@ export const EmployeeEditPanel: React.FC<EmployeeEditPanelProps> = ({
                                     placeholder="Chọn ngày sinh"
                                     className="w-full border-0 border-b-2 border-[#102e3c] rounded-none bg-transparent text-lg px-0 focus:shadow-none hover:border-[#1a998f] focus:border-[#1a998f]"
                                     style={{ fontSize: 18 }}
+                                />
+                            </Form.Item>
+
+                            <Form.Item
+                                name="role"
+                                label={<span className="text-lg font-semibold text-[#102e3c]">Vai Trò:</span>}
+                                rules={[{ required: true, message: "Vui lòng chọn vai trò" }]}
+                            >
+                                <Select
+                                    placeholder="Chọn vai trò"
+                                    className="border-0 border-b-2 border-[#102e3c] rounded-none bg-transparent text-lg hover:border-[#1a998f] focus:border-[#1a998f]"
+                                    options={[
+                                          { label: "Quản lý cửa hàng", value: "STORE_MANAGER"},
+  { label: "Nhân viên", value: 'STAFF' },
+  { label: "Thu ngân", value:'CASHIER' },
+  { label: "Kho hàng", value: "INVENTORY"},
+  { label: "Kế toán", value: "ACCOUNTANT"},
+                                    ]}
+                                />
+                            </Form.Item>
+
+                            <Form.Item
+                                name="isActive"
+                                label={<span className="text-lg font-semibold text-[#102e3c]">Trạng Thái:</span>}
+                                valuePropName="checked"
+                            >
+                                <Switch
+                                    checkedChildren="Hoạt động"
+                                    unCheckedChildren="Ngừng hoạt động"
+                                    className="bg-gray-400"
                                 />
                             </Form.Item>
                         </Form>
