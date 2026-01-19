@@ -40,6 +40,7 @@ import { ReturnOrderListPage } from "@/features/return-orders/components";
 import { CreateReturnOrderPage } from "@/features/return-orders/components/CreateReturnOrderPage";
 import { EditReturnOrderPage } from "@/features/return-orders/components/EditReturnOrderPage";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { InventoryLogsPage } from "@/features/inventory/components/InventoryLogsPage";
 
 // Select Store Page (Semi-protected: requires token but no store)
 // const SelectStorePage = () => (
@@ -279,6 +280,17 @@ export const AppRoutes = () => {
             <RequireRoles roles={["OWNER"]}>
               <MainLayout>
                 <EmployeeReportView />
+              </MainLayout>
+            </RequireRoles>
+          }
+        />
+
+        <Route
+          path="/inventory/logs"
+          element={
+            <RequireRoles roles={["OWNER"]}>
+              <MainLayout>
+                <InventoryLogsPage />
               </MainLayout>
             </RequireRoles>
           }

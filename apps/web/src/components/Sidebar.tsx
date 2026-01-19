@@ -44,7 +44,8 @@ const menuItems: MenuItem[] = [
             { path: "/dashboard/products/return-orders/list", label: "Danh sách trả/đổi hàng", visibleFor: ["OWNER", "EMPLOYEE"] },
             { path: "/dashboard/products/return-orders/create", label: "Tạo trả/đổi hàng", visibleFor: ["EMPLOYEE"] }
           ]
-      }
+      },
+      { path: "/inventory/logs", label: "Lịch sử tồn kho", visibleFor: ["OWNER"] }
     ],
   },
   {
