@@ -106,7 +106,7 @@ export const InventoryPage = () => {
     supplier: selectedItem.supplier,
     author: selectedItem.author,
     publisher: selectedItem.publisher,
-    releaseYear: selectedItem.releaseYear,
+    releaseYear: selectedItem.releaseYear?.toString(),
     releaseVersion: selectedItem.releaseVersion,
     language: selectedItem.language,
   } : undefined;

@@ -22,7 +22,6 @@ import { MainLayout } from "../layouts/MainLayout";
 import { ProtectedRoute } from "./ProtectedRoute";
 import { PublicRoute } from "./PublicRoute";
 import { TokenProtectedRoute } from "./TokenProtectedRoute";
-import RevenuePage from "@/features/reports/pages/RevenuePage";
 import { CategoriesPage } from "@/features/categories/components/CategoriesPage";
 import { PublishersPage } from "@/features/publishers/components/PublishersPage";
 import { AuthorsPage } from "@/features/authors/components/AuthorsPage";
@@ -35,6 +34,7 @@ import { DisplayLogsView } from "@/features/display/components/DisplayLogsView";
 import { RevenueReportView } from "@/features/reports/components/RevenueReportView";
 import { StockReportView } from "@/features/reports/components/StockReportView";
 import { EmployeeReportView } from "@/features/reports/components/EmployeeReportView";
+import { SettingsPage } from "@/features/settings/pages/SettingsPage";
 
 // Select Store Page (Semi-protected: requires token but no store)
 // const SelectStorePage = () => (
@@ -233,6 +233,15 @@ export const AppRoutes = () => {
           element={
             <MainLayout>
               <EmployeeReportView />
+            </MainLayout>
+          }
+        />
+
+        <Route
+          path="/settings"
+          element={
+            <MainLayout>
+              <SettingsPage />
             </MainLayout>
           }
         />

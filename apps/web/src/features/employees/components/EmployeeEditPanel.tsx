@@ -82,20 +82,15 @@ export const EmployeeEditPanel: React.FC<EmployeeEditPanelProps> = ({
                 }
             }
 
-            const formData: EmployeeFormData = {
+            // Tạo partial form data cho update (chỉ gửi các field được phép edit)
+            const formData = {
                 fullName: values.fullName,
                 email: values.email,
                 phone: values.phone,
                 address: values.address,
-                // SỬA: Backend yêu cầu ISO 8601. 
-                // Nếu Backend dùng NestJS/Java strict, dùng .toISOString().
-                // Nếu Backend linh động xử lý ngày, giữ format YYYY-MM-DD cũng được nhưng cần thống nhất.
-                // Dưới đây là cách convert sang ISO chuẩn (đặt giờ về 00:00:00 UTC để tránh lệch ngày):
                 dateOfBirth: values.dateOfBirth ? values.dateOfBirth.toISOString() : undefined,
-
                 avatarUrl: finalAvatarUrl || undefined,
-                // Đảm bảo KHÔNG gửi role hay isActive (Code cũ đã làm đúng việc này)
-            };
+            } as EmployeeFormData;
 
             onSubmit(formData);
 
