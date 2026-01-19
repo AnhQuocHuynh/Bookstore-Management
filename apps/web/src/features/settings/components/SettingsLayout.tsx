@@ -29,7 +29,7 @@ const tabs = [
     id: "hr" as SettingsTab,
     label: "Nhân sự",
     icon: Users,
-    description: "Lương và ca làm",
+    description: "Lương",
   },
   {
     id: "security" as SettingsTab,
