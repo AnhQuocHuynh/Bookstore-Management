@@ -29,12 +29,6 @@ export interface HrSettings {
   overtimeMultiplier?: number;
   latePenalty?: number;
   standardWorkDays?: number;
-  morningShiftStart?: string;
-  morningShiftEnd?: string;
-  afternoonShiftStart?: string;
-  afternoonShiftEnd?: string;
-  eveningShiftStart?: string;
-  eveningShiftEnd?: string;
 }
 
 export interface InventorySettings {
@@ -60,18 +54,4 @@ export interface UpdateSettingsDto {
   pos?: Partial<PosSettings>;
   hr?: Partial<HrSettings>;
   inventory?: Partial<InventorySettings>;
-}
-
-// Shift times from settings
-export interface ShiftTimeInfo {
-  name: string;
-  startTime: string;
-  endTime: string;
-}
-
-export interface ShiftTimesResponse {
-  morning: ShiftTimeInfo;
-  afternoon: ShiftTimeInfo;
-  evening: ShiftTimeInfo;
-  fullDay: ShiftTimeInfo;
 }

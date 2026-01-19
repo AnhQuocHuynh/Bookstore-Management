@@ -72,7 +72,7 @@ export class SettingsController {
 
   @ApiOperation({
     summary: 'Cập nhật cài đặt cửa hàng',
-    description: 'Cập nhật một phần hoặc toàn bộ cài đặt. Hỗ trợ partial update. Khi cập nhật HR settings, các ca làm việc sẽ được tự động đồng bộ.',
+    description: 'Cập nhật một phần hoặc toàn bộ cài đặt. Hỗ trợ partial update.',
   })
   @ApiBody({ type: UpdateSettingsDto })
   @ApiResponse({
@@ -85,23 +85,5 @@ export class SettingsController {
     @Body() updateSettingsDto: UpdateSettingsDto,
   ) {
     return this.settingsService.updateSettings(bookStoreId, updateSettingsDto);
-  }
-
-  @ApiOperation({
-    summary: 'Lấy thời gian các ca làm việc',
-    description: 'Trả về thời gian bắt đầu/kết thúc của các ca làm việc dựa trên cài đặt HR.',
-  })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    example: {
-      morning: { name: 'Ca Sáng', startTime: '07:30', endTime: '12:00' },
-      afternoon: { name: 'Ca Chiều', startTime: '13:00', endTime: '17:30' },
-      evening: { name: 'Ca Tối', startTime: '17:30', endTime: '21:30' },
-      fullDay: { name: 'Ca Cả Ngày', startTime: '07:30', endTime: '21:30' },
-    },
-  })
-  @Get('shift-times')
-  async getShiftTimes(@BookStoreId() bookStoreId: string) {
-    return this.settingsService.getShiftTimes(bookStoreId);
   }
 }
