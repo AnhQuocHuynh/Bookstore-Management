@@ -91,6 +91,7 @@ export const InventoryPage = () => {
   }, [productsData]);
 
   // --- Transform Data (Table UI -> Edit Form) ---
+  // --- Transform Data (Table UI -> Edit Form) ---
   const selectedFormData: InventoryFormData | undefined = selectedItem ? {
     sku: selectedItem.sku,
     name: selectedItem.name,
@@ -107,11 +108,13 @@ export const InventoryPage = () => {
     supplier: selectedItem.supplier,
     author: selectedItem.author,
     publisher: selectedItem.publisher,
-    releaseYear: selectedItem.releaseYear,
+
+    // SỬA LỖI Ở ĐÂY: Chuyển đổi number sang string
+    releaseYear: selectedItem.releaseYear ? String(selectedItem.releaseYear) : undefined,
+
     releaseVersion: selectedItem.releaseVersion,
     language: selectedItem.language,
   } : undefined;
-
   // --- Handlers ---
   const handleSortChange = (key: string, order: 'asc' | 'desc') => {
     setSortBy(key);
@@ -151,12 +154,13 @@ export const InventoryPage = () => {
   const handleUpdate = (formData: InventoryFormData) => {
     if (!selectedItem) return;
 
-    // Map dữ liệu từ Form (sellingPrice) -> API (price)
+    // SỬA: Chỉ gửi những trường cần thiết. 
+    // KHÔNG GỬI 'sku' để tránh lỗi 409 (Conflict) từ backend.
     const updatePayload = {
-      sku: formData.sku,
+      // sku: formData.sku, // <-- BỎ DÒNG NÀY (Vì SKU không thay đổi, gửi lên sẽ bị check trùng)
       name: formData.name,
       description: formData.description,
-      price: formData.sellingPrice, // Đổi tên cho đúng API
+      price: formData.sellingPrice,
       imageUrl: formData.image,
       isActive: formData.isActive,
     };
@@ -167,11 +171,11 @@ export const InventoryPage = () => {
     }, {
       onSuccess: () => {
         setIsEditPanelOpen(false);
-        // Cập nhật lại UI tạm thời
+        // Cập nhật Optimistic UI
         setSelectedItem((prev) => prev ? ({
           ...prev,
           name: formData.name,
-          sku: formData.sku,
+          // sku: formData.sku, // Không cần update SKU vì không đổi
           image: formData.image || "",
           sellingPrice: formData.sellingPrice,
           description: formData.description,
@@ -193,18 +197,18 @@ export const InventoryPage = () => {
               <SorterButton onSortChange={handleSortChange} currentSort={sortBy} currentSortOrder={sortOrder} />
               {userRole !== "OWNER" && (
                 <>
-                  <Button 
-                    onClick={handleDelete} 
-                    danger 
-                    disabled={!selectedItem} 
+                  <Button
+                    onClick={handleDelete}
+                    danger
+                    disabled={!selectedItem}
                     className="h-10 rounded-xl font-semibold"
                   >
                     Xóa
                   </Button>
 
-                  <Button 
-                    onClick={() => selectedItem ? setIsEditPanelOpen(true) : message.warning("Vui lòng chọn sản phẩm")} 
-                    disabled={!selectedItem} 
+                  <Button
+                    onClick={() => selectedItem ? setIsEditPanelOpen(true) : message.warning("Vui lòng chọn sản phẩm")}
+                    disabled={!selectedItem}
                     className="h-10 rounded-xl font-semibold border-teal-600 text-teal-700"
                   >
                     Sửa
@@ -219,21 +223,19 @@ export const InventoryPage = () => {
             <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-lg">
               <button
                 onClick={() => setActiveCategory("Sách")}
-                className={`px-6 py-2 rounded-md font-semibold transition-all ${
-                  activeCategory === "Sách"
-                    ? "bg-[#1a998f] text-white"
-                    : "bg-transparent text-[#102e3c] hover:bg-gray-200"
-                }`}
+                className={`px-6 py-2 rounded-md font-semibold transition-all ${activeCategory === "Sách"
+                  ? "bg-[#1a998f] text-white"
+                  : "bg-transparent text-[#102e3c] hover:bg-gray-200"
+                  }`}
               >
                 Sách
               </button>
               <button
                 onClick={() => setActiveCategory("Văn phòng phẩm")}
-                className={`px-6 py-2 rounded-md font-semibold transition-all ${
-                  activeCategory === "Văn phòng phẩm"
-                    ? "bg-[#1a998f] text-white"
-                    : "bg-transparent text-[#102e3c] hover:bg-gray-200"
-                }`}
+                className={`px-6 py-2 rounded-md font-semibold transition-all ${activeCategory === "Văn phòng phẩm"
+                  ? "bg-[#1a998f] text-white"
+                  : "bg-transparent text-[#102e3c] hover:bg-gray-200"
+                  }`}
               >
                 Văn phòng phẩm
               </button>

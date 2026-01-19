@@ -34,7 +34,7 @@ export class PurchaseOrdersService {
     private readonly tenantService: TenantService,
     private readonly productsService: ProductsService,
     private readonly inventoriesService: InventoriesService,
-  ) {}
+  ) { }
 
   async findPurchaseOrderByField(
     repo: Repository<PurchaseOrder>,
@@ -57,47 +57,38 @@ export class PurchaseOrdersService {
     userSession: TUserSession,
   ) {
     const { bookStoreId, userId } = userSession;
-
     const dataSource = await this.tenantService.getTenantConnection({
       bookStoreId,
     });
 
     return dataSource.transaction(async (manager) => {
-      const { supplierId, createPurchaseOrderDetailDtos, note } =
-        createPurchaseOrderDto;
+      const { supplierId, createPurchaseOrderDetailDtos, note } = createPurchaseOrderDto;
 
       const purchaseOrderRepo = manager.getRepository(PurchaseOrder);
-      const purchaseOrderDetailRepo =
-        manager.getRepository(PurchaseOrderDetail);
+      const purchaseOrderDetailRepo = manager.getRepository(PurchaseOrderDetail);
       const supplierRepo = manager.getRepository(Supplier);
       const employeeRepo = manager.getRepository(Employee);
-      const productRepo = manager.getRepository(Product);
 
+      // 1. Kiểm tra nhà cung cấp
       const findSupplier = await supplierRepo.findOne({
-        where: {
-          id: supplierId,
-        },
+        where: { id: supplierId },
       });
-
       if (!findSupplier) {
         throw new NotFoundException('Không tìm thấy thông tin nhà cung cấp.');
       }
 
+      // 2. Kiểm tra nhân viên
       const employee = await employeeRepo.findOne({
-        where: {
-          id: userId,
-        },
+        where: { id: userId },
       });
-
       if (!employee) {
         throw new NotFoundException('Không tìm thấy thông tin của bạn.');
       }
 
+      // 3. Tạo Purchase Order (Status mặc định COMPLETED như logic cũ)
       let newPurchaseOrder = purchaseOrderRepo.create({
         supplier: findSupplier,
-        employee: {
-          id: userId,
-        },
+        employee: { id: userId },
         ...(note?.trim() && { note }),
         totalAmount: 0,
         status: PurchaseStatus.COMPLETED,
@@ -106,65 +97,34 @@ export class PurchaseOrdersService {
 
       await purchaseOrderRepo.save(newPurchaseOrder);
 
+      // 4. Xử lý chi tiết đơn hàng (CHỈ TẠO MỚI SẢN PHẨM)
       for (const createPurchaseOrderDetailDto of createPurchaseOrderDetailDtos) {
-        const { createProductDto, quantity, unitPrice, productId } =
-          createPurchaseOrderDetailDto;
+        const { createProductDto, quantity, unitPrice } = createPurchaseOrderDetailDto;
 
-        const isNewProduct =
-          createProductDto !== undefined &&
-          Object.keys(createProductDto).length > 0;
-
-        const isOldProduct = productId !== undefined && productId.trim() !== '';
-
-        if (!(isNewProduct || isOldProduct)) {
-          throw new BadRequestException(
-            'Vui lòng cung cấp thông tin về sản phẩm.',
-          );
-        }
-
-        if (isNewProduct && isOldProduct) {
-          throw new BadRequestException(
-            'Chỉ có thể hoặc tạo sản phẩm mới hoặc cung cấp mã định danh sản phẩm cũ.',
-          );
-        }
-
-        let product: Product | null = null;
-
-        if (isOldProduct) {
-          product = await productRepo.findOne({
-            where: {
-              id: productId,
-            },
-          });
-
-          if (!product) {
-            throw new NotFoundException('Không tìm thấy thông tin sản phẩm.');
-          }
-        } else if (isNewProduct) {
-          product = await this.productsService.createProduct(
-            createProductDto,
-            manager,
-            employee,
-            supplierId,
-          );
-
-          if (!product) {
-            throw new InternalServerErrorException(
-              'Đã xảy ra lỗi khi tạo sản phẩm mới.',
-            );
-          }
-        }
+        // Gọi service tạo sản phẩm mới (Service này đã có logic check trùng SKU -> throw ConflictException)
+        // [Lưu ý]: Hàm createProduct bên ProductsService cần đảm bảo hoạt động trong transaction `manager` truyền vào
+        const product = await this.productsService.createProduct(
+          createProductDto,
+          manager,
+          employee,
+          supplierId,
+        );
 
         if (!product) {
-          throw new InternalServerErrorException('Đã xảy ra lỗi từ hệ thống.');
+          throw new InternalServerErrorException(
+            'Đã xảy ra lỗi khi tạo sản phẩm mới.',
+          );
         }
 
+        // Tính toán SubTotal
         const subTotal = new Decimal(unitPrice).mul(quantity).toFixed(2);
 
+        // Cộng dồn vào tổng đơn hàng
         newPurchaseOrder.totalAmount = new Decimal(newPurchaseOrder.totalAmount)
           .add(subTotal)
           .toNumber();
 
+        // Tạo chi tiết đơn mua
         const newPurchaseOrderDetail = purchaseOrderDetailRepo.create({
           purchaseOrder: newPurchaseOrder,
           subTotal: new Decimal(subTotal).toNumber(),
@@ -176,8 +136,10 @@ export class PurchaseOrdersService {
         await purchaseOrderDetailRepo.save(newPurchaseOrderDetail);
       }
 
+      // Cập nhật lại tổng tiền cho đơn hàng
       await purchaseOrderRepo.save(newPurchaseOrder);
 
+      // Trả về kết quả
       const updatedPurchaseOrder = await this.findPurchaseOrderByField(
         purchaseOrderRepo,
         'id',
