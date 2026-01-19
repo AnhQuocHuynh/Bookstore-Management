@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { message, Input, Button, Modal } from "antd";
 import { Search, Plus, X } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
@@ -6,8 +6,9 @@ import { useDebounce } from "@/hooks/use-debounce";
 import { TableHeader, EmployeeTable } from "./EmployeeTable";
 import { EmployeeDetailPanel } from "./EmployeeDetailPanel";
 import { EmployeeEditPanel } from "./EmployeeEditPanel";
+import { EmployeeAddPage } from "./EmployeeAddPage";
 
-import { useEmployees, useDeleteEmployee, useUpdateEmployee } from "../hooks/useEmployees";
+import { useEmployees, useUpdateEmployee, useUpdateEmployeeStatus, useUpdateEmployeeRole } from "../hooks/useEmployees";
 import { Employee, EmployeeTableRow, EmployeeFormData } from "../types";
 
 export const EmployeeListPage = () => {
@@ -16,13 +17,15 @@ export const EmployeeListPage = () => {
     const debouncedKeyword = useDebounce(keyword, 300);
     const [selectedEmployee, setSelectedEmployee] = useState<EmployeeTableRow | null>(null);
     const [isEditOpen, setIsEditOpen] = useState(false);
+    const [isAddOpen, setIsAddOpen] = useState(false);
 
     // --- Fetching ---
-    const { data: responseData, isLoading, isError } = useEmployees();
+    const { data: responseData, isLoading, isError } = useEmployees({ limit: 1000 });
     
     // --- Mutations ---
-    const deleteMutation = useDeleteEmployee();
     const updateMutation = useUpdateEmployee();
+    const updateStatusMutation = useUpdateEmployeeStatus();
+    const updateRoleMutation = useUpdateEmployeeRole();
     const employeesList: Employee[] = useMemo(() => {
         if (!responseData) return [];
         if (Array.isArray(responseData)) return responseData;
@@ -58,40 +61,32 @@ export const EmployeeListPage = () => {
         }
     };
 
-    const handleDelete = () => {
-        if (!selectedEmployee) {
-            message.warning("Chọn nhân viên để xóa");
-            return;
-        }
-
-        Modal.confirm({
-            title: "Xác nhận xóa nhân viên",
-            content: (
-                <div>
-                    <p>Bạn có chắc chắn muốn xóa <strong>{selectedEmployee.fullName}</strong>?</p>
-                    <p className="text-red-500 text-xs mt-1">Lưu ý: Không thể xóa nếu nhân viên đã có lịch sử làm việc.</p>
-                </div>
-            ),
-            okText: "Xóa",
-            okType: "danger",
-            cancelText: "Hủy",
-            onOk: () => {
-                deleteMutation.mutate(selectedEmployee.id, {
-                    onSuccess: () => setSelectedEmployee(null),
-                });
-            }
-        });
-    };
-
-    const handleUpdate = (data: EmployeeFormData) => {
+    const handleUpdate = async (data: Partial<EmployeeFormData>) => {
         if (!selectedEmployee) return;
-        updateMutation.mutate({ id: selectedEmployee.id, data }, {
-            onSuccess: () => {
-                setIsEditOpen(false);
-                // Update local state
-                setSelectedEmployee(prev => prev ? ({ ...prev, ...data }) : null);
+
+        // Extract role and isActive from data
+        const { role, isActive, ...employeeData } = data;
+
+        try {
+            // Update employee basic info (excluding role and isActive)
+            await updateMutation.mutateAsync({ id: selectedEmployee.id, data: employeeData });
+
+            // Update role if changed
+            if (role !== undefined && role !== selectedEmployee.role) {
+                await updateRoleMutation.mutateAsync({ id: selectedEmployee.id, role });
             }
-        });
+
+            // Update status if changed
+            if (isActive !== undefined && isActive !== selectedEmployee.isActive) {
+                await updateStatusMutation.mutateAsync({ id: selectedEmployee.id, isActive });
+            }
+
+            setIsEditOpen(false);
+            // Update local state
+            setSelectedEmployee(prev => prev ? ({ ...prev, ...data }) : null);
+        } catch (error) {
+            // Error handling is done in the hooks
+        }
     };
 
     // --- Mapping Data for Edit Form ---
@@ -100,6 +95,7 @@ export const EmployeeListPage = () => {
         
         // Tìm employee đầy đủ từ employeesList
         const fullEmployee = employeesList.find(emp => emp.id === selectedEmployee.id);
+        
         if (!fullEmployee) return undefined;
         
         return {
@@ -112,7 +108,7 @@ export const EmployeeListPage = () => {
             address: fullEmployee.address,
             avatarUrl: fullEmployee.avatarUrl || undefined,
             role: fullEmployee.role,
-            status: fullEmployee.status,
+            isActive: fullEmployee.isActive,
             startDate: fullEmployee.startDate,
             salary: fullEmployee.salary,
             identityCard: fullEmployee.identityCard,
@@ -133,13 +129,15 @@ export const EmployeeListPage = () => {
                             Nhân Viên
                         </h1>
                         <div className="flex items-center gap-2.5">
-                            <Button onClick={handleDelete} danger disabled={!selectedEmployee} className="h-10 rounded-xl font-semibold">
-                                Xóa
-                            </Button>
                             <Button onClick={() => selectedEmployee ? setIsEditOpen(true) : message.warning("Chọn nhân viên để sửa")} disabled={!selectedEmployee} className="bg-[#1a998f] hover:bg-[#158f85] h-10 px-4 rounded-xl font-semibold border-none text-white">
                                 Sửa
                             </Button>
-                            <Button type="primary" icon={<Plus size={18} />} className="bg-[#1a998f] hover:bg-[#158f85] h-10 px-4 rounded-xl font-bold border-none">
+                            <Button
+                                type="primary"
+                                icon={<Plus size={18} />}
+                                className="bg-[#1a998f] hover:bg-[#158f85] h-10 px-4 rounded-xl font-bold border-none"
+                                onClick={() => setIsAddOpen(true)}
+                            >
                                 Tạo Mới
                             </Button>
                         </div>
@@ -213,6 +211,28 @@ export const EmployeeListPage = () => {
                 onSubmit={handleUpdate}
                 initialData={selectedFormData}
             />
+
+            {/* --- ADD MODAL --- */}
+            <Modal
+                open={isAddOpen}
+                onCancel={() => setIsAddOpen(false)}
+                footer={null}
+                width={800}
+                destroyOnClose
+                centered
+                closeIcon={<span className="text-3xl text-[#102e3c] cursor-pointer hover:opacity-70">×</span>}
+                styles={{
+                    body: { backgroundColor: "#D4E5E4", padding: 0 },
+                    mask: { backgroundColor: "rgba(16, 46, 60, 0.5)" },
+                }}
+                title={null}
+            >
+                <EmployeeAddPage
+                    isModal
+                    onClose={() => setIsAddOpen(false)}
+                    onSuccess={() => setIsAddOpen(false)}
+                />
+            </Modal>
         </div>
     );
 };

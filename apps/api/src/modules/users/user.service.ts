@@ -341,19 +341,26 @@ export class UserService {
   ): Promise<string> {
     const prefix = EMPLOYEE_ROLE_PREFIX[role];
 
-    const lastEmployee = await employeeRepo.findOne({
+    // Get all employees with this role and extract their code numbers
+    const employees = await employeeRepo.find({
       where: { role },
-      order: { createdAt: 'DESC' },
       select: {
         employeeCode: true,
       },
     });
 
-    const lastNumber = lastEmployee?.employeeCode
-      ? parseInt(lastEmployee.employeeCode.replace(prefix, ''), 10)
-      : 0;
+    // Find the maximum number from existing codes
+    let maxNumber = 0;
+    employees.forEach(emp => {
+      if (emp.employeeCode?.startsWith(prefix)) {
+        const num = parseInt(emp.employeeCode.replace(prefix, ''), 10);
+        if (!isNaN(num) && num > maxNumber) {
+          maxNumber = num;
+        }
+      }
+    });
 
-    const nextNumber = lastNumber + 1;
+    const nextNumber = maxNumber + 1;
 
     return `${prefix}${nextNumber.toString().padStart(4, '0')}`;
   }

@@ -20,8 +20,15 @@ const InfoRow: React.FC<InfoRowProps> = ({ label, value }) => (
     </div>
 );
 
-const getRoleLabel = (role: string) => {
-    return ROLE_LABELS[role as EmployeeRole] || role;
+const getRoleLabel = (role: EmployeeRole) => {
+    switch (role) {
+        case 'ADMIN': return 'Quản lý';
+        case 'STORE_MANAGER': return 'Quản lý cửa hàng';
+        case 'CASHIER': return 'Thu ngân';
+        case 'INVENTORY': return 'Nhân viên kho';
+        case 'ACCOUNTANT': return 'Kế toán';
+        default: return 'Nhân viên';
+    }
 };
 
 const getRoleColor = (role: string) => {
