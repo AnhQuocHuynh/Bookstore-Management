@@ -1,11 +1,17 @@
 // File: pages/EmployeeSchedulePage.tsx
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Button, Select, Spin, Tooltip, Modal, Avatar } from 'antd';
 import { ChevronLeft, ChevronRight, Settings, Plus, X } from 'lucide-react';
 import dayjs from 'dayjs';
+import isoWeek from 'dayjs/plugin/isoWeek';
+import 'dayjs/locale/vi';
 import { useWeekSchedule, useShifts, useAssignSchedule, useUnassignSchedule, useEmployees } from '../hooks/useEmployees';
 import { ShiftManagerModal } from '../components/ShiftManagerModal';
 import { ShiftTemplate, DailyShift, ScheduledEmployee } from '../types';
+
+// Extend dayjs với plugin isoWeek và locale vi
+dayjs.extend(isoWeek);
+dayjs.locale('vi');
 
 export const EmployeeSchedulePage = () => {
   const [currentDate, setCurrentDate] = useState(dayjs());
@@ -61,9 +67,26 @@ export const EmployeeSchedulePage = () => {
     return daySchedule?.shifts.find(s => s.id === shiftTemplateId);
   };
 
-  if (isLoading) return <div className="h-screen flex items-center justify-center"><Spin size="large" /></div>;
+  // Tạo danh sách 7 ngày trong tuần (Thứ 2 -> Chủ nhật) từ currentDate
+  const weekDays = useMemo(() => {
+    // Lấy ngày đầu tuần (Thứ 2) dựa trên currentDate
+    const startOfWeek = currentDate.startOf('isoWeek'); // ISO week bắt đầu từ Thứ 2
+    
+    const days = [];
+    const dayNames = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'CN'];
+    
+    for (let i = 0; i < 7; i++) {
+      const day = startOfWeek.add(i, 'day');
+      days.push({
+        date: day.format('YYYY-MM-DD'),
+        dayOfWeek: dayNames[i],
+        dayjs: day,
+      });
+    }
+    return days;
+  }, [currentDate]);
 
-  const weekDays = weekData?.schedule || [];
+  if (isLoading) return <div className="h-screen flex items-center justify-center"><Spin size="large" /></div>;
 
   return (
     <div className="p-6 h-full flex flex-col font-['Inter'] bg-[#f8fafc]">
@@ -72,7 +95,9 @@ export const EmployeeSchedulePage = () => {
         <div>
           <h1 className="text-2xl font-bold text-[#102e3c]">Lịch Làm Việc</h1>
           <p className="text-gray-500">
-            {weekData ? `Tuần từ ${dayjs(weekData.weekStart).format('DD/MM')} đến ${dayjs(weekData.weekEnd).format('DD/MM/YYYY')}` : '...'}
+            {weekDays.length > 0 
+              ? `Tuần từ ${weekDays[0].dayjs.format('DD/MM')} đến ${weekDays[6].dayjs.format('DD/MM/YYYY')}`
+              : '...'}
           </p>
         </div>
         <div className="flex gap-2">
@@ -89,14 +114,14 @@ export const EmployeeSchedulePage = () => {
 
       {/* SCHEDULE TABLE */}
       <div className="flex-1 bg-white rounded-xl shadow-sm border overflow-auto">
-        <table className="w-full border-collapse min-w-[1000px]">
+        <table className="w-full border-collapse table-fixed">
           <thead className="bg-[#1a998f] text-white sticky top-0 z-10">
             <tr>
-              <th className="p-4 text-left border-r border-teal-600 w-[200px]">Ca / Ngày</th>
+              <th className="p-4 text-left border-r border-teal-600 w-[180px]">Ca / Ngày</th>
               {weekDays.map(day => (
-                <th key={day.date} className={`p-3 text-center border-r border-teal-600 ${day.date === dayjs().format('YYYY-MM-DD') ? 'bg-[#158f85]' : ''}`}>
+                <th key={day.date} className={`p-3 text-center border-r border-teal-600 min-w-[120px] ${day.date === dayjs().format('YYYY-MM-DD') ? 'bg-[#158f85]' : ''}`}>
                   <div className="font-bold uppercase">{day.dayOfWeek}</div>
-                  <div className="text-xs opacity-80">{dayjs(day.date).format('DD/MM')}</div>
+                  <div className="text-xs opacity-80">{day.dayjs.format('DD/MM')}</div>
                 </th>
               ))}
             </tr>
