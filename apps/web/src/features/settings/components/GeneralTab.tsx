@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Store, Phone, MapPin, Mail, Globe, Loader2 } from "lucide-react";
-import { useEffect } from "react";
+import { Store, Phone, MapPin, Mail, Loader2, ImagePlus, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import {
   Form,
   FormControl,
@@ -18,18 +18,22 @@ import {
   generalSettingsSchema,
   type GeneralSettingsFormData,
 } from "../schema/general.schema";
-import { useSettings, useUpdateSettings } from "../hooks/useSettings";
+import { useSettings, useUpdateSettings, useUploadFile } from "../hooks/useSettings";
 import { toast } from "sonner";
 
 export function GeneralTab() {
   const { data: settings, isLoading, error } = useSettings();
   const updateMutation = useUpdateSettings();
+  const uploadMutation = useUploadFile();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>("");
+  const [isUploading, setIsUploading] = useState(false);
 
   const form = useForm<GeneralSettingsFormData>({
     resolver: zodResolver(generalSettingsSchema),
     defaultValues: {
       storeName: "",
-      logo: "",
+      logoUrl: "",
       contactPhone: "",
       contactEmail: "",
       address: "",
@@ -41,13 +45,59 @@ export function GeneralTab() {
     if (settings?.general) {
       form.reset({
         storeName: settings.general.storeName || "",
-        logo: "",
+        logoUrl: settings.general.logoUrl || "",
         contactPhone: settings.general.phone || "",
         contactEmail: settings.general.email || "",
         address: settings.general.address || "",
       });
+      setPreviewUrl(settings.general.logoUrl || "");
     }
   }, [settings, form]);
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      toast.error("Vui lòng chọn file ảnh");
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Kích thước ảnh không được vượt quá 5MB");
+      return;
+    }
+
+    // Show preview
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setPreviewUrl(event.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+
+    // Upload file
+    setIsUploading(true);
+    try {
+      const result = await uploadMutation.mutateAsync(file);
+      form.setValue("logoUrl", result.url);
+      toast.success("Tải ảnh lên thành công!");
+    } catch (err) {
+      toast.error("Có lỗi khi tải ảnh lên!");
+      setPreviewUrl(settings?.general?.logoUrl || "");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleRemoveLogo = () => {
+    setPreviewUrl("");
+    form.setValue("logoUrl", "");
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
 
   const onSubmit = async (data: GeneralSettingsFormData) => {
     try {
@@ -57,6 +107,7 @@ export function GeneralTab() {
           phone: data.contactPhone,
           email: data.contactEmail,
           address: data.address,
+          logoUrl: data.logoUrl,
         },
       });
       toast.success("Đã lưu thông tin cửa hàng thành công!");
@@ -94,6 +145,85 @@ export function GeneralTab() {
       <Separator />
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          {/* Logo Upload */}
+          <FormField
+            control={form.control}
+            name="logoUrl"
+            render={() => (
+              <FormItem>
+                <FormLabel className="flex items-center gap-2">
+                  <ImagePlus className="h-4 w-4" />
+                  Ảnh đại diện cửa hàng
+                </FormLabel>
+                <FormControl>
+                  <div className="flex items-center gap-4">
+                    <div className="relative">
+                      {previewUrl ? (
+                        <div className="relative">
+                          <img
+                            src={previewUrl}
+                            alt="Logo cửa hàng"
+                            className="h-24 w-24 rounded-lg object-cover border-2 border-gray-200"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleRemoveLogo}
+                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div
+                          onClick={() => fileInputRef.current?.click()}
+                          className="h-24 w-24 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:border-teal-500 hover:bg-teal-50 transition-colors"
+                        >
+                          {isUploading ? (
+                            <Loader2 className="h-6 w-6 animate-spin text-teal-600" />
+                          ) : (
+                            <ImagePlus className="h-6 w-6 text-gray-400" />
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileSelect}
+                        className="hidden"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isUploading}
+                      >
+                        {isUploading ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Đang tải...
+                          </>
+                        ) : (
+                          "Chọn ảnh"
+                        )}
+                      </Button>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        PNG, JPG tối đa 5MB
+                      </p>
+                    </div>
+                  </div>
+                </FormControl>
+                <FormDescription>
+                  Ảnh đại diện sẽ hiển thị trên sidebar và hóa đơn
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
           <FormField
             control={form.control}
             name="storeName"
@@ -185,11 +315,12 @@ export function GeneralTab() {
                 if (settings?.general) {
                   form.reset({
                     storeName: settings.general.storeName || "",
-                    logo: "",
+                    logoUrl: settings.general.logoUrl || "",
                     contactPhone: settings.general.phone || "",
                     contactEmail: settings.general.email || "",
                     address: settings.general.address || "",
                   });
+                  setPreviewUrl(settings.general.logoUrl || "");
                 }
               }}
             >
