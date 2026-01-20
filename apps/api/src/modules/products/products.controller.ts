@@ -31,7 +31,7 @@ import { ProductsService } from './products.service';
 @ApiTags('Sản phẩm')
 @ApiBearerAuth()
 export class ProductsController {
-  constructor(private readonly productsService: ProductsService) {}
+  constructor(private readonly productsService: ProductsService) { }
 
   @ApiOperation({
     summary: 'Lấy chi tiết thông tin sản phẩm',
@@ -179,7 +179,7 @@ export class ProductsController {
     },
   })
   @Delete('detail')
-  @Roles(UserRole.OWNER)
+  @Roles(UserRole.OWNER, UserRole.EMPLOYEE)
   async deleteProduct(
     @Query() getProductDetailQueryDto: GetProductDetailQueryDto,
     @BookStoreId() bookStoreId: string,
