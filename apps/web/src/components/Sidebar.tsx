@@ -100,6 +100,7 @@ const Sidebar = ({ onItemClick }: SidebarProps) => {
   const location = useLocation();
   const [openMenus, setOpenMenus] = useState<string[]>([]);
   const user = useAuthStore((state) => state.user);
+  const currentStore = useAuthStore((state) => state.currentStore);
 
   const userRole = (user?.role as "OWNER" | "EMPLOYEE" | "ADMIN") || "EMPLOYEE";
 
@@ -182,12 +183,12 @@ const Sidebar = ({ onItemClick }: SidebarProps) => {
       <div className="flex flex-col gap-4">
         <StoreModal
           store={{
-            name: "Nhà sách BookFlow",
-            address: "123 Bà Triệu, TP. Thủ Đức, HCM",
-            phone: "0909 123 456",
-            logo: "/default-store.jpg",
+            name: currentStore?.name || "Chưa chọn nhà sách",
+            address: currentStore?.address || "",
+            phone: currentStore?.phone || "",
+            logo: currentStore?.logoUrl || "/default-store.jpg",
           }}
-          onSave={(data: any) => console.log("Save store:", data)}
+          onSave={(data) => console.log("Save store:", data)}
         />
 
         <nav className="flex flex-col md:pt-4">

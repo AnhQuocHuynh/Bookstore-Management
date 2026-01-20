@@ -98,8 +98,9 @@ const SelectStorePage = () => {
       const storeInfo = {
         id: response.bookStoreId,
         name: store.name,
-        address: response.profile.address || undefined,
-        phone: response.profile.phoneNumber,
+        address: store.address || response.profile.address || undefined,
+        phone: store.phoneNumber || response.profile.phoneNumber,
+        logoUrl: store.logoUrl || undefined,
       };
 
       setStoreToken(newAccessToken, storeInfo, response.profile);
@@ -159,8 +160,9 @@ const SelectStorePage = () => {
       const storeData = {
         id: selectedStoreId,
         name: selectedStoreInfo?.name || "Cửa hàng",
-        address: response.profile.address || selectedStoreInfo?.address,
-        phone: response.profile.phoneNumber || selectedStoreInfo?.phoneNumber,
+        address: selectedStoreInfo?.address || response.profile.address,
+        phone: selectedStoreInfo?.phoneNumber || response.profile.phoneNumber,
+        logoUrl: selectedStoreInfo?.logoUrl || undefined,
       };
 
       setStoreData(storeData);

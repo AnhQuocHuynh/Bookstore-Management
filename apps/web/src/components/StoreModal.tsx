@@ -1,11 +1,28 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Modal, Input, Button } from "antd";
 
-export default function StoreModal({ store, onSave }: any) {
+interface StoreModalProps {
+  store: {
+    name: string;
+    address?: string;
+    phone?: string;
+    logo?: string;
+  };
+  onSave: (data: { name: string; address: string; phone: string }) => void;
+}
+
+export default function StoreModal({ store, onSave }: StoreModalProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [storeName, setStoreName] = useState(store.name);
-  const [address, setAddress] = useState(store.address);
-  const [phone, setPhone] = useState(store.phone);
+  const [address, setAddress] = useState(store.address || "");
+  const [phone, setPhone] = useState(store.phone || "");
+
+  // Sync state khi props store thay đổi
+  useEffect(() => {
+    setStoreName(store.name);
+    setAddress(store.address || "");
+    setPhone(store.phone || "");
+  }, [store.name, store.address, store.phone]);
 
   const handleSave = () => {
     onSave({ name: storeName, address, phone });
@@ -15,23 +32,20 @@ export default function StoreModal({ store, onSave }: any) {
   return (
     <>
       <div
-        className="
-    flex flex-col items-center gap-2 px-1 cursor-pointer z-10
-    lg:flex-row lg:items-start lg:gap-3
-  "
+        className="flex items-center gap-3 px-1 cursor-pointer z-10"
         onClick={() => setIsModalOpen(true)}
       >
         <img
-          src="/default-store.jpg"
+          src={store.logo || "/default-store.jpg"}
           alt="Logo nhà sách"
-          className="h-15 md:w-15 w-20 select-none rounded-lg object-cover"
+          className="h-12 w-12 flex-shrink-0 select-none rounded-lg object-cover"
         />
-        <div className="flex flex-col text-nowrap md:text-left text-center">
-          <h1 className="text-base font-bold leading-normal text-white">
+        <div className="flex flex-col min-w-0 text-left">
+          <h1 className="text-base font-bold leading-normal text-white truncate">
             {store.name}
           </h1>
-          <p className="text-sm font-normal leading-normal text-gray-300">
-            {store.address}
+          <p className="text-xs font-normal leading-normal text-gray-300 truncate">
+            {store.address || "Chưa có địa chỉ"}
           </p>
         </div>
       </div>
