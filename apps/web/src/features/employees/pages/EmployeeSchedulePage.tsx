@@ -106,7 +106,7 @@ export const EmployeeSchedulePage = () => {
           </Button>
           <div className="flex bg-white border rounded-lg">
             <Button type="text" icon={<ChevronLeft size={16} />} onClick={() => setCurrentDate(currentDate.subtract(1, 'week'))} />
-            <Button type="text" onClick={() => setCurrentDate(dayjs())}>Hôm nay</Button>
+            <Button type="text" onClick={() => setCurrentDate(dayjs())}>Đổi Tuần</Button>
             <Button type="text" icon={<ChevronRight size={16} />} onClick={() => setCurrentDate(currentDate.add(1, 'week'))} />
           </div>
         </div>

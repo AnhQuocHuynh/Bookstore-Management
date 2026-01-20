@@ -13,35 +13,35 @@ interface MenuItem {
   label: string;
   icon?: string;
   children?: MenuItem[];
-  visibleFor?: ("OWNER" | "EMPLOYEE" | "ADMIN")[];
+  visibleFor?: ("OWNER" | "EMPLOYEE" | "ADMIN" | "STAFF" | "CASHIERS" | "INVENTORY" | "ACCOUNTANT" | "STORE_MANAGER")[];
 }
 
 const menuItems: MenuItem[] = [
-  { path: "/dashboard", label: "Tổng quan", icon: "dashboard", visibleFor: ["OWNER", "EMPLOYEE"] },
+  { path: "/dashboard", label: "Tổng quan", icon: "dashboard", visibleFor: ["OWNER", "EMPLOYEE", "STAFF", "CASHIERS", "INVENTORY", "ACCOUNTANT", "STORE_MANAGER"] },
   {
     path: "/dashboard/products",
     label: "Sản phẩm",
     icon: "menu_book",
-    visibleFor: ["OWNER", "EMPLOYEE"],
+    visibleFor: ["OWNER", "EMPLOYEE", "STAFF", "CASHIERS", "INVENTORY", "ACCOUNTANT", "STORE_MANAGER"],
     children: [
-      { path: "/dashboard/products/inventories", label: "Tồn kho", visibleFor: ["OWNER", "EMPLOYEE"] },
+      { path: "/dashboard/products/inventories", label: "Tồn kho", visibleFor: ["OWNER", "EMPLOYEE", "STAFF", "CASHIERS", "INVENTORY", "ACCOUNTANT", "STORE_MANAGER"] },
       // Mục này có children -> Cần logic đệ quy để hiển thị
       {
         path: "/dashboard/products/display",
         label: "Hàng trưng bày",
-        visibleFor: ["OWNER", "EMPLOYEE"],
+        visibleFor: ["OWNER", "EMPLOYEE", "STAFF", "CASHIERS", "INVENTORY", "ACCOUNTANT", "STORE_MANAGER"],
         children: [
-          { path: "/dashboard/products/display/list", label: "Danh sách kệ", visibleFor: ["OWNER", "EMPLOYEE"] },
-          { path: "/dashboard/products/display/filter", label: "Tìm kiếm SP", visibleFor: ["OWNER", "EMPLOYEE"] },
-          { path: "/dashboard/products/display/history", label: "Lịch sử", visibleFor: ["OWNER", "EMPLOYEE"] },
+          { path: "/dashboard/products/display/list", label: "Danh sách kệ", visibleFor: ["OWNER", "EMPLOYEE", "STAFF", "CASHIERS", "INVENTORY", "ACCOUNTANT", "STORE_MANAGER"] },
+          { path: "/dashboard/products/display/filter", label: "Tìm kiếm SP", visibleFor: ["OWNER", "EMPLOYEE", "STAFF", "CASHIERS", "INVENTORY", "ACCOUNTANT", "STORE_MANAGER"] },
+          { path: "/dashboard/products/display/history", label: "Lịch sử", visibleFor: ["OWNER", "EMPLOYEE", "STAFF", "CASHIERS", "INVENTORY", "ACCOUNTANT", "STORE_MANAGER"] },
         ]
       },
       {
         path: "/dashboard/products/return-orders", label: "Trả/Đổi hàng",
-        visibleFor: ["OWNER", "EMPLOYEE"],
+        visibleFor: ["OWNER", "EMPLOYEE", "STAFF", "CASHIERS", "INVENTORY", "ACCOUNTANT", "STORE_MANAGER"],
         children:
           [
-            { path: "/dashboard/products/return-orders/list", label: "Danh sách trả/đổi hàng", visibleFor: ["OWNER", "EMPLOYEE"] },
+            { path: "/dashboard/products/return-orders/list", label: "Danh sách trả/đổi hàng", visibleFor: ["OWNER", "EMPLOYEE", "STAFF", "CASHIERS", "INVENTORY", "ACCOUNTANT", "STORE_MANAGER"] },
             { path: "/dashboard/products/return-orders/create", label: "Tạo trả/đổi hàng", visibleFor: ["EMPLOYEE"] }
           ]
       },
@@ -52,23 +52,23 @@ const menuItems: MenuItem[] = [
     path: "/purchase-orders",
     label: "Nhập hàng",
     icon: "inventory",
-    visibleFor: ["OWNER", "EMPLOYEE"],
+    visibleFor: ["OWNER", "EMPLOYEE", "STAFF", "CASHIERS", "INVENTORY", "ACCOUNTANT", "STORE_MANAGER"],
     children: [
       { path: "/purchase-orders/create", label: "Tạo phiếu nhập", visibleFor: ["EMPLOYEE"] },
-      { path: "/purchase-orders/list", label: "Danh sách phiếu nhập", visibleFor: ["OWNER", "EMPLOYEE"] },
+      { path: "/purchase-orders/list", label: "Danh sách phiếu nhập", visibleFor: ["OWNER", "EMPLOYEE", "STAFF", "CASHIERS", "INVENTORY", "ACCOUNTANT", "STORE_MANAGER"] },
     ],
   },
   {
     path: "/sales",
     label: "Giao dịch",
     icon: "receipt_long",
-    visibleFor: ["OWNER", "EMPLOYEE"],
+    visibleFor: ["OWNER", "EMPLOYEE", "STAFF", "CASHIERS", "INVENTORY", "ACCOUNTANT", "STORE_MANAGER"],
     children: [
       { path: "/sales/create", label: "Tạo giao dịch", visibleFor: ["EMPLOYEE"] },
-      { path: "/sales/list", label: "Danh sách giao dịch", visibleFor: ["OWNER", "EMPLOYEE"] },
+      { path: "/sales/list", label: "Danh sách giao dịch", visibleFor: ["OWNER", "EMPLOYEE", "STAFF", "CASHIERS", "INVENTORY", "ACCOUNTANT", "STORE_MANAGER"] },
     ],
   },
-  { path: "/dashboard/customers", label: "Khách hàng", icon: "groups", visibleFor: ["OWNER", "EMPLOYEE"] },
+  { path: "/dashboard/customers", label: "Khách hàng", icon: "groups", visibleFor: ["OWNER", "EMPLOYEE", "STAFF", "CASHIERS", "INVENTORY", "ACCOUNTANT", "STORE_MANAGER"] },
   {
     path: "/dashboard/employees",
     label: "Nhân viên",
@@ -79,18 +79,18 @@ const menuItems: MenuItem[] = [
       { path: "/dashboard/employees/list", label: "Danh sách nhân viên", visibleFor: ["OWNER"] },
     ],
   },
-  { path: "/dashboard/suppliers", label: "Nhà cung cấp", icon: "local_shipping", visibleFor: ["OWNER", "EMPLOYEE"] },
-  { path: "/dashboard/categories", label: "Danh mục", icon: "category", visibleFor: ["OWNER", "EMPLOYEE"] },
-  { path: "/dashboard/publishers", label: "Nhà xuất bản", icon: "public", visibleFor: ["OWNER", "EMPLOYEE"] },
-  { path: "/dashboard/authors", label: "Tác giả", icon: "person", visibleFor: ["OWNER", "EMPLOYEE"] },
+  { path: "/dashboard/suppliers", label: "Nhà cung cấp", icon: "local_shipping", visibleFor: ["OWNER", "EMPLOYEE", "STAFF", "CASHIERS", "INVENTORY", "ACCOUNTANT", "STORE_MANAGER"] },
+  { path: "/dashboard/categories", label: "Danh mục", icon: "category", visibleFor: ["OWNER", "EMPLOYEE", "STAFF", "CASHIERS", "INVENTORY", "ACCOUNTANT", "STORE_MANAGER"] },
+  { path: "/dashboard/publishers", label: "Nhà xuất bản", icon: "public", visibleFor: ["OWNER", "EMPLOYEE", "STAFF", "CASHIERS", "INVENTORY", "ACCOUNTANT", "STORE_MANAGER"] },
+  { path: "/dashboard/authors", label: "Tác giả", icon: "person", visibleFor: ["OWNER", "EMPLOYEE", "STAFF", "CASHIERS", "INVENTORY", "ACCOUNTANT", "STORE_MANAGER"] },
   {
     path: "/reports",
     label: "Thống kê",
     icon: "pie_chart",
-    visibleFor: ["OWNER", "EMPLOYEE"],
+    visibleFor: ["OWNER", "EMPLOYEE", "STAFF", "CASHIERS", "INVENTORY", "ACCOUNTANT", "STORE_MANAGER"],
     children: [
-      { path: "/reports/revenue", label: "Doanh thu", visibleFor: ["OWNER", "EMPLOYEE"] },
-      { path: "/reports/stocks", label: "Tồn kho", visibleFor: ["OWNER", "EMPLOYEE"] },
+      { path: "/reports/revenue", label: "Doanh thu", visibleFor: ["OWNER", "EMPLOYEE", "STAFF", "CASHIERS", "INVENTORY", "ACCOUNTANT", "STORE_MANAGER"] },
+      { path: "/reports/stocks", label: "Tồn kho", visibleFor: ["OWNER", "EMPLOYEE", "STAFF", "CASHIERS", "INVENTORY", "ACCOUNTANT", "STORE_MANAGER"] },
       { path: "/reports/employees", label: "Nhân viên", visibleFor: ["OWNER"] },
     ],
   },
@@ -102,7 +102,7 @@ const Sidebar = ({ onItemClick }: SidebarProps) => {
   const user = useAuthStore((state) => state.user);
   const currentStore = useAuthStore((state) => state.currentStore);
 
-  const userRole = (user?.role as "OWNER" | "EMPLOYEE" | "ADMIN") || "EMPLOYEE";
+  const userRole = (user?.role as "OWNER" | "EMPLOYEE" | "ADMIN" | "STAFF" | "CASHIERS" | "INVENTORY" | "ACCOUNTANT" | "STORE_MANAGER") || "EMPLOYEE";
 
   const isItemVisible = (item: MenuItem): boolean => {
     if (!item.visibleFor) return true;
