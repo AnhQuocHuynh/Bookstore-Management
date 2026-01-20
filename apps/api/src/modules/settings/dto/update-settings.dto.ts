@@ -46,6 +46,11 @@ export class GeneralSettingsDto {
   @IsOptional()
   @IsString()
   facebook?: string;
+
+  @ApiPropertyOptional({ description: 'Logo URL', example: 'https://example.com/logo.png' })
+  @IsOptional()
+  @IsString()
+  logoUrl?: string;
 }
 
 export class PosSettingsDto {

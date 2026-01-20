@@ -5,7 +5,7 @@ export const generalSettingsSchema = z.object({
     .string()
     .min(1, "Tên cửa hàng là bắt buộc")
     .max(100, "Tên cửa hàng không được quá 100 ký tự"),
-  logo: z.string().optional(),
+  logoUrl: z.string().optional(),
   contactPhone: z
     .string()
     .min(10, "Số điện thoại phải có ít nhất 10 số")

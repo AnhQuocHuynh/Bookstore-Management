@@ -56,6 +56,9 @@ interface AuthState {
   // Action Login bước 2 (Update token mới)
   setStoreToken: (newToken: string, store: Store, user: UserProfile) => void;
 
+  // Action cập nhật thông tin store (khi settings thay đổi)
+  updateCurrentStore: (storeUpdate: Partial<Store>) => void;
+
   logout: () => void;
   logoutAsync: () => Promise<void>;
 }
@@ -99,6 +102,14 @@ export const useAuthStore = create<AuthState>()(
           isAuthenticated: true,
           tempCredentials: null, // Xóa pass tạm
         }),
+
+      // Cập nhật thông tin store (khi settings thay đổi)
+      updateCurrentStore: (storeUpdate) =>
+        set((state) => ({
+          currentStore: state.currentStore
+            ? { ...state.currentStore, ...storeUpdate }
+            : null,
+        })),
 
       logout: () =>
         set({

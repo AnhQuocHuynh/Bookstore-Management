@@ -8,6 +8,7 @@ export interface GeneralSettings {
   email?: string;
   website?: string;
   facebook?: string;
+  logoUrl?: string;
 }
 
 export interface PosSettings {
