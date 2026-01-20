@@ -66,10 +66,12 @@ export const EmployeeAddPage: React.FC<EmployeeAddPageProps> = ({ onSuccess, onC
   };
 
   return (
-    <div className="bg-[#D4E5E4] rounded-xl p-8 relative" style={{ zIndex: 1 }}>
-      <h2 className="text-center text-3xl font-bold text-[#102e3c] mb-8">Thêm Nhân Viên</h2>
+    <>
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "#D4E5E4", borderRadius: 12, zIndex: 0 }} />
+      <div className="bg-[#D4E5E4] rounded-xl p-8 relative" style={{ zIndex: 1 }}>
+        <h2 className="text-center text-3xl font-bold text-[#102e3c] mb-8">Thêm Nhân Viên</h2>
 
-      <div className="flex justify-center">
+        <div className="flex justify-center">
         <div className="w-full max-w-md">
           <Form
             form={form}
@@ -143,6 +145,7 @@ export const EmployeeAddPage: React.FC<EmployeeAddPageProps> = ({ onSuccess, onC
           {isUploading || inviteEmployee.isPending ? "Đang xử lý..." : "Tạo Nhân Viên"}
         </Button>
       </div>
-    </div>
+      </div>
+    </>
   );
 };
