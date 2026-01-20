@@ -70,7 +70,11 @@ export default function Step1Store({ onNext }: Step1StoreProps) {
         )}
       />
 
-      <Button onClick={onNext} className="w-full mt-6 cursor-pointer">
+      <Button
+        onClick={onNext}
+        className="w-full mt-6 cursor-pointer !bg-gradient-to-r !from-emerald-500 !to-teal-600
+              hover:!from-emerald-600 hover:!to-teal-700 text-white"
+      >
         Tiếp tục
       </Button>
     </div>

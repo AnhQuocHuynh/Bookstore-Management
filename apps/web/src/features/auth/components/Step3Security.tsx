@@ -181,7 +181,7 @@ export default function Step3Security({ onBack }: Step3SecurityProps) {
           variant="outline"
           type="button"
           onClick={onBack}
-          className="flex-1 cursor-pointer"
+          className="flex-1 cursor-pointer hover:bg-gray-200"
         >
           Quay lại
         </Button>
@@ -189,7 +189,8 @@ export default function Step3Security({ onBack }: Step3SecurityProps) {
         <Button
           type="submit"
           disabled={isPending}
-          className="flex-1 cursor-pointer"
+          className="flex-1 cursor-pointer !bg-gradient-to-r !from-emerald-500 !to-teal-600
+              hover:!from-emerald-600 hover:!to-teal-700 text-white"
         >
           {isPending ? "Đang xử lý..." : "Hoàn tất đăng ký"}
         </Button>

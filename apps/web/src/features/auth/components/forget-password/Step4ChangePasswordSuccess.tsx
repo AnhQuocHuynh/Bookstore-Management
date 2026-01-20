@@ -25,8 +25,15 @@ const Step4ChangePasswordSuccess = () => {
       </p>
 
       {/* Action */}
-      <Button asChild className="w-full mt-4 cursor-pointer">
-        <Link to="/auth/login">Quay lại Đăng nhập</Link>
+      <Button
+        asChild
+        className="w-full mt-4 cursor-pointer text-white
+      !bg-gradient-to-r !from-emerald-500 !to-teal-600
+              hover:!from-emerald-600 hover:!to-teal-700 text-white"
+      >
+        <Link to="/auth/login" className="text-white">
+          Quay lại Đăng nhập
+        </Link>
       </Button>
     </div>
   );
