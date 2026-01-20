@@ -139,14 +139,15 @@ const Step2VerifyOtp = ({
           variant="outline"
           type="button"
           onClick={onBack}
-          className="cursor-pointer"
+          className="cursor-pointer hover:bg-gray-200"
         >
           Quay lại
         </Button>
         <Button
           onClick={onNext}
           disabled={isPendingHandler}
-          className="w-full cursor-pointer"
+          className="w-full cursor-pointer !bg-gradient-to-r !from-emerald-500 !to-teal-600
+              hover:!from-emerald-600 hover:!to-teal-700 text-white"
         >
           {isPendingHandler ? "Đang xử lý" : "Xác thực"}
         </Button>

@@ -147,11 +147,15 @@ export default function Step2Owner({ onBack, onNext }: Step2OwnerProps) {
         <Button
           variant="outline"
           onClick={onBack}
-          className="flex-1 cursor-pointer"
+          className="flex-1 cursor-pointer hover:bg-gray-200"
         >
           Quay lại
         </Button>
-        <Button onClick={onNext} className="flex-1 cursor-pointer">
+        <Button
+          onClick={onNext}
+          className="flex-1 cursor-pointer !bg-gradient-to-r !from-emerald-500 !to-teal-600
+              hover:!from-emerald-600 hover:!to-teal-700 text-white"
+        >
           Tiếp tục
         </Button>
       </div>

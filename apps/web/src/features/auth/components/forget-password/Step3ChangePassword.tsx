@@ -44,7 +44,7 @@ const Step3ChangePassword: React.FC<Step3ChangePasswordProps> = ({
                   <Button
                     type="button"
                     variant="ghost"
-                    className="absolute inset-y-0 right-3 flex items-center p-0
+                    className="absolute inset-y-1 right-3 flex items-center p-0
              bg-transparent hover:bg-transparent focus:bg-transparent active:bg-transparent"
                     onClick={() => setShowPassword(!showPassword)}
                   >
@@ -82,7 +82,7 @@ const Step3ChangePassword: React.FC<Step3ChangePasswordProps> = ({
                   <Button
                     type="button"
                     variant="ghost"
-                    className="absolute inset-y-0 right-3 flex items-center p-0
+                    className="absolute inset-y-1 right-3 flex items-center p-0
              bg-transparent hover:bg-transparent focus:bg-transparent active:bg-transparent"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   >
@@ -101,7 +101,8 @@ const Step3ChangePassword: React.FC<Step3ChangePasswordProps> = ({
       />
 
       <Button
-        className="w-full cursor-pointer mt-2"
+        className="w-full cursor-pointer mt-2 !bg-gradient-to-r !from-emerald-500 !to-teal-600
+              hover:!from-emerald-600 hover:!to-teal-700 text-white"
         type="submit"
         disabled={isPending}
       >

@@ -36,7 +36,8 @@ const Step1SendEmail = ({ onNext, isPending }: Step1SendEmailProps) => {
       <Button
         onClick={onNext}
         disabled={isPending}
-        className="w-full mt-2 cursor-pointer"
+        className="w-full mt-2 cursor-pointer !bg-gradient-to-r !from-emerald-500 !to-teal-600
+              hover:!from-emerald-600 hover:!to-teal-700 text-white"
       >
         {isPending ? "Đang xử lý..." : " Gửi mã OTP"}
       </Button>
