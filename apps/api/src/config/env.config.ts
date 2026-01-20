@@ -9,6 +9,7 @@ export default () => ({
   },
   jwt_secret: process.env.JWT_SECRET || '',
   jwt_refresh_secret: process.env.JWT_REFRESH_SECRET || '',
+  jwt_expiration_time: process.env.JWT_EXPIRATION_TIME || '3600s',
   crypto_secret_key: process.env.CRYPTO_SECRET_KEY || '',
   mailer: {
     host: process.env.MAILER_HOST || '',
