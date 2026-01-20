@@ -8,6 +8,7 @@ export interface Store {
   name: string;
   address?: string;
   phone?: string;
+  logoUrl?: string;
 }
 
 // Vẫn cần lưu cái này vì API bước 2 bắt buộc gửi lại Password
