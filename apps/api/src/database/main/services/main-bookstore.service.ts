@@ -3,6 +3,7 @@ import { CreateBookStoreDto } from '@/database/main/dto';
 import { BookStore, DatabaseConnection } from '@/database/main/entities';
 import { MainDatabaseConnectionService } from '@/database/main/services/main-database-connection.service';
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -56,6 +57,12 @@ export class MainBookStoreService {
     userId: string,
     manager?: EntityManager,
   ) {
+    if (!userId?.trim()) {
+      throw new BadRequestException(
+        'Thiếu thông tin người dùng để tạo nhà sách. Vui lòng đăng xuất và đăng nhập lại để làm mới phiên đăng nhập.',
+      );
+    }
+
     const availableDbConnections =
       await this.mainDatabaseConnectionService.findAvailableDbConnections(
         manager,
@@ -63,7 +70,7 @@ export class MainBookStoreService {
 
     if (!availableDbConnections.length)
       throw new NotFoundException(
-        'Tất cả các cơ sở dữ liệu của hệ thống đã được sử dụng. Liên hệ với quản trị viên để được tư vấn.',
+        'Tất cả các cơ sở dữ liệu của hệ thống đã được sử dụng. Liên hệ với quản trị viên để được tư vấn. Hint: Có lẽ bạn nên liên hệ quản trị viên tạo 1 database trong supabase trước',
       );
 
     const { name, phoneNumber } = createBookStoreDto;

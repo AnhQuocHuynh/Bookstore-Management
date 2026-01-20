@@ -105,12 +105,11 @@ apiClient.interceptors.response.use(
       console.warn("[axios] Debug error response logging failed:", logErr);
     }
     if (error.response?.status === 401) {
-      if (
-        window.location.pathname !== "/auth/login" &&
-        window.location.pathname !== "/select-store"
-      ) {
+      // Clear persisted auth and hard-redirect to root so routing guards re-evaluate cleanly.
+      // IMPORTANT: We also do this on /select-store (system-token can expire there).
+      if (window.location.pathname !== "/auth/login") {
         localStorage.removeItem("auth-storage");
-        window.location.href = "/auth/login";
+        window.location.href = "/";
       }
     }
     return Promise.reject(error);
