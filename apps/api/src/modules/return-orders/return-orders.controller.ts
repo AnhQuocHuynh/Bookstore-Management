@@ -16,6 +16,8 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  HttpStatus,
+  Query,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -25,14 +27,120 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Roles, UserSession } from '@/common/decorators';
+import { BookStoreId, Roles, UserSession } from '@/common/decorators';
 import { TUserSession } from '@/common/utils';
+import { GetReturnOrdersQueryDto } from '@/common/dtos/return-orders/get-return-orders-query.dto';
 
 @Controller('return-orders')
 @ApiTags('Đơn trả/đổi hàng')
 @ApiBearerAuth()
 export class ReturnOrdersController {
   constructor(private readonly returnOrdersService: ReturnOrdersService) {}
+
+  @ApiOperation({
+    summary: 'Lấy danh sách đơn trả/đổi hàng',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    example: [
+      {
+        id: '351c1480-ec86-4619-86a0-2e89a597e8c6',
+        employee: {
+          id: '6a353274-ea64-47ca-96f0-57206a247608',
+          email: 'ngocanh2k5uit1@example.com',
+          username: 'tunv20060841qkAQ',
+          isActive: true,
+          isFirstLogin: false,
+          role: 'STORE_MANAGER',
+          employeeCode: 'SM0002',
+          fullName: 'Huỳnh Anh Quốc',
+          address: '123 Đường ABC, Hà Nội',
+          phoneNumber: '0988655328',
+          birthDate: '1995-06-14T17:00:00.000Z',
+          avatarUrl: 'https://github.com/shadcn.png',
+          createdAt: '2025-12-25T22:57:05.258Z',
+          updatedAt: '2025-12-25T22:57:05.258Z',
+        },
+        customer: {
+          id: '84c70455-17a8-4e85-a793-dcfe65634d3c',
+          email: 'tien@example.com',
+          fullName: 'Nguyễn Văn Tiến',
+          phoneNumber: '0977998877',
+          address: '56 Đường Nguyễn Văn Cừ, Cần Thơ',
+          customerCode: 'KH0015',
+          note: null,
+          customerType: 'regular',
+          createdAt: '2025-12-25T23:28:02.246Z',
+          updatedAt: '2025-12-25T23:28:02.246Z',
+        },
+        transaction: {
+          id: 'f9895600-6754-4d55-a46d-3202456eca87',
+          totalAmount: 125.5,
+          taxAmount: 0,
+          finalAmount: 125.5,
+          paymentMethod: 'cash',
+          note: null,
+          paidAmount: 0,
+          changeAmount: 0,
+          isCompleted: true,
+          completedAt: null,
+          createdAt: '2025-12-07T05:54:49.483Z',
+          updatedAt: '2025-12-07T05:54:49.483Z',
+        },
+        totalRefundAmount: 112.75,
+        status: 'completed',
+        details: [
+          {
+            id: 'adeb280c-364f-4568-a056-80da977177ab',
+            quantity: 1,
+            type: 'exchange',
+            refundAmount: 112.75,
+            status: 'processed',
+            reason: 'Prefer hardcover version',
+            createdAt: '2026-01-03T05:54:49.483Z',
+            updatedAt: '2026-01-03T05:54:49.483Z',
+          },
+        ],
+        note: 'Exchange completed',
+        createdAt: '2026-01-03T05:54:49.483Z',
+        updatedAt: '2026-01-03T05:54:49.483Z',
+      },
+    ],
+  })
+  @Roles(UserRole.EMPLOYEE, UserRole.OWNER)
+  @Get()
+  async getReturnOrders(
+    @BookStoreId() bookStoreId: string,
+    @Query() getReturnOrdersQueryDto: GetReturnOrdersQueryDto,
+  ) {
+    return this.returnOrdersService.getReturnOrders(
+      bookStoreId,
+      getReturnOrdersQueryDto,
+    );
+  }
+
+  @ApiOperation({
+    summary: 'Xoá đơn trả/đổi hàng',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    example: {
+      message: 'Đã xoá đơn trả/đổi hàng thành công.',
+    },
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Id đơn trả/đổi hàng',
+    example: '351c1480-ec86-4619-86a0-2e89a597e8c6',
+  })
+  @Roles(UserRole.EMPLOYEE, UserRole.OWNER)
+  @Delete(':id')
+  async deleteReturnOrder(
+    @BookStoreId() bookStoreId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.returnOrdersService.deleteReturnOrder(bookStoreId, id);
+  }
 
   private getBookStoreId(userSession: TUserSession) {
     const { bookStoreId } = userSession;

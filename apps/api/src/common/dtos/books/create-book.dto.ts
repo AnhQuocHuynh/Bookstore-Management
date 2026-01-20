@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
   IsDate,
   IsNotEmpty,
@@ -35,23 +36,25 @@ export class CreateBookDto {
   @IsNotEmpty({ message: 'Ngôn ngữ không được để trống' })
   readonly language?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Ảnh bìa sách (URL)',
     example: 'https://cdn.example.com/books/clean-architecture.jpg',
   })
+  @IsOptional()
   @IsUrl(
     {},
     {
       message: 'Đường dẫn đến ảnh bìa không hợp lệ.',
     },
   )
-  readonly coverImage: string;
+  readonly coverImageUrl?: string;
 
   @ApiPropertyOptional({
     description: 'Ngày phát hành',
     example: '2023-05-01',
   })
   @IsOptional()
+  @Type(() => Date)
   @IsDate({ message: 'Ngày phát hành không hợp lệ' })
   readonly publicationDate?: Date;
 
@@ -59,13 +62,13 @@ export class CreateBookDto {
     description: 'ID tác giả',
     example: '550e8400-e29b-41d4-a716-446655440000',
   })
-  @IsUUID('4', { message: 'authorId không đúng định dạng UUID' })
+  @IsUUID('all', { message: 'authorId không đúng định dạng UUID' })
   readonly authorId: string;
 
   @ApiProperty({
     description: 'ID nhà xuất bản',
     example: '660e8400-e29b-41d4-a716-446655440111',
   })
-  @IsUUID('4', { message: 'publisherId không đúng định dạng UUID' })
+  @IsUUID('all', { message: 'publisherId không đúng định dạng UUID' })
   readonly publisherId: string;
 }

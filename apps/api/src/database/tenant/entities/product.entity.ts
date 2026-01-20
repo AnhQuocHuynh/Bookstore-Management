@@ -1,4 +1,4 @@
-import { ProductType } from '@/common/enums';
+import { ProductType, ProductUnit } from '@/common/enums';
 import { DecimalTransformer } from '@/common/transformers';
 import {
   Book,
@@ -35,9 +35,7 @@ export class Product {
   })
   sku: string;
 
-  @Column({
-    unique: true,
-  })
+  @Column()
   name: string;
 
   @Column({
@@ -57,6 +55,15 @@ export class Product {
   imageUrl?: string;
 
   @Column({
+    type: 'decimal',
+    precision: 4,
+    scale: 2,
+    nullable: true,
+    transformer: DecimalTransformer,
+  })
+  taxRate?: number;
+
+  @Column({
     type: 'enum',
     enum: ProductType,
   })
@@ -67,6 +74,13 @@ export class Product {
     default: false,
   })
   isActive: boolean;
+
+  @Column({
+    type: 'enum',
+    enum: ProductUnit,
+    default: ProductUnit.CUON,
+  })
+  unit: ProductUnit;
 
   @CreateDateColumn({
     type: 'timestamp',

@@ -1,9 +1,10 @@
-import { BookStoreId, Roles } from '@/common/decorators';
+import { BookStoreId, Roles, UserSession } from '@/common/decorators';
 import {
   GetEmployeeQueryDto,
   GetEmployeesQueryDto,
   UpdateEmployeeDto,
   ToggleEmployeeStatusDto,
+  UpdateEmployeeRoleDto,
 } from '@/common/dtos';
 import { UserRole } from '@/modules/users/enums';
 import {
@@ -26,6 +27,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { EmployeeService } from './employee.service';
+import { TUserSession } from '@/common/utils';
 
 @Controller('employee')
 @ApiTags('EmployeeController')
@@ -209,6 +211,49 @@ export class EmployeeController {
       id,
       toggleEmployeeStatusDto,
       bookStoreId,
+    );
+  }
+
+  @ApiOperation({
+    summary: 'Thay đổi vai trò của nhân viên',
+    description: 'Chỉ có CHỦ NHÀ SÁCH mới có quyền thực hiện',
+  })
+  @Patch(':id/role')
+  @Roles(UserRole.OWNER)
+  @ApiParam({
+    name: 'id',
+    description: 'Id của nhân viên',
+  })
+  @ApiBody({
+    type: UpdateEmployeeRoleDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    example: {
+      id: '7a3ef648-3a4d-497d-80c0-68c38a148015',
+      email: 'ngocanhsedev2005@gmail.com',
+      username: 'nunth200508)HUvl',
+      isActive: true,
+      isFirstLogin: true,
+      role: 'STAFF',
+      fullName: 'ADC',
+      address: 'abcdef',
+      phoneNumber: '0393878912',
+      birthDate: '2005-08-20T00:00:00.000Z',
+      avatarUrl: null,
+      createdAt: '2025-11-22T08:22:17.559Z',
+      updatedAt: '2025-11-22T11:08:46.770Z',
+    },
+  })
+  async updateEmployeeRole(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updateEmployeeRoleDto: UpdateEmployeeRoleDto,
+    @UserSession() userSession: TUserSession,
+  ) {
+    return this.employeeService.updateEmployeeRole(
+      id,
+      updateEmployeeRoleDto,
+      userSession,
     );
   }
 }

@@ -1,6 +1,13 @@
 import { IsStrongPassword, IsVietnamesePhoneNumber } from '@/common/decorators';
 import { Type } from 'class-transformer';
-import { IsDate, IsEmail, IsNotEmpty, IsString } from 'class-validator';
+import {
+  IsDate,
+  IsEmail,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUrl,
+} from 'class-validator';
 
 export class CreateMainUserDto {
   @IsString()
@@ -23,4 +30,8 @@ export class CreateMainUserDto {
   @Type(() => Date)
   @IsDate()
   readonly birthDate: Date;
+
+  @IsOptional()
+  @IsUrl()
+  readonly avatarUrl?: string;
 }

@@ -6,7 +6,7 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { omit } from 'lodash';
 import { Client } from 'pg';
-import { IsNull, Repository } from 'typeorm';
+import { EntityManager, IsNull, Repository } from 'typeorm';
 
 @Injectable()
 export class MainDatabaseConnectionService {
@@ -19,12 +19,19 @@ export class MainDatabaseConnectionService {
   async updateDatabaseConnection(
     data: Partial<DatabaseConnection>,
     dbConnectionId: string,
+    manager?: EntityManager,
   ) {
-    return this.dbConnectionRepo.update({ id: dbConnectionId }, data);
+    const repo = manager
+      ? manager.getRepository(DatabaseConnection)
+      : this.dbConnectionRepo;
+    return repo.update({ id: dbConnectionId }, data);
   }
 
-  async findAvailableDbConnections() {
-    return this.dbConnectionRepo.find({
+  async findAvailableDbConnections(manager?: EntityManager) {
+    const repo = manager
+      ? manager.getRepository(DatabaseConnection)
+      : this.dbConnectionRepo;
+    return repo.find({
       where: {
         isConnected: false,
         lastConnectedAt: IsNull(),

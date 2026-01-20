@@ -11,8 +11,12 @@ export class MainUserService {
     @InjectRepository(User) private readonly userRepo: Repository<User>,
   ) {}
 
-  async findUserByField(field: keyof User, value: string) {
-    const user = await this.userRepo.findOne({
+  async findUserByField(
+    field: keyof User,
+    value: string,
+    repo?: Repository<User>,
+  ) {
+    const user = await (repo ?? this.userRepo).findOne({
       where: {
         [field]: value,
       },
@@ -21,12 +25,16 @@ export class MainUserService {
     return user ? user : null;
   }
 
-  async createNewUser(createUserDto: CreateMainUserDto) {
-    const newUser = this.userRepo.create({
+  async createNewUser(
+    createUserDto: CreateMainUserDto,
+    repo?: Repository<User>,
+  ) {
+    const newUser = (repo ?? this.userRepo).create({
       ...createUserDto,
       password: await hashPassword(createUserDto.password),
+      avatarUrl: 'https://github.com/shadcn.png',
     });
-    return this.userRepo.save(newUser);
+    return (repo ?? this.userRepo).save(newUser);
   }
 
   async updatePasswordOfUser(userId: string, newPassword: string) {

@@ -7,15 +7,18 @@ import { PurchaseStatus } from '@/common/enums';
 import { TUserSession } from '@/common/utils';
 import {
   Employee,
+  Inventory,
   Product,
   PurchaseOrder,
   PurchaseOrderDetail,
   Supplier,
 } from '@/database/tenant/entities';
+import { InventoriesService } from '@/modules/inventories/inventories.service';
 import { ProductsService } from '@/modules/products/products.service';
 import { UserRole } from '@/modules/users/enums';
 import { TenantService } from '@/tenants/tenant.service';
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   InternalServerErrorException,
@@ -30,6 +33,7 @@ export class PurchaseOrdersService {
   constructor(
     private readonly tenantService: TenantService,
     private readonly productsService: ProductsService,
+    private readonly inventoriesService: InventoriesService,
   ) {}
 
   async findPurchaseOrderByField(
@@ -53,7 +57,6 @@ export class PurchaseOrdersService {
     userSession: TUserSession,
   ) {
     const { bookStoreId, userId } = userSession;
-
     const dataSource = await this.tenantService.getTenantConnection({
       bookStoreId,
     });
@@ -61,70 +64,74 @@ export class PurchaseOrdersService {
     return dataSource.transaction(async (manager) => {
       const { supplierId, createPurchaseOrderDetailDtos, note } =
         createPurchaseOrderDto;
+
       const purchaseOrderRepo = manager.getRepository(PurchaseOrder);
       const purchaseOrderDetailRepo =
         manager.getRepository(PurchaseOrderDetail);
       const supplierRepo = manager.getRepository(Supplier);
       const employeeRepo = manager.getRepository(Employee);
 
+      // 1. Kiểm tra nhà cung cấp
       const findSupplier = await supplierRepo.findOne({
-        where: {
-          id: supplierId,
-        },
+        where: { id: supplierId },
       });
-
       if (!findSupplier) {
         throw new NotFoundException('Không tìm thấy thông tin nhà cung cấp.');
       }
 
+      // 2. Kiểm tra nhân viên
       const employee = await employeeRepo.findOne({
-        where: {
-          id: userId,
-        },
+        where: { id: userId },
       });
-
       if (!employee) {
         throw new NotFoundException('Không tìm thấy thông tin của bạn.');
       }
 
+      // 3. Tạo Purchase Order (Status mặc định COMPLETED như logic cũ)
       let newPurchaseOrder = purchaseOrderRepo.create({
         supplier: findSupplier,
-        employee: {
-          id: userId,
-        },
+        employee: { id: userId },
         ...(note?.trim() && { note }),
         totalAmount: 0,
+        status: PurchaseStatus.COMPLETED,
+        purchaseDate: new Date(),
       });
 
       await purchaseOrderRepo.save(newPurchaseOrder);
 
+      // 4. Xử lý chi tiết đơn hàng (CHỈ TẠO MỚI SẢN PHẨM)
       for (const createPurchaseOrderDetailDto of createPurchaseOrderDetailDtos) {
         const { createProductDto, quantity, unitPrice } =
           createPurchaseOrderDetailDto;
 
-        const subTotal = new Decimal(unitPrice).mul(quantity).toFixed(2);
-
-        newPurchaseOrder.totalAmount = new Decimal(newPurchaseOrder.totalAmount)
-          .add(subTotal)
-          .toNumber();
-
-        const newProduct = await this.productsService.createProduct(
+        // Gọi service tạo sản phẩm mới (Service này đã có logic check trùng SKU -> throw ConflictException)
+        // [Lưu ý]: Hàm createProduct bên ProductsService cần đảm bảo hoạt động trong transaction `manager` truyền vào
+        const product = await this.productsService.createProduct(
           createProductDto,
           manager,
           employee,
           supplierId,
         );
 
-        if (!newProduct) {
+        if (!product) {
           throw new InternalServerErrorException(
             'Đã xảy ra lỗi khi tạo sản phẩm mới.',
           );
         }
 
+        // Tính toán SubTotal
+        const subTotal = new Decimal(unitPrice).mul(quantity).toFixed(2);
+
+        // Cộng dồn vào tổng đơn hàng
+        newPurchaseOrder.totalAmount = new Decimal(newPurchaseOrder.totalAmount)
+          .add(subTotal)
+          .toNumber();
+
+        // Tạo chi tiết đơn mua
         const newPurchaseOrderDetail = purchaseOrderDetailRepo.create({
           purchaseOrder: newPurchaseOrder,
           subTotal: new Decimal(subTotal).toNumber(),
-          product: newProduct,
+          product,
           quantity,
           unitPrice,
         });
@@ -132,8 +139,10 @@ export class PurchaseOrdersService {
         await purchaseOrderDetailRepo.save(newPurchaseOrderDetail);
       }
 
+      // Cập nhật lại tổng tiền cho đơn hàng
       await purchaseOrderRepo.save(newPurchaseOrder);
 
+      // Trả về kết quả
       const updatedPurchaseOrder = await this.findPurchaseOrderByField(
         purchaseOrderRepo,
         'id',
@@ -251,6 +260,7 @@ export class PurchaseOrdersService {
       const productRepo = manager.getRepository(Product);
       const purchaseOrderDetailRepo =
         manager.getRepository(PurchaseOrderDetail);
+      const inventoryRepo = manager.getRepository(Inventory);
       const findPurchase = await this.findPurchaseOrderByField(
         purchaseOrderRepo,
         'id',
@@ -294,17 +304,23 @@ export class PurchaseOrdersService {
       if (status === PurchaseStatus.SENT_TO_SUPPLIER) {
         findPurchase.purchaseDate = new Date();
       } else if (status === PurchaseStatus.COMPLETED) {
-        for (const { product } of findPurchase.details) {
+        for (const { product, quantity } of findPurchase.details) {
           if (!product.isActive) {
             product.isActive = true;
             await productRepo.save(product);
           }
+          await this.inventoriesService.updateStockOfProductInventory(
+            product.id,
+            quantity,
+            inventoryRepo,
+            'increase',
+          );
         }
       }
 
       if (updatePurchaseOrderDetailDtos?.length) {
         for (const updatePurchaseOrderDetailDto of updatePurchaseOrderDetailDtos) {
-          const { productId, quantity, unitPrice } =
+          const { productId, quantity, unitPrice, taxRate } =
             updatePurchaseOrderDetailDto;
 
           const findProduct = await productRepo.findOne({
@@ -317,6 +333,11 @@ export class PurchaseOrdersService {
             throw new NotFoundException(
               'Không tìm thấy thông tin của sản phẩm.',
             );
+          }
+
+          if (taxRate && taxRate > 0) {
+            findProduct.taxRate = taxRate;
+            await productRepo.save(findProduct);
           }
 
           // Check if the purchase order already has a detail with this productId

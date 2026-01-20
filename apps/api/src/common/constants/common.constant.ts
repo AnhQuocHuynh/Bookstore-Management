@@ -21,3 +21,10 @@ export const EMPLOYEE_ROLE_PREFIX: Record<EmployeeRole, string> = {
   [EmployeeRole.INVENTORY]: 'IV',
   [EmployeeRole.ACCOUNTANT]: 'AC',
 };
+export const EmployeeRoleLabelMap: Record<EmployeeRole, string> = {
+  [EmployeeRole.STORE_MANAGER]: 'Quản lý cửa hàng',
+  [EmployeeRole.STAFF]: 'Nhân viên',
+  [EmployeeRole.CASHIER]: 'Thu ngân',
+  [EmployeeRole.INVENTORY]: 'Nhân viên kho',
+  [EmployeeRole.ACCOUNTANT]: 'Kế toán',
+};

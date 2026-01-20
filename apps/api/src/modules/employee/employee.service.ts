@@ -1,9 +1,15 @@
-import { assignDefined } from '@/common/utils';
+import {
+  assignDefined,
+  getEmployeeRoleLabel,
+  handleGenerateUserNotificationContent,
+  TUserSession,
+} from '@/common/utils';
 import {
   GetEmployeeQueryDto,
   GetEmployeesQueryDto,
   UpdateEmployeeDto,
   ToggleEmployeeStatusDto,
+  UpdateEmployeeRoleDto,
 } from '@/common/dtos';
 import { Employee } from '@/database/tenant/entities';
 import { TenantService } from '@/tenants/tenant.service';
@@ -14,10 +20,15 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { FindOptionsWhere } from 'typeorm';
+import { NotificationsService } from '@/modules/notifications/notifications.service';
+import { NotificationType, ReceiverType } from '@/common/enums';
 
 @Injectable()
 export class EmployeeService {
-  constructor(private readonly tenantService: TenantService) {}
+  constructor(
+    private readonly tenantService: TenantService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   async getEmployees(bookStoreId: string, query: GetEmployeesQueryDto) {
     const dataSource = await this.tenantService.getTenantConnection({
@@ -180,5 +191,72 @@ export class EmployeeService {
     await employeeRepo.save(employee);
 
     return this.getEmployee(bookStoreId, { id });
+  }
+
+  async updateEmployeeRole(
+    id: string,
+    updateEmployeeRoleDto: UpdateEmployeeRoleDto,
+    userSession: TUserSession,
+  ) {
+    const { bookStoreId, userId } = userSession;
+    const dataSource = await this.tenantService.getTenantConnection({
+      bookStoreId,
+    });
+
+    const employeeRepo = dataSource.getRepository(Employee);
+
+    const employee = await employeeRepo.findOne({
+      where: {
+        id,
+      },
+    });
+
+    if (!employee) {
+      throw new NotFoundException('Không tìm thấy thông tin nhân viên.');
+    }
+
+    const { role } = updateEmployeeRoleDto;
+
+    employee.role = role;
+    await employeeRepo.save(employee);
+
+    await this.notificationsService.createNotification(
+      {
+        receiverId: employee.id,
+        receiverType: ReceiverType.EMPLOYEE,
+        content: handleGenerateUserNotificationContent(
+          NotificationType.ROLE_CHANGED,
+          {
+            isOwner: false,
+            role: getEmployeeRoleLabel(role),
+            time: new Date(),
+          },
+        ),
+        notificationType: NotificationType.ROLE_CHANGED,
+      },
+      bookStoreId,
+    );
+
+    await this.notificationsService.createNotification(
+      {
+        receiverId: userId,
+        receiverType: ReceiverType.OWNER,
+        content: handleGenerateUserNotificationContent(
+          NotificationType.ROLE_CHANGED,
+          {
+            isOwner: true,
+            role: getEmployeeRoleLabel(role),
+            time: new Date(),
+            employeeName: employee.fullName,
+          },
+        ),
+        notificationType: NotificationType.ROLE_CHANGED,
+      },
+      bookStoreId,
+    );
+
+    return this.getEmployee(bookStoreId ?? '', {
+      id,
+    });
   }
 }

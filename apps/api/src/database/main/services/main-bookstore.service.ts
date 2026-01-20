@@ -1,8 +1,9 @@
 import { generateStoreCode } from '@/common/utils';
 import { CreateBookStoreDto } from '@/database/main/dto';
-import { BookStore } from '@/database/main/entities';
+import { BookStore, DatabaseConnection } from '@/database/main/entities';
 import { MainDatabaseConnectionService } from '@/database/main/services/main-database-connection.service';
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -10,6 +11,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { omit } from 'lodash';
 import {
+  EntityManager,
   FindOptionsOrder,
   FindOptionsRelations,
   FindOptionsWhere,
@@ -38,8 +40,9 @@ export class MainBookStoreService {
     field: keyof BookStore,
     value: string,
     relations?: FindOptionsRelations<BookStore> | undefined,
+    repo?: Repository<BookStore>,
   ) {
-    const bookStore = await this.bookStoreRepo.findOne({
+    const bookStore = await (repo ?? this.bookStoreRepo).findOne({
       where: {
         [field]: value,
       },
@@ -52,20 +55,55 @@ export class MainBookStoreService {
   async createNewBookStore(
     createBookStoreDto: CreateBookStoreDto,
     userId: string,
+    manager?: EntityManager,
   ) {
+    if (!userId?.trim()) {
+      throw new BadRequestException(
+        'Thiếu thông tin người dùng để tạo nhà sách. Vui lòng đăng xuất và đăng nhập lại để làm mới phiên đăng nhập.',
+      );
+    }
+
     const availableDbConnections =
-      await this.mainDatabaseConnectionService.findAvailableDbConnections();
+      await this.mainDatabaseConnectionService.findAvailableDbConnections(
+        manager,
+      );
 
     if (!availableDbConnections.length)
       throw new NotFoundException(
-        'Tất cả các cơ sở dữ liệu của hệ thống đã được sử dụng. Liên hệ với quản trị viên để được tư vấn.',
+        'Tất cả các cơ sở dữ liệu của hệ thống đã được sử dụng. Liên hệ với quản trị viên để được tư vấn. Hint: Có lẽ bạn nên liên hệ quản trị viên tạo 1 database trong supabase trước',
       );
 
-    const { name } = createBookStoreDto;
+    const { name, phoneNumber } = createBookStoreDto;
 
-    const newBookStore = this.bookStoreRepo.create({
+    const bookStoreRepo = manager
+      ? manager.getRepository(BookStore)
+      : this.bookStoreRepo;
+
+    const existingName = await bookStoreRepo.findOne({
+      where: {
+        name,
+      },
+    });
+
+    if (existingName) {
+      throw new ConflictException(`Nhà sách '${name}' đã tồn tại.`);
+    }
+
+    const existingPhoneNumber = await bookStoreRepo.findOne({
+      where: {
+        phoneNumber,
+      },
+    });
+
+    if (existingPhoneNumber) {
+      throw new ConflictException(
+        `Đã có nhà sách sử dụng số điện thoại '${phoneNumber}' rồi.`,
+      );
+    }
+
+    const newBookStore = bookStoreRepo.create({
       ...createBookStoreDto,
-      code: await this.generateUniqueStoreCode(name),
+      code: await this.generateUniqueStoreCode(name, bookStoreRepo),
       connection: {
         id: availableDbConnections[0].id,
       },
@@ -80,9 +118,10 @@ export class MainBookStoreService {
         lastConnectedAt: new Date(),
       },
       availableDbConnections[0].id,
+      manager,
     );
 
-    return this.bookStoreRepo.save(newBookStore);
+    return bookStoreRepo.save(newBookStore);
   }
 
   async updateBookStore(data: Partial<BookStore>, bookStoreId: string) {
@@ -95,10 +134,16 @@ export class MainBookStoreService {
     value: string,
     email: string,
     fieldLabel: string,
+    repo?: Repository<BookStore>,
   ) {
-    const existing = await this.findBookStoreByField(field, value, {
-      user: true,
-    });
+    const existing = await this.findBookStoreByField(
+      field,
+      value,
+      {
+        user: true,
+      },
+      repo,
+    );
 
     if (!existing) return;
 
@@ -127,10 +172,15 @@ export class MainBookStoreService {
     });
   }
 
-  private async generateUniqueStoreCode(storeName: string): Promise<string> {
+  private async generateUniqueStoreCode(
+    storeName: string,
+    repo?: Repository<BookStore>,
+  ): Promise<string> {
     while (true) {
       const code = generateStoreCode(storeName);
-      const exists = await this.bookStoreRepo.findOne({ where: { code } });
+      const exists = await (repo ?? this.bookStoreRepo).findOne({
+        where: { code },
+      });
       if (!exists) return code;
     }
   }

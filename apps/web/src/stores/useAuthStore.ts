@@ -1,20 +1,14 @@
-// src/stores/useAuthStore.ts
+import { UserProfile } from "@/features/auth";
+import { authApi } from "@/features/auth/api/auth.api";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-
-export interface User {
-  id: string;
-  email: string;
-  name: string;
-  role: string;
-  avatar?: string;
-}
 
 export interface Store {
   id: string;
   name: string;
   address?: string;
   phone?: string;
+  logoUrl?: string;
 }
 
 // Vẫn cần lưu cái này vì API bước 2 bắt buộc gửi lại Password
@@ -25,24 +19,48 @@ interface TempCredentials {
   role: "OWNER" | "EMPLOYEE" | "ADMIN";
 }
 
+interface RegisterTemp {
+  storeName: string;
+  storePhoneNumber: string;
+  storeAddress: string;
+  fullName: string;
+  email: string;
+  phoneNumber: string;
+  birthDate: string;
+  address: string;
+  password: string;
+  confirmPassword: string;
+  agreeTerms: boolean;
+}
+
 interface AuthState {
-  user: User | null;
+  user: UserProfile | null;
   accessToken: string | null; // Dùng chung cho cả System Token và Store Token
   currentStore: Store | null;
   isAuthenticated: boolean;
   tempCredentials: TempCredentials | null;
+  registerTemp: RegisterTemp | null;
+  tokenFirstLogin: string | null;
+
+  setTokenFirstLogin: (tokenFirstLogin: string) => void;
+
+  setRegisterTemp: (registerTemp: RegisterTemp | null) => void;
 
   // Action Login bước 1
   setSystemToken: (
     token: string,
     tempCreds: TempCredentials,
-    user?: User,
+    user?: UserProfile,
   ) => void;
 
   // Action Login bước 2 (Update token mới)
-  setStoreToken: (newToken: string, store: Store, user: User) => void;
+  setStoreToken: (newToken: string, store: Store, user: UserProfile) => void;
+
+  // Action cập nhật thông tin store (khi settings thay đổi)
+  updateCurrentStore: (storeUpdate: Partial<Store>) => void;
 
   logout: () => void;
+  logoutAsync: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -53,6 +71,18 @@ export const useAuthStore = create<AuthState>()(
       currentStore: null,
       isAuthenticated: false,
       tempCredentials: null,
+      registerTemp: null,
+      tokenFirstLogin: null,
+
+      setTokenFirstLogin: (token) =>
+        set({
+          tokenFirstLogin: token,
+        }),
+
+      setRegisterTemp: (registerTemp) =>
+        set({
+          registerTemp,
+        }),
 
       // Bước 1: Lưu token hệ thống
       setSystemToken: (token, tempCredentials, user) =>
@@ -73,6 +103,14 @@ export const useAuthStore = create<AuthState>()(
           tempCredentials: null, // Xóa pass tạm
         }),
 
+      // Cập nhật thông tin store (khi settings thay đổi)
+      updateCurrentStore: (storeUpdate) =>
+        set((state) => ({
+          currentStore: state.currentStore
+            ? { ...state.currentStore, ...storeUpdate }
+            : null,
+        })),
+
       logout: () =>
         set({
           user: null,
@@ -80,7 +118,32 @@ export const useAuthStore = create<AuthState>()(
           currentStore: null,
           isAuthenticated: false,
           tempCredentials: null,
+          registerTemp: null,
+          tokenFirstLogin: null,
         }),
+
+      logoutAsync: async () => {
+        try {
+          // Gọi API đăng xuất để revoke refresh token
+          await authApi.signOut();
+        } catch (error) {
+          // Nếu API fail, vẫn clear state để đảm bảo user có thể logout
+          console.error("Error during logout:", error);
+        } finally {
+          // Luôn clear state sau khi gọi API (thành công hoặc thất bại)
+          set({
+            user: null,
+            accessToken: null,
+            currentStore: null,
+            isAuthenticated: false,
+            tempCredentials: null,
+            registerTemp: null,
+            tokenFirstLogin: null,
+          });
+          // Xóa localStorage để đảm bảo state được clear hoàn toàn
+          localStorage.removeItem("auth-storage");
+        }
+      },
     }),
     {
       name: "auth-storage",

@@ -1,0 +1,201 @@
+import React, { useEffect, useState } from "react";
+import { Modal, Form, Input, DatePicker, Button, message, Select, Switch } from "antd";
+import { EmployeeFormData } from "../types";
+import dayjs from "dayjs";
+
+interface EmployeeEditPanelProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onSubmit: (data: Partial<EmployeeFormData>) => void;
+    initialData?: EmployeeFormData;
+}
+
+export const EmployeeEditPanel: React.FC<EmployeeEditPanelProps> = ({
+    isOpen,
+    onClose,
+    onSubmit,
+    initialData,
+}) => {
+    const [form] = Form.useForm();
+    const [isUploading, setIsUploading] = useState(false);
+    const [isDirty, setIsDirty] = useState(false);
+
+    useEffect(() => {
+        if (isOpen && initialData) {
+            form.setFieldsValue({
+                fullName: initialData.fullName,
+                email: initialData.email,
+                phone: initialData.phone,
+                address: initialData.address,
+                dateOfBirth: initialData.dateOfBirth ? dayjs(initialData.dateOfBirth) : null,
+                role: initialData.role,
+                isActive: initialData.isActive,
+            });
+            setIsDirty(false);
+        } else if (!isOpen) {
+            form.resetFields();
+            setIsDirty(false);
+        }
+    }, [isOpen, initialData, form]);
+
+    const handleClose = () => {
+        if (isDirty) {
+            Modal.confirm({
+                title: "Bạn có chắc muốn hủy những thay đổi?",
+                okText: "Có",
+                cancelText: "Không",
+                onOk: onClose,
+            });
+        } else {
+            onClose();
+        }
+    };
+
+    const handleSubmit = async () => {
+        try {
+            const values = await form.validateFields();
+            setIsUploading(true);
+
+            const formData: Partial<EmployeeFormData> = {
+                fullName: values.fullName,
+                email: values.email,
+                phone: values.phone,
+                address: values.address,
+                dateOfBirth: values.dateOfBirth ? values.dateOfBirth.toISOString() : undefined,
+            };
+
+            // Include role and isActive so parent can handle them separately
+            const completeData = {
+                ...formData,
+                role: values.role,
+                isActive: values.isActive,
+            };
+
+            onSubmit(completeData);
+
+            setIsDirty(false);
+        } catch (error) {
+            message.error("Vui lòng kiểm tra lại thông tin");
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    return (
+        <Modal
+            open={isOpen}
+            onCancel={handleClose}
+            width={800}
+            centered
+            footer={null}
+            destroyOnClose={true}
+            closeIcon={<span className="text-3xl text-[#102e3c] cursor-pointer hover:opacity-70">×</span>}
+            styles={{
+                body: { backgroundColor: "#D4E5E4", padding: 0 },
+                mask: { backgroundColor: "rgba(16, 46, 60, 0.5)" },
+            }}
+            title={null}
+        >
+            <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "#D4E5E4", borderRadius: 12, zIndex: 0 }} />
+
+            <div className="bg-[#D4E5E4] rounded-xl p-8 relative" style={{ zIndex: 1 }}>
+                <h2 className="text-center text-3xl font-bold text-[#102e3c] mb-8">Cập Nhật Thông Tin Nhân Viên</h2>
+
+                <div className="flex justify-center">
+                    <div className="w-full max-w-md">
+                        <Form form={form} layout="vertical" requiredMark={false} className="space-y-4" onValuesChange={() => setIsDirty(true)}>
+                            <Form.Item
+                                name="fullName"
+                                label={<span className="text-lg font-semibold text-[#102e3c]">Họ và Tên:</span>}
+                                rules={[{ required: true, message: "Vui lòng nhập họ tên" }]}
+                            >
+                                <Input className="border-0 border-b-2 border-[#102e3c] rounded-none bg-transparent text-lg px-0 focus:shadow-none hover:border-[#1a998f] focus:border-[#1a998f]" />
+                            </Form.Item>
+
+                            <Form.Item
+                                name="email"
+                                label={<span className="text-lg font-semibold text-[#102e3c]">Email:</span>}
+                                rules={[
+                                    { required: true, message: "Vui lòng nhập email" },
+                                    { type: "email", message: "Email không hợp lệ" }
+                                ]}
+                            >
+                                <Input className="border-0 border-b-2 border-[#102e3c] rounded-none bg-transparent text-lg px-0 focus:shadow-none hover:border-[#1a998f] focus:border-[#1a998f]" />
+                            </Form.Item>
+
+                            <Form.Item
+                                name="phone"
+                                label={<span className="text-lg font-semibold text-[#102e3c]">Số Điện Thoại:</span>}
+                                rules={[{ required: true, message: "Vui lòng nhập số điện thoại" }]}
+                            >
+                                <Input className="border-0 border-b-2 border-[#102e3c] rounded-none bg-transparent text-lg px-0 focus:shadow-none hover:border-[#1a998f] focus:border-[#1a998f]" />
+                            </Form.Item>
+
+                            <Form.Item
+                                name="address"
+                                label={<span className="text-lg font-semibold text-[#102e3c]">Địa Chỉ:</span>}
+                                rules={[{ required: true, message: "Vui lòng nhập địa chỉ" }]}
+                            >
+                                <Input className="border-0 border-b-2 border-[#102e3c] rounded-none bg-transparent text-lg px-0 focus:shadow-none hover:border-[#1a998f] focus:border-[#1a998f]" />
+                            </Form.Item>
+
+                            <Form.Item
+                                name="dateOfBirth"
+                                label={<span className="text-lg font-semibold text-[#102e3c]">Ngày Sinh:</span>}
+                            >
+                                <DatePicker
+                                    format="DD/MM/YYYY"
+                                    placeholder="Chọn ngày sinh"
+                                    className="w-full border-0 border-b-2 border-[#102e3c] rounded-none bg-transparent text-lg px-0 focus:shadow-none hover:border-[#1a998f] focus:border-[#1a998f]"
+                                    style={{ fontSize: 18 }}
+                                />
+                            </Form.Item>
+
+                            <Form.Item
+                                name="role"
+                                label={<span className="text-lg font-semibold text-[#102e3c]">Vai Trò:</span>}
+                                rules={[{ required: true, message: "Vui lòng chọn vai trò" }]}
+                            >
+                                <Select
+                                    placeholder="Chọn vai trò"
+                                    className="border-0 border-b-2 border-[#102e3c] rounded-none bg-transparent text-lg hover:border-[#1a998f] focus:border-[#1a998f]"
+                                    options={[
+                                          { label: "Quản lý cửa hàng", value: "STORE_MANAGER"},
+  { label: "Nhân viên", value: 'STAFF' },
+  { label: "Thu ngân", value:'CASHIER' },
+  { label: "Kho hàng", value: "INVENTORY"},
+  { label: "Kế toán", value: "ACCOUNTANT"},
+                                    ]}
+                                />
+                            </Form.Item>
+
+                            <Form.Item
+                                name="isActive"
+                                label={<span className="text-lg font-semibold text-[#102e3c]">Trạng Thái:</span>}
+                                valuePropName="checked"
+                            >
+                                <Switch
+                                    checkedChildren="Hoạt động"
+                                    unCheckedChildren="Ngừng hoạt động"
+                                    className="bg-gray-400"
+                                />
+                            </Form.Item>
+                        </Form>
+                    </div>
+                </div>
+
+                <div className="flex justify-center mt-8">
+                    <Button
+                        type="primary"
+                        onClick={handleSubmit}
+                        loading={isUploading}
+                        disabled={isUploading}
+                        className="h-12 px-20 rounded-2xl bg-[#1a998f] text-2xl font-bold border-none hover:bg-[#158f85]"
+                    >
+                        {isUploading ? "Đang xử lý..." : "Cập Nhật"}
+                    </Button>
+                </div>
+            </div>
+        </Modal>
+    );
+};

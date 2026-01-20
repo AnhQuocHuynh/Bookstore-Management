@@ -24,7 +24,12 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { EntityManager, FindOptionsRelations, Repository } from 'typeorm';
+import {
+  EntityManager,
+  FindOptionsRelations,
+  Repository,
+  Brackets,
+} from 'typeorm';
 
 @Injectable()
 export class ProductsService {
@@ -34,7 +39,7 @@ export class ProductsService {
     private readonly supplierService: SupplierService,
     private readonly categoriesService: CategoriesService,
     private readonly inventoriesService: InventoriesService,
-  ) {}
+  ) { }
 
   async findProductByField(
     field: keyof Product,
@@ -66,47 +71,40 @@ export class ProductsService {
     const { createInventoryDto, createBookDto, type, categoryIds, ...res } =
       createProductDto;
 
+    // 1. Kiểm tra nhà cung cấp
     const supplier = await this.supplierService.findSupplierByField(
       'id',
       supplierId,
       supplierRepo,
     );
-
     if (!supplier)
       throw new NotFoundException(
         `Không tìm thấy nhà cung cấp với mã ${supplierId}.`,
       );
 
-    let newProduct = await productRepo.findOne({
-      where: [{ sku: res.sku }, { name: res.name }],
+    // 2. [FIXED] Chỉ kiểm tra trùng SKU. Nếu trùng -> Báo lỗi Conflict ngay lập tức.
+    // Bỏ qua kiểm tra Name.
+    const existingProduct = await productRepo.findOne({
+      where: { sku: res.sku },
     });
 
-    if (newProduct) {
-      await productRepo.update(
-        {
-          id: newProduct.id,
-        },
-        {
-          price: res.price,
-          ...(res?.description?.trim() && {
-            description: res.description.trim(),
-          }),
-          type,
-          supplier,
-          categories: [],
-        },
+    if (existingProduct) {
+      throw new ConflictException(
+        `Sản phẩm với mã SKU '${res.sku}' đã tồn tại trong hệ thống. Vui lòng kiểm tra lại.`,
       );
-    } else {
-      newProduct = productRepo.create({
-        ...res,
-        type,
-        supplier,
-        categories: [],
-      });
-
-      await productRepo.save(newProduct);
     }
 
+    // 3. [FIXED] Luôn luôn tạo mới (Create), không còn logic Update
+    const newProduct = productRepo.create({
+      ...res,
+      type,
+      supplier,
+      categories: [],
+    });
+
+    await productRepo.save(newProduct);
+
+    // 4. Các logic phụ trợ giữ nguyên (Gán danh mục, tạo sách, tạo kho...)
     await this.categoriesService.assignCategoriesToProduct(
       categoryIds,
       newProduct,
@@ -198,7 +196,23 @@ export class ProductsService {
       isActive,
       sortBy,
       sortOrder,
+      keyword,
     } = getProductsQueryDto;
+
+    if (keyword?.trim()) {
+      const searchTerm = `%${keyword.trim()}%`;
+      qb.andWhere(
+        new Brackets((qb) => {
+          qb.where('product.name ILIKE :keyword', { keyword: searchTerm })
+            .orWhere('product.sku ILIKE :keyword', { keyword: searchTerm })
+            // Nếu sản phẩm là Sách, tìm luôn trong tên tác giả hoặc ISBN
+            .orWhere('book.isbn ILIKE :keyword', { keyword: searchTerm });
+
+          // Bạn có thể mở rộng thêm tìm kiếm theo danh mục nếu muốn:
+          // .orWhere('categories.name ILIKE :keyword', { keyword: searchTerm });
+        }),
+      );
+    }
 
     const exactFilters: Record<string, any> = {
       sku,
@@ -223,14 +237,16 @@ export class ProductsService {
     });
 
     if (categoryName?.trim() || categorySlug?.trim()) {
+      // Code MỚI (Đã sửa)
       if (categoryName?.trim()) {
-        qb.andWhere('category.name ILIKE :categoryName', {
+        // Đổi category -> categories
+        qb.andWhere('categories.name ILIKE :categoryName', {
           categoryName: `%${categoryName?.trim()}%`,
         });
       }
-
       if (categorySlug?.trim()) {
-        qb.andWhere('category.slug = :categorySlug', {
+        // Đổi category -> categories
+        qb.andWhere('categories.slug = :categorySlug', {
           categorySlug: categorySlug?.trim(),
         });
       }
@@ -364,12 +380,6 @@ export class ProductsService {
         throw new ConflictException(`Sản phẩm với mã SKU ${sku} đã tồn tại.`);
     }
 
-    if (name?.trim()) {
-      const existing = await this.findProductByField('name', name, productRepo);
-
-      if (existing && existing.id !== product.id)
-        throw new ConflictException(`Sản phẩm với tên ${name} đã tồn tại.`);
-    }
 
     Object.assign(product, updateProductDto);
     await productRepo.save(product);

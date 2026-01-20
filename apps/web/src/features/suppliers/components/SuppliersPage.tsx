@@ -1,275 +1,232 @@
-import React, { useState, useEffect } from "react";
-import { Card, Table, Button, Space, Spin, message } from "antd";
-import { PlusOutlined } from "@ant-design/icons";
-import axios from "axios";
+import React, { useState, useMemo } from "react";
+import { message, Input, Button, Modal } from "antd"; // Import Modal
+import { Search, Plus, X } from "lucide-react";
+import { useDebounce } from "@/hooks/use-debounce";
 
-interface Supplier {
-  key: number;
-  id?: string;
-  supplierId: string;
-  name: string;
-  email: string;
-  phoneNumber: string;
-  contactPerson: string;
-  status: string;
-  address?: string;
-  taxCode?: string;
-  note?: string;
-  createdDate?: string;
-  updateDate?: string;
-}
+import { TableHeader, SupplierTable } from "./SupplierTable";
+import { SupplierDetailPanel } from "./SupplierDetailPanel";
+import { SupplierAddPanel } from "./SupplierAddPanel"; // Import mới
+import { SupplierEditPanel } from "./SupplierEditPanel"; // Import mới
+
+// Import Hooks
+import {
+  useSuppliers,
+  useCreateSupplier,
+  useUpdateSupplier,
+  useDeleteSupplier
+} from "../hooks/useSuppliers";
+
+import { Supplier, SupplierTableRow, SupplierFormData } from "../types";
+import { ActionButton } from "@/features/inventory/components/ActionButton"; // Tái sử dụng ActionButton nếu muốn
+import { useAuthStore } from "@/stores/useAuthStore";
 
 export const SuppliersPage = () => {
-  const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(
-    null,
-  );
-  const [data, setData] = useState<Supplier[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [detailLoading, setDetailLoading] = useState(false);
+  const userRole = (useAuthStore((s) => s.user?.role) as "OWNER" | "EMPLOYEE" | "ADMIN" | undefined) || "EMPLOYEE";
+  // --- States ---
+  const [keyword, setKeyword] = useState("");
+  const debouncedKeyword = useDebounce(keyword, 300);
+  const [selectedSupplier, setSelectedSupplier] = useState<SupplierTableRow | null>(null);
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
 
-  // Fetch suppliers list from API
-  useEffect(() => {
-    const fetchSuppliers = async () => {
-      try {
-        setLoading(true);
-        const response = await axios.get("/api/v1/suppliers", {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-          },
-        });
+  // --- Fetching ---
+  const { data: responseData, isLoading, isError } = useSuppliers();
+  const suppliersList = Array.isArray(responseData) ? responseData : (Array.isArray(responseData?.data) ? responseData?.data : []);
 
-        if (response.data?.data) {
-          const supplierList = Array.isArray(response.data.data)
-            ? response.data.data
-            : [response.data.data];
+  // --- Mutations ---
+  const createMutation = useCreateSupplier();
+  const updateMutation = useUpdateSupplier();
+  const deleteMutation = useDeleteSupplier();
 
-          const formattedSuppliers = supplierList.map(
-            (supplier: any, index: number) => ({
-              key: supplier.id || index,
-              id: supplier.id,
-              supplierId: supplier.supplierCode || "N/A",
-              name: supplier.name || "N/A",
-              email: supplier.email || "N/A",
-              phoneNumber: supplier.phoneNumber || "N/A",
-              contactPerson: supplier.contactPerson || "N/A",
-              status: supplier.status || "N/A",
-              address: supplier.address || "N/A",
-              taxCode: supplier.taxCode || "N/A",
-              note: supplier.note || "",
-              createdDate: supplier.createdAt || "N/A",
-              updateDate: supplier.updatedAt || "N/A",
-            }),
-          );
+  // --- Transform & Filter ---
+  const tableData: SupplierTableRow[] = useMemo(() => {
+    let data = suppliersList.map((item: Supplier) => ({
+      ...item,
+      key: item.id,
+    }));
+    if (debouncedKeyword) {
+      const lowerKeyword = debouncedKeyword.toLowerCase();
+      data = data.filter((item: Supplier) =>
+        (item.name && item.name.toLowerCase().includes(lowerKeyword)) ||
+        (item.supplierCode && item.supplierCode.toLowerCase().includes(lowerKeyword)) ||
+        (item.phoneNumber && item.phoneNumber.includes(lowerKeyword)) ||
+        (item.email && item.email.toLowerCase().includes(lowerKeyword))
+      );
+    }
+    return data;
+  }, [suppliersList, debouncedKeyword]);
 
-          setData(formattedSuppliers);
-        }
-      } catch (error: any) {
-        console.error("Failed to fetch suppliers:", error);
-        message.error("Không thể tải danh sách nhà cung cấp");
-      } finally {
-        setLoading(false);
-      }
-    };
+  // --- Mapping Data for Edit Form ---
+  const selectedFormData: SupplierFormData | undefined = selectedSupplier ? {
+    name: selectedSupplier.name,
+    email: selectedSupplier.email || "",
+    phoneNumber: selectedSupplier.phoneNumber || "",
+    address: selectedSupplier.address || "",
+    taxCode: selectedSupplier.taxCode,
+    contactPerson: selectedSupplier.contactPerson,
+    note: selectedSupplier.note,
+    status: selectedSupplier.status,
+  } : undefined;
 
-    fetchSuppliers();
-  }, []);
-
-  // Fetch specific supplier details when row is clicked
-  const handleRowClick = async (record: Supplier) => {
+  // --- Handlers ---
+  const handleRowClick = (record: SupplierTableRow) => {
     if (selectedSupplier?.key === record.key) {
       setSelectedSupplier(null);
-      return;
-    }
-
-    try {
-      setDetailLoading(true);
-      const response = await axios.get(`/api/v1/suppliers/${record.id}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-        },
-      });
-
-      if (response.data?.data) {
-        const supplier = response.data.data;
-        const detailedSupplier: Supplier = {
-          key: supplier.id || record.key,
-          id: supplier.id,
-          supplierId: supplier.supplierCode || "N/A",
-          name: supplier.name || "N/A",
-          email: supplier.email || "N/A",
-          phoneNumber: supplier.phoneNumber || "N/A",
-          contactPerson: supplier.contactPerson || "N/A",
-          status: supplier.status || "N/A",
-          address: supplier.address || "N/A",
-          taxCode: supplier.taxCode || "N/A",
-          note: supplier.note || "",
-          createdDate: supplier.createdAt || "N/A",
-          updateDate: supplier.updatedAt || "N/A",
-        };
-
-        setSelectedSupplier(detailedSupplier);
-      }
-    } catch (error: any) {
-      console.error("Failed to fetch supplier details:", error);
-      message.error("Không thể tải chi tiết nhà cung cấp");
-    } finally {
-      setDetailLoading(false);
+    } else {
+      setSelectedSupplier(record);
     }
   };
 
-  /** ---------------- TABLE COLUMNS ---------------- */
-  const columns = [
-    {
-      title: "STT",
-      key: "index",
-      render: (_: any, __: any, index: number) => index + 1,
-      width: 70,
-    },
-    { title: "Mã NCC", dataIndex: "supplierId", key: "supplierId" },
-    { title: "Tên NCC", dataIndex: "name", key: "name" },
-    { title: "Email", dataIndex: "email", key: "email" },
-    { title: "Số điện thoại", dataIndex: "phoneNumber", key: "phoneNumber" },
-    {
-      title: "Người liên lạc",
-      dataIndex: "contactPerson",
-      key: "contactPerson",
-    },
-    { title: "Trạng thái", dataIndex: "status", key: "status" },
-    {
-      title: "Hành động",
-      key: "action",
-      render: () => (
-        <Space>
-          <Button type="link">Sửa</Button>
-          <Button type="link" danger>
-            Xóa
-          </Button>
-        </Space>
+  const handleCreate = (data: SupplierFormData) => {
+    createMutation.mutate(data, {
+      onSuccess: () => setIsAddOpen(false),
+    });
+  };
+
+  const handleUpdate = (data: SupplierFormData) => {
+    if (!selectedSupplier) return;
+    updateMutation.mutate({ id: selectedSupplier.id, data }, {
+      onSuccess: () => {
+        setIsEditOpen(false);
+        // Cập nhật UI tạm thời để không cần đợi fetch
+        setSelectedSupplier(prev => prev ? ({ ...prev, ...data }) : null);
+      }
+    });
+  };
+
+  const handleDelete = () => {
+    if (!selectedSupplier) {
+      message.warning("Chọn nhà cung cấp để xóa");
+      return;
+    }
+
+    Modal.confirm({
+      title: "Xác nhận xóa nhà cung cấp",
+      content: (
+        <div>
+          <p>Bạn có chắc chắn muốn xóa <strong>{selectedSupplier.name}</strong>?</p>
+          <p className="text-red-500 font-bold mt-2">CẢNH BÁO: Hành động này sẽ xóa toàn bộ lịch sử đơn nhập hàng liên quan!</p>
+        </div>
       ),
-    },
-  ];
+      okText: "Xóa Ngay",
+      okType: "danger",
+      cancelText: "Hủy",
+      onOk: () => {
+        deleteMutation.mutate(selectedSupplier.id, {
+          onSuccess: () => setSelectedSupplier(null),
+        });
+      }
+    });
+  };
 
   return (
-    <div className="flex flex-col w-full bg-white min-h-screen">
-      <div className="flex w-full items-start justify-start gap-6">
-        {/* LEFT — SUPPLIER TABLE */}
-        <div className="flex-1">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold">Nhà cung cấp</h1>
+    <div className="relative w-full h-full overflow-hidden flex flex-col font-['Inter']">
 
-            <Button type="primary" icon={<PlusOutlined />}>
-              Thêm nhà cung cấp
-            </Button>
+      {/* --- Header --- */}
+      <div className="flex-shrink-0 px-6 pt-3 pb-2">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <h1 className="font-bold text-[#102e3c] text-2xl sm:text-3xl lg:text-4xl">
+              Nhà Cung Cấp
+            </h1>
+            {userRole === "OWNER" && (
+              <div className="flex items-center gap-2.5">
+                <Button onClick={handleDelete} danger disabled={!selectedSupplier} className="h-10 rounded-xl font-semibold">
+                  Xóa
+                </Button>
+                <Button onClick={() => selectedSupplier ? setIsEditOpen(true) : message.warning("Chọn NCC để sửa")} disabled={!selectedSupplier} className="h-10 rounded-xl font-semibold border-teal-600 text-teal-700">
+                  Sửa
+                </Button>
+                <Button
+                  type="primary"
+                  icon={<Plus size={18} />}
+                  className="bg-[#1a998f] hover:bg-[#158f85] h-10 px-4 rounded-xl font-bold border-none"
+                  onClick={() => setIsAddOpen(true)}
+                >
+                  Tạo Mới
+                </Button>
+              </div>
+            )}
           </div>
 
-          <Card>
-            {loading ? (
-              <div className="flex justify-center py-10">
-                <Spin />
-              </div>
-            ) : (
-              <Table
-                columns={columns}
-                dataSource={data}
-                onRow={(record) => ({
-                  onClick: () => handleRowClick(record),
-                })}
-                rowClassName={() =>
-                  "cursor-pointer hover:bg-gray-100 transition-colors"
-                }
+          {/* Filter Bar */}
+          <div className="flex flex-wrap items-center gap-3 mt-2 bg-white p-3 rounded-xl border border-[#102e3c]/10 shadow-sm">
+            <div className="relative w-full sm:w-80">
+              <Input
+                placeholder="Tìm tên, mã, SĐT, email..."
+                prefix={<Search size={16} className="text-gray-400" />}
+                className="rounded-lg border-teal-600/30 hover:border-teal-600 focus:border-teal-600 h-[38px]"
+                onChange={(e) => setKeyword(e.target.value)}
               />
-            )}
-          </Card>
+            </div>
+          </div>
         </div>
+      </div>
 
-        {/* RIGHT — DETAIL PANEL */}
-        {selectedSupplier && (
-          <aside className="relative w-[400px] bg-white border-2 border-teal-600 rounded-xl p-6 flex flex-col items-center shadow-md">
+      {/* --- Main Content --- */}
+      <main className="flex-1 px-6 pb-6 overflow-hidden mt-4 relative">
+        <section className="relative w-full h-full bg-white rounded-[20px] overflow-hidden border border-solid border-[#102e3c] shadow-sm flex flex-col">
+
+          <div className={`
+            absolute top-3 bottom-3 left-[13px] rounded-[20px] transition-all duration-300 flex flex-col bg-white z-10
+            ${selectedSupplier ? "right-[450px]" : "right-[20px]"}
+          `}>
+            <div className="flex-shrink-0">
+              <TableHeader isPanelOpen={!!selectedSupplier} />
+            </div>
+
+            <div className="flex-1 overflow-y-auto relative custom-scrollbar">
+              {isError ? (
+                <div className="flex justify-center items-center h-full text-red-500">Có lỗi xảy ra khi tải dữ liệu.</div>
+              ) : (
+                <SupplierTable
+                  data={tableData}
+                  loading={isLoading}
+                  onRowClick={handleRowClick}
+                  selectedId={selectedSupplier?.id}
+                  isPanelOpen={!!selectedSupplier}
+                />
+              )}
+            </div>
+          </div>
+
+          {/* DETAIL PANEL */}
+          <div className={`
+            absolute top-3 bottom-3 w-[430px] bg-white rounded-[20px] border-[3px] border-[#1a998f]
+            transition-all duration-300 ease-in-out z-20 shadow-xl overflow-hidden flex flex-col
+            ${selectedSupplier ? "right-3 translate-x-0 opacity-100" : "right-3 translate-x-[110%] opacity-0 pointer-events-none"}
+          `}>
             <button
               onClick={() => setSelectedSupplier(null)}
-              className="absolute top-3 right-3 text-gray-600 hover:text-black text-xl"
+              className="absolute top-3 right-3 p-1.5 rounded-full hover:bg-gray-100 text-gray-500 hover:text-red-500 transition-colors z-50 cursor-pointer"
             >
-              ✕
+              <X size={24} />
             </button>
 
-            {detailLoading ? (
-              <div className="flex justify-center py-10 w-full">
-                <Spin />
-              </div>
-            ) : (
-              <>
-                {/* PHOTO PLACEHOLDER */}
-                {/* <div className="w-[250px] h-[250px] bg-gray-300 rounded-md" /> */}
+            <div className="flex-1 overflow-hidden h-full">
+              <SupplierDetailPanel selectedItem={selectedSupplier} />
+            </div>
+          </div>
+        </section>
+      </main>
 
-                <div className="mt-8 w-full space-y-2">
-                  <DetailItem
-                    label="Mã NCC"
-                    value={selectedSupplier.supplierId}
-                  />
-                  <DetailItem label="Tên NCC" value={selectedSupplier.name} />
-                  <DetailItem label="Email" value={selectedSupplier.email} />
-                  <DetailItem
-                    label="Số điện thoại"
-                    value={selectedSupplier.phoneNumber}
-                  />
-                  <DetailItem
-                    label="Người liên lạc"
-                    value={selectedSupplier.contactPerson}
-                  />
-                  <DetailItem
-                    label="Trạng thái"
-                    value={selectedSupplier.status}
-                  />
-                  <DetailItem
-                    label="Địa chỉ"
-                    value={selectedSupplier.address}
-                    multiline
-                  />
-                  <DetailItem
-                    label="Mã số thuế"
-                    value={selectedSupplier.taxCode}
-                  />
-                  <DetailItem
-                    label="Ghi chú"
-                    value={selectedSupplier.note}
-                    multiline
-                  />
-                  <DetailItem
-                    label="Ngày tạo"
-                    value={selectedSupplier.createdDate}
-                  />
-                  <DetailItem
-                    label="Ngày cập nhật"
-                    value={selectedSupplier.updateDate}
-                  />
-                </div>
-              </>
-            )}
-          </aside>
-        )}
-      </div>
+      {/* --- MODALS --- */}
+      {userRole === "OWNER" && (
+        <SupplierAddPanel
+          isOpen={isAddOpen}
+          onClose={() => setIsAddOpen(false)}
+          onSubmit={handleCreate}
+        />
+      )}
+
+      {userRole === "OWNER" && (
+        <SupplierEditPanel
+          isOpen={isEditOpen}
+          onClose={() => setIsEditOpen(false)}
+          onSubmit={handleUpdate}
+          initialData={selectedFormData}
+        />
+      )}
     </div>
   );
 };
-
-/** Component used for each detail item */
-const DetailItem = ({
-  label,
-  value,
-  multiline,
-}: {
-  label: string;
-  value?: string;
-  multiline?: boolean;
-}) => (
-  <div className="flex justify-between items-center mb-3 w-full gap-4">
-    <div className="text-gray-600 text-sm flex-shrink-0 w-[130px]">{label}</div>
-    <div
-      className={`text-lg font-semibold text-right ${
-        multiline ? "whitespace-pre-line" : ""
-      }`}
-    >
-      {value || "--"}
-    </div>
-  </div>
-);

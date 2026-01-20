@@ -6,13 +6,17 @@ import {
   UpdateTransactionDetailDto,
   UpdateTransactionDto,
 } from '@/common/dtos';
+import { ReturnDetailsDto } from '@/common/dtos/transactions/return-details.dto';
 import { TUserSession } from '@/common/utils';
 import {
+  Customer,
   Employee,
+  Inventory,
   Product,
   Transaction,
   TransactionDetail,
 } from '@/database/tenant/entities';
+import { InventoriesService } from '@/modules/inventories/inventories.service';
 import { TenantService } from '@/tenants/tenant.service';
 import {
   BadRequestException,
@@ -27,7 +31,10 @@ import { Repository } from 'typeorm';
 
 @Injectable()
 export class TransactionsService {
-  constructor(private readonly tenantService: TenantService) {}
+  constructor(
+    private readonly tenantService: TenantService,
+    private readonly inventoriesService: InventoriesService,
+  ) {}
 
   async createTransaction(
     createTransactionDto: CreateTransactionDto,
@@ -43,7 +50,19 @@ export class TransactionsService {
       const transactionDetailRepo = manager.getRepository(TransactionDetail);
       const productRepo = manager.getRepository(Product);
       const employeeRepo = manager.getRepository(Employee);
-      const { createTransactionDetailDtos, note } = createTransactionDto;
+      const inventoryRepo = manager.getRepository(Inventory);
+      const customerRepo = manager.getRepository(Customer);
+      const {
+        createTransactionDetailDtos,
+        note,
+        paidAmount,
+        changeAmount,
+        finalAmount,
+        taxAmount,
+        totalAmount,
+        paymentMethod,
+        customerId,
+      } = createTransactionDto;
 
       const employee = await employeeRepo.findOne({
         where: {
@@ -55,9 +74,35 @@ export class TransactionsService {
         throw new NotFoundException('Không tìm thấy thông tin của bạn.');
       }
 
+      if (customerId?.trim()) {
+        const customer = await customerRepo.findOne({
+          where: {
+            id: customerId,
+          },
+        });
+
+        if (!customer) {
+          throw new NotFoundException('Không tìm thấy thông tin khách hàng');
+        }
+      }
+
       const newTransaction = transactionRepo.create({
         cashier: employee,
         ...(note?.trim() && { note }),
+        totalAmount,
+        taxAmount,
+        finalAmount,
+        details: [],
+        paidAmount,
+        changeAmount: changeAmount ?? 0,
+        paymentMethod,
+        completedAt: new Date(),
+        isCompleted: true,
+        ...(customerId?.trim() && {
+          customer: {
+            id: customerId,
+          },
+        }),
       });
 
       await transactionRepo.save(newTransaction);
@@ -68,6 +113,7 @@ export class TransactionsService {
           productRepo,
           newTransaction,
           transactionDetailRepo,
+          inventoryRepo,
         );
       }
 
@@ -86,8 +132,6 @@ export class TransactionsService {
         );
       }
 
-      this.recalcTransaction(savedTransaction);
-
       return transactionRepo.save(savedTransaction);
     });
   }
@@ -104,7 +148,7 @@ export class TransactionsService {
 
     return dataSource.transaction(async (manager) => {
       const transactionRepo = manager.getRepository(Transaction);
-      const { discountAmount, paymentMethod } = updateTransactionDto;
+      const { paymentMethod } = updateTransactionDto;
 
       const transaction = await transactionRepo.findOne({
         where: {
@@ -125,15 +169,10 @@ export class TransactionsService {
       }
 
       transaction.paymentMethod = paymentMethod || transaction.paymentMethod;
-      transaction.discountAmount = discountAmount || transaction.discountAmount;
 
       if (paymentMethod) {
         transaction.isCompleted = true;
         transaction.completedAt = new Date();
-      }
-
-      if (discountAmount) {
-        this.recalcTransaction(transaction);
       }
 
       return transactionRepo.save(transaction);
@@ -209,17 +248,14 @@ export class TransactionsService {
         );
       }
 
-      if (quantity && quantity >= transactionDetail.quantity) {
-        transaction.details.filter((d) => d.id !== transactionDetail.id);
-        await transactionDetailRepo.delete({
-          id: transactionDetailId,
-        });
-        return transactionRepo.save(transaction);
+      if (quantity && quantity > transactionDetail.quantity) {
+        throw new BadRequestException(
+          'Bạn đang thêm chi tiết vào đơn hàng. Vui lòng gọi API thêm chi tiết vào đơn hàng.',
+        );
       }
 
       const updatableFields: (keyof typeof updateTransactionDetailDto)[] = [
         'unitPrice',
-        'discount',
         'quantity',
       ];
 
@@ -240,7 +276,13 @@ export class TransactionsService {
             id: transactionId,
           },
           relations: {
-            details: true,
+            details: {
+              product: {
+                inventory: true,
+                book: true,
+              },
+            },
+            cashier: true,
           },
         });
 
@@ -252,7 +294,9 @@ export class TransactionsService {
 
         this.recalcTransaction(transaction);
 
-        return transactionRepo.save(transaction);
+        return omit(await transactionRepo.save(transaction), [
+          'cashier.password',
+        ]);
       }
 
       return transaction;
@@ -266,17 +310,11 @@ export class TransactionsService {
       new Decimal(0),
     );
 
-    const discountAmount = transaction.details.reduce(
-      (sum, detail) => sum.plus(new Decimal(detail.discount)),
-      new Decimal(0),
-    );
+    const taxAmount = totalAmount.times(0.1);
 
-    const taxAmount = totalAmount.minus(discountAmount).times(0.1);
-
-    const finalAmount = totalAmount.minus(discountAmount).plus(taxAmount);
+    const finalAmount = totalAmount.plus(taxAmount);
 
     transaction.totalAmount = Number(totalAmount.toFixed(2));
-    transaction.discountAmount = Number(discountAmount.toFixed(2));
     transaction.taxAmount = Number(taxAmount.toFixed(2));
     transaction.finalAmount = Number(finalAmount.toFixed(2));
 
@@ -284,9 +322,7 @@ export class TransactionsService {
   }
 
   private recalcTransactionDetail(detail: TransactionDetail) {
-    const totalPrice = new Decimal(detail.unitPrice)
-      .times(detail.quantity)
-      .minus(detail.discount);
+    const totalPrice = new Decimal(detail.unitPrice).times(detail.quantity);
 
     detail.totalPrice = Number(totalPrice.toFixed(2));
     return detail;
@@ -306,6 +342,7 @@ export class TransactionsService {
       const transactionRepo = manager.getRepository(Transaction);
       const productRepo = manager.getRepository(Product);
       const transactionDetailRepo = manager.getRepository(TransactionDetail);
+      const inventoryRepo = manager.getRepository(Inventory);
 
       const transaction = await transactionRepo.findOne({
         where: {
@@ -313,6 +350,7 @@ export class TransactionsService {
         },
         relations: {
           cashier: true,
+          details: true,
         },
       });
 
@@ -334,6 +372,7 @@ export class TransactionsService {
           productRepo,
           transaction,
           transactionDetailRepo,
+          inventoryRepo,
         );
       }
 
@@ -342,7 +381,13 @@ export class TransactionsService {
           id: transactionId,
         },
         relations: {
-          details: true,
+          details: {
+            product: {
+              inventory: true,
+              book: true,
+            },
+          },
+          cashier: true,
         },
       });
 
@@ -354,7 +399,9 @@ export class TransactionsService {
 
       this.recalcTransaction(updatedTransaction);
 
-      return transactionRepo.save(updatedTransaction);
+      return omit(await transactionRepo.save(updatedTransaction), [
+        'cashier.password',
+      ]);
     });
   }
 
@@ -363,20 +410,51 @@ export class TransactionsService {
     productRepo: Repository<Product>,
     transaction: Transaction,
     transactionDetailRepo: Repository<TransactionDetail>,
+    inventoryRepo: Repository<Inventory>,
   ) {
     const { productId, quantity, unitPrice } = dto;
 
     const product = await productRepo.findOne({
-      where: {
-        id: productId,
-      },
-      relations: {
-        inventory: true,
-      },
+      where: { id: productId },
+      relations: { inventory: true },
     });
 
     if (!product) {
-      throw new NotFoundException('Không tìm thấy thông tin sản phảm');
+      throw new NotFoundException('Không tìm thấy thông tin sản phẩm');
+    }
+
+    const existingDetail = await transactionDetailRepo.findOne({
+      where: {
+        transaction: { id: transaction.id },
+        product: { id: productId },
+      },
+    });
+
+    const incomingQty = new Decimal(quantity);
+
+    if (existingDetail) {
+      const newQty = new Decimal(existingDetail.quantity).plus(incomingQty);
+
+      if (product.inventory.availableQuantity < newQty.toNumber()) {
+        throw new BadRequestException(
+          `Sản phẩm "${product.name}" chỉ còn ${product.inventory.availableQuantity} trong kho, không đủ để xuất ${newQty.toNumber()} cái.`,
+        );
+      }
+
+      const price = new Decimal(unitPrice ?? existingDetail.unitPrice);
+
+      existingDetail.quantity = newQty.toNumber();
+      existingDetail.unitPrice = price.toNumber();
+      existingDetail.totalPrice = Number(price.times(newQty).toFixed(2));
+
+      await this.inventoriesService.updateStockOfProductInventory(
+        productId,
+        quantity,
+        inventoryRepo,
+        'decrease',
+      );
+
+      return transactionDetailRepo.save(existingDetail);
     }
 
     if (product.inventory.availableQuantity < quantity) {
@@ -425,7 +503,9 @@ export class TransactionsService {
     let qb = transactionRepo
       .createQueryBuilder('transaction')
       .leftJoinAndSelect('transaction.cashier', 'cashier')
+      .leftJoinAndSelect('transaction.customer', 'customer')
       .leftJoinAndSelect('transaction.details', 'details')
+      .leftJoinAndSelect('details.product', 'product')
       .leftJoinAndSelect('transaction.returnOrders', 'returnOrders');
 
     if (cashierId) {
@@ -489,6 +569,11 @@ export class TransactionsService {
     return transactions.map((t) => ({
       ...t,
       cashier: omit(t.cashier, ['password']),
+      details: t.details.map((detail) => ({
+        ...detail,
+        productName: detail.product?.name, // <--- Lấy tên sản phẩm ra ngoài
+        // product: detail.product // Bỏ comment dòng này nếu bạn muốn giữ cả cục object product
+      })),
     }));
   }
 
@@ -512,6 +597,7 @@ export class TransactionsService {
             book: true,
           },
         },
+        customer: true,
       },
     });
 
@@ -520,5 +606,66 @@ export class TransactionsService {
     }
 
     return omit(transaction, ['cashier.password']);
+  }
+
+  async returnDetails(returnDetailsDto: ReturnDetailsDto, bookStoreId: string) {
+    const dataSource = await this.tenantService.getTenantConnection({
+      bookStoreId,
+    });
+
+    const productRepo = dataSource.getRepository(Product);
+
+    const { createTransactionDetailDtos } = returnDetailsDto;
+
+    let totalAmount = new Decimal(0);
+    let totalTaxAmount = new Decimal(0);
+
+    for (const dto of createTransactionDetailDtos) {
+      const { productId, unitPrice, quantity } = dto;
+
+      const product = await productRepo.findOne({
+        where: { id: productId },
+        relations: {
+          categories: true,
+        },
+      });
+
+      if (!product) {
+        throw new NotFoundException('Không tìm thấy thông tin sản phẩm');
+      }
+
+      const price = new Decimal(unitPrice ?? product.price);
+      const qty = new Decimal(quantity);
+      const lineTotal = price.times(qty);
+      totalAmount = totalAmount.plus(lineTotal);
+
+      let lineTax: Decimal;
+
+      if (product.taxRate != null) {
+        lineTax = lineTotal.times(new Decimal(product.taxRate));
+      } else if (product.categories.length > 0) {
+        const categoryRates = product.categories.map(
+          (c) => new Decimal(c.taxRate ?? 0),
+        );
+        const sumRate = categoryRates.reduce(
+          (a, b) => a.plus(b),
+          new Decimal(0),
+        );
+        const avgRate = sumRate.dividedBy(categoryRates.length);
+        lineTax = lineTotal.times(avgRate);
+      } else {
+        lineTax = new Decimal(0);
+      }
+
+      totalTaxAmount = totalTaxAmount.plus(lineTax);
+    }
+
+    const finalAmount = totalAmount.plus(totalTaxAmount);
+
+    return {
+      totalAmount: totalAmount.toNumber(),
+      taxAmount: totalTaxAmount.toNumber(),
+      finalAmount: finalAmount.toNumber(),
+    };
   }
 }

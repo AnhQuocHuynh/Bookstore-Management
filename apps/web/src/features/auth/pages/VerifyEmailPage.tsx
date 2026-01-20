@@ -1,9 +1,15 @@
+import NotFoundPage from "@/components/NotFound";
 import VerifyEmailForm from "@/features/auth/components/VerifyEmailForm";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { Link } from "react-router-dom";
 
 const VerifyEmailPage = () => {
+  const { registerTemp } = useAuthStore();
+
+  if (!registerTemp) return <NotFoundPage />;
+
   return (
-    <div>
+    <div className="flex flex-col items-center h-screen justify-center">
       <div className="flex flex-col gap-1 items-center text-center mb-8">
         <h1 className="text-2xl font-bold text-gray-800">
           Xác thực email của bạn

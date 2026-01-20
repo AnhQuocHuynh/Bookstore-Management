@@ -1,5 +1,7 @@
+// === File: ./common/dtos/purchase-orders/create-purchase-order-detail.dto.ts ===
+
 import { CreateProductDto } from '@/common/dtos/products';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger'; // Bỏ ApiPropertyOptional
 import { Type } from 'class-transformer';
 import {
   IsInt,
@@ -7,7 +9,7 @@ import {
   IsNumber,
   IsPositive,
   ValidateNested,
-} from 'class-validator';
+} from 'class-validator'; // Bỏ IsOptional, IsUUID
 
 export class CreatePurchaseOrderDetailDto {
   @ApiProperty({
@@ -36,8 +38,15 @@ export class CreatePurchaseOrderDetailDto {
   })
   readonly unitPrice: number;
 
-  @IsNotEmpty()
+  // --- ĐÃ XÓA productId ---
+
+  @ApiProperty({
+    type: CreateProductDto,
+    description: 'Thông tin tạo sản phẩm mới (Bắt buộc)',
+    // ... (Giữ nguyên example cũ)
+  })
+  @IsNotEmpty({ message: 'Thông tin sản phẩm là bắt buộc.' }) // Thêm thông báo lỗi rõ ràng
   @Type(() => CreateProductDto)
   @ValidateNested()
-  readonly createProductDto: CreateProductDto;
+  readonly createProductDto: CreateProductDto; // Xóa dấu ? (optional)
 }

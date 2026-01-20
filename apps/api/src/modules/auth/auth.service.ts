@@ -1,12 +1,15 @@
 import {
   AuthorizationCodeTypeEnum,
   EmailTemplateNameEnum,
+  NotificationType,
   OtpTypeEnum,
+  ReceiverType,
 } from '@/common/enums';
 import {
   decryptPayload,
   encryptPayload,
   generateOtp,
+  handleGenerateUserNotificationContent,
   setCookie,
   verifyPassword,
 } from '@/common/utils/helpers';
@@ -31,6 +34,7 @@ import {
   VerifyOtpDto,
 } from '@/modules/auth/dto';
 import { EmailService } from '@/modules/email/email.service';
+import { NotificationsService } from '@/modules/notifications/notifications.service';
 import { UserRole } from '@/modules/users/enums';
 import { TenantService } from '@/tenants/tenant.service';
 import {
@@ -44,10 +48,11 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import { InjectDataSource } from '@nestjs/typeorm';
 import { addDays, addMinutes } from 'date-fns';
 import { Response } from 'express';
 import { omit } from 'lodash';
-import { MoreThan, Repository } from 'typeorm';
+import { DataSource, EntityManager, MoreThan, Repository } from 'typeorm';
 @Injectable()
 export class AuthService {
   constructor(
@@ -61,6 +66,8 @@ export class AuthService {
     private readonly mainAuthCodeService: MainAuthorizationCodeService,
     private readonly mainRefreshTokenService: MainRefreshTokenService,
     private readonly mainEmployeeMappingService: MainEmployeeMappingService,
+    @InjectDataSource() private readonly dataSource: DataSource,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async signIn(signInDto: SignInDto, response: Response) {
@@ -85,14 +92,29 @@ export class AuthService {
     }
 
     const payload = {
+      userId: user.id,
       role: user.role,
       email,
     };
 
     const token = this.jwtService.sign(payload, {
       secret: this.configService.get('jwt_secret'),
-      expiresIn: this.configService.get('jwt_expiration_time', '120s'),
+      expiresIn: '10m',
     });
+
+    if (!user.isEmailVerified) {
+      const bookstores = await this.mainBookStoreService.findBookStores({
+        user,
+        isActive: false,
+      });
+
+      await this.processVerifyEmail(
+        user,
+        bookstores?.length > 0
+          ? (bookstores[0] as unknown as BookStore)
+          : undefined,
+      );
+    }
 
     return {
       token,
@@ -204,6 +226,12 @@ export class AuthService {
         throw new UnauthorizedException('Thông tin đăng nhập không chính xác.');
       }
 
+      if (!employee.isActive) {
+        throw new ForbiddenException(
+          'Tài khoản của bạn đã bị khoá bởi chủ nhà sách này.',
+        );
+      }
+
       if (employee.isFirstLogin) {
         const token = await this.jwtService.signAsync({
           username: employee.username,
@@ -215,6 +243,7 @@ export class AuthService {
           message:
             'Chào mừng! Vì đây là lần đăng nhập đầu tiên của bạn, vui lòng thay đổi mật khẩu.',
           isFirstLogin: true,
+          profile: omit(employee, ['password']),
         };
       }
 
@@ -256,7 +285,7 @@ export class AuthService {
 
     const token = this.jwtService.sign(payload, {
       secret: this.configService.get('jwt_secret'),
-      expiresIn: this.configService.get('jwt_expiration_time', '120s'),
+      expiresIn: '10m',
     });
 
     return {
@@ -275,51 +304,64 @@ export class AuthService {
       address,
     } = signUpDto;
 
-    const existingEmail = await this.mainUserService.findUserByField(
-      'email',
-      email,
-    );
+    return this.dataSource.transaction(async (manager) => {
+      const userRepo = manager.getRepository(User);
+      const bookStoreRepo = manager.getRepository(BookStore);
 
-    if (existingEmail)
-      throw new ConflictException(`Email này đã được đăng ký.`);
+      const existingEmail = await this.mainUserService.findUserByField(
+        'email',
+        email,
+        userRepo,
+      );
 
-    await this.mainBookStoreService.checkDuplicateField(
-      'name',
-      createBookStoreDto.name,
-      email,
-      'tên',
-    );
+      if (existingEmail)
+        throw new ConflictException(`Email này đã được đăng ký.`);
 
-    await this.mainBookStoreService.checkDuplicateField(
-      'phoneNumber',
-      createBookStoreDto.phoneNumber,
-      email,
-      'số điện thoại',
-    );
+      await this.mainBookStoreService.checkDuplicateField(
+        'name',
+        createBookStoreDto.name,
+        email,
+        'tên',
+        bookStoreRepo,
+      );
 
-    const newUser = await this.mainUserService.createNewUser({
-      email,
-      password,
-      fullName,
-      phoneNumber,
-      address,
-      birthDate,
+      await this.mainBookStoreService.checkDuplicateField(
+        'phoneNumber',
+        createBookStoreDto.phoneNumber,
+        email,
+        'số điện thoại',
+        bookStoreRepo,
+      );
+
+      const newUser = await this.mainUserService.createNewUser(
+        {
+          email,
+          password,
+          fullName,
+          phoneNumber,
+          address,
+          birthDate,
+        },
+        userRepo,
+      );
+
+      const bookStoreData = await this.mainBookStoreService.createNewBookStore(
+        createBookStoreDto,
+        newUser.id,
+        manager,
+      );
+
+      await this.processVerifyEmail(
+        newUser,
+        bookStoreData ? bookStoreData : undefined,
+        manager,
+      );
+
+      return {
+        message:
+          'Mã OTP xác thực tài khoản đã được gửi đến email của bạn. Vui lòng kiểm tra để hoàn tất đăng ký.',
+      };
     });
-
-    const bookStoreData = await this.mainBookStoreService.createNewBookStore(
-      createBookStoreDto,
-      newUser.id,
-    );
-
-    await this.processVerifyEmail(
-      newUser,
-      bookStoreData ? bookStoreData : undefined,
-    );
-
-    return {
-      message:
-        'Mã OTP xác thực tài khoản đã được gửi đến email của bạn. Vui lòng kiểm tra để hoàn tất đăng ký.',
-    };
   }
 
   async verifyOtp(verifyOtpDto: VerifyOtpDto) {
@@ -381,6 +423,22 @@ export class AuthService {
       }
 
       if (type === OtpTypeEnum.SIGN_UP && bookStore) {
+        await this.notificationsService.createNotification(
+          {
+            receiverId: user.id,
+            receiverType: ReceiverType.OWNER,
+            content: handleGenerateUserNotificationContent(
+              NotificationType.ACCOUNT_CREATED,
+              {
+                time: new Date(),
+                fullName: user.fullName,
+              },
+            ),
+            notificationType: NotificationType.ACCOUNT_CREATED,
+          },
+          bookStoreId,
+        );
+
         await this.emailService.handleSendEmail(
           user.email,
           EmailTemplateNameEnum.EMAIL_STORE_REGISTRATION,
@@ -438,7 +496,11 @@ export class AuthService {
     };
   }
 
-  async signOut(userSession: TUserSession, refreshToken: string) {
+  async signOut(
+    userSession: TUserSession,
+    refreshToken: string,
+    response: Response,
+  ) {
     const { userId, bookStoreId, role } = userSession;
 
     const user = await this.mainUserService.findUserByField('id', userId);
@@ -450,6 +512,23 @@ export class AuthService {
     }
 
     await this.revokeRefreshToken(userId, role, refreshToken, bookStoreId);
+
+    // Xóa cookie refreshToken và storeCode
+    // Phải match với options khi set cookie (path, domain, secure, sameSite)
+    const isProd = this.configService.get<string>('node_env') === 'production';
+    response.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: 'strict',
+      path: '/',
+    });
+    response.clearCookie('storeCode', {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: 'strict',
+      path: '/',
+    });
+
     return {
       message: 'Đăng xuất tài khoản thành công.',
     };
@@ -624,7 +703,11 @@ export class AuthService {
     await repo.save(newRT);
   }
 
-  private async processVerifyEmail(user: User, bookStoreData?: BookStore) {
+  private async processVerifyEmail(
+    user: User,
+    bookStoreData?: BookStore,
+    manager?: EntityManager,
+  ) {
     const now = new Date();
     const expiresAt = new Date(now.getTime() + 10 * 60 * 1000);
     const metadata = bookStoreData
@@ -636,6 +719,7 @@ export class AuthService {
       expiresAt,
       OtpTypeEnum.SIGN_UP,
       metadata,
+      manager,
     );
     await this.emailService.handleSendEmail(
       user.email,
@@ -651,7 +735,9 @@ export class AuthService {
     const user = await this.mainUserService.findUserByField('email', email);
 
     if (!user)
-      throw new NotFoundException(`This email has not been registered.`);
+      throw new NotFoundException(
+        `Email của bạn chưa được đăng ký trong hệ thống.`,
+      );
 
     if (user.role !== UserRole.OWNER) {
       throw new ForbiddenException(
@@ -664,23 +750,28 @@ export class AuthService {
       OtpTypeEnum.RESET_PASSWORD,
     );
 
-    if (validOtps.length > 0)
-      throw new UnauthorizedException('You still have an active OTP code.');
+    let otpCode: string = '';
 
-    const expiresAt = addMinutes(new Date(), 5);
+    if (validOtps.length > 0) {
+      otpCode = decryptPayload(validOtps[0].otp, this.configService);
+    } else {
+      const expiresAt = addMinutes(new Date(), 5);
 
-    const { otp } = await this.mainOtpService.createNewOtp(
-      6,
-      user.id,
-      expiresAt,
-      OtpTypeEnum.RESET_PASSWORD,
-    );
+      const { otp } = await this.mainOtpService.createNewOtp(
+        6,
+        user.id,
+        expiresAt,
+        OtpTypeEnum.RESET_PASSWORD,
+      );
+
+      otpCode = otp;
+    }
 
     await this.emailService.handleSendEmail(
       user.email,
       EmailTemplateNameEnum.EMAIL_RESET_PASSWORD,
       {
-        otp,
+        otp: otpCode,
       },
     );
 
@@ -695,7 +786,9 @@ export class AuthService {
     const user = await this.mainUserService.findUserByField('email', email);
 
     if (!user)
-      throw new NotFoundException(`This email has not been registered.`);
+      throw new NotFoundException(
+        `Email của bạn chưa được đăng ký trong hệ thống.`,
+      );
 
     if (user.role !== UserRole.OWNER) {
       throw new ForbiddenException(
@@ -729,7 +822,9 @@ export class AuthService {
     const user = await this.mainUserService.findUserByField('email', email);
 
     if (!user)
-      throw new NotFoundException(`This email has not been registered.`);
+      throw new NotFoundException(
+        `Email của bạn chưa được đăng ký trong hệ thống.`,
+      );
 
     if (user.role !== UserRole.OWNER) {
       throw new ForbiddenException(
@@ -814,7 +909,9 @@ export class AuthService {
     const user = await this.mainUserService.findUserByField('id', userId);
 
     if (!user)
-      throw new NotFoundException(`This email has not been registered.`);
+      throw new NotFoundException(
+        `Email của bạn chưa được đăng ký trong hệ thống.`,
+      );
 
     const isValidPassword = await verifyPassword(
       currentPassword,

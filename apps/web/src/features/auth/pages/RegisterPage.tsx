@@ -1,4 +1,3 @@
-import { ScrollArea } from "@/components/ui/scroll-area";
 import SocialLogin from "@/features/auth/components/SocialLogin";
 import Step1Store from "@/features/auth/components/Step1StoreInfo";
 import Step2Owner from "@/features/auth/components/Step2OwnerInfo";
@@ -29,6 +28,7 @@ export default function RegisterPage() {
       password: "",
       confirmPassword: "",
       email: "",
+      agreeTerms: false,
     },
   });
 
@@ -66,7 +66,6 @@ export default function RegisterPage() {
 
           <hr className="border-t border-gray-300 my-6" />
 
-          {/* Steps */}
           {step === 1 && (
             <Step1Store
               onNext={() =>

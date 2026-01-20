@@ -141,8 +141,11 @@
 // };
 
 // src/features/auth/api/auth.api.ts
+import { BookStore } from "@/features/auth/types/bookstore.types";
 import { apiClient } from "@/lib/axios";
-import { SignInDto, SignInResponse, BookStore } from "../types";
+import { OtpTypeEnum, SignInResponse } from "../types";
+import { RegisterDto } from "@/features/auth/types/register";
+import { omit } from "lodash";
 
 export const authApi = {
   systemLoginOwner: async (body: {
@@ -186,6 +189,78 @@ export const authApi = {
     const response = await apiClient.post("/auth/sign-in/bookstore", body, {
       params: { token },
     });
+    return response.data;
+  },
+
+  verifyOtp: async (body: {
+    email: string;
+    otp: string;
+    type: OtpTypeEnum;
+  }) => {
+    const response = await apiClient.post("/auth/verify-otp", body);
+    return response.data;
+  },
+
+  register: async (body: RegisterDto) => {
+    const response = await apiClient.post("/auth/sign-up", body);
+    return response.data;
+  },
+
+  resendOtp: async (body: { email: string; type: OtpTypeEnum }) => {
+    const response = await apiClient.post("/auth/resend-otp", body);
+    return response.data;
+  },
+
+  forgetPassword: async (body: { email: string }) => {
+    const response = await apiClient.post("/auth/forget-password", body);
+    return response.data;
+  },
+
+  resetPassword: async (body: {
+    authCode: string;
+    email: string;
+    newPassword: string;
+  }) => {
+    const response = await apiClient.post("/auth/reset-password", body);
+    return response.data;
+  },
+
+  changeFirstLoginPassword: async (body: {
+    token: string;
+    currentPassword: string;
+    newPassword: string;
+  }) => {
+    const response = await apiClient.patch("/users/me/password", body);
+    return response.data;
+  },
+
+  loginBookStoreEmployee: async (body: {
+    username: string;
+    password: string;
+    bookStoreId: string;
+    token: string;
+  }) => {
+    const response = await apiClient.post(
+      "/auth/sign-in/bookstore",
+      omit(body, ["token"]),
+      {
+        params: {
+          token: body.token,
+        },
+      },
+    );
+    return response.data;
+  },
+
+  /**
+   * Đăng xuất tài khoản
+   * Revoke refresh token và xóa session
+   * @returns Response với message thành công
+   */
+  signOut: async () => {
+    const response = await apiClient.delete<{ message: string }>(
+      "/auth/sign-out",
+    );
     return response.data;
   },
 };

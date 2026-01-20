@@ -29,11 +29,6 @@ export class Book {
   @Column({ nullable: true })
   language?: string;
 
-  @Column({
-    type: 'text',
-  })
-  coverImage: string;
-
   @ManyToOne(() => Author, (author) => author.books, {
     onDelete: 'CASCADE',
   })

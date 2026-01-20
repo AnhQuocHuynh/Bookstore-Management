@@ -1,6 +1,7 @@
 import { PaymentMethod } from '@/common/enums';
 import { DecimalTransformer } from '@/common/transformers';
 import {
+  Customer,
   Employee,
   ReturnOrder,
   TransactionDetail,
@@ -39,17 +40,9 @@ export class Transaction {
     precision: 12,
     scale: 2,
     transformer: DecimalTransformer,
+    default: 0,
   })
   totalAmount: number;
-
-  @Column({
-    type: 'decimal',
-    precision: 12,
-    scale: 2,
-    default: 0,
-    transformer: DecimalTransformer,
-  })
-  discountAmount: number;
 
   @Column({
     type: 'decimal',
@@ -83,6 +76,24 @@ export class Transaction {
   note?: string;
 
   @Column({
+    type: 'decimal',
+    precision: 12,
+    scale: 2,
+    default: 0,
+    transformer: DecimalTransformer,
+  })
+  paidAmount: number;
+
+  @Column({
+    type: 'decimal',
+    precision: 12,
+    scale: 2,
+    default: 0,
+    transformer: DecimalTransformer,
+  })
+  changeAmount: number;
+
+  @Column({
     type: 'boolean',
     default: false,
   })
@@ -106,4 +117,13 @@ export class Transaction {
 
   @OneToMany(() => ReturnOrder, (ro) => ro.transaction)
   returnOrders: ReturnOrder[];
+
+  @ManyToOne(() => Customer, (customer) => customer.transactions, {
+    onDelete: 'CASCADE',
+    nullable: true,
+  })
+  @JoinColumn({
+    name: 'customer_id',
+  })
+  readonly customer: Customer;
 }

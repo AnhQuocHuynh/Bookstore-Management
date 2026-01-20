@@ -39,3 +39,20 @@ export const formatDateTime = (date: Date | string): string => {
     minute: "2-digit",
   }).format(new Date(date));
 };
+
+export const maskEmail = (email?: string) => {
+  if (!email) return "";
+
+  const [name, domain] = email.split("@");
+  if (name.length <= 2) return `${name[0]}***@${domain}`;
+
+  return `${name[0]}***${name[name.length - 1]}@${domain}`;
+};
+
+export const toBase64 = (file: File) =>
+  new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = (error) => reject(error);
+  });
