@@ -156,15 +156,20 @@ export const InventoryPage = () => {
       // KHÔNG gửi 'sku' để tránh lỗi 409 (Conflict)
       name: formData.name,
 
-      // FIX LỖI DESCRIPTION:
-      // Nếu chuỗi rỗng => gửi undefined (để backend không validate lỗi Empty)
-      // Nếu có nội dung => trim() để xóa khoảng trắng thừa
+      // Xử lý Description (như đã sửa trước đó)
       description: formData.description && formData.description.trim() !== ""
         ? formData.description.trim()
         : undefined,
 
       price: formData.sellingPrice,
-      imageUrl: formData.image,
+
+      // --- FIX LỖI ẢNH (IMAGE) ---
+      // Nếu có ảnh và không phải chuỗi rỗng -> gửi URL
+      // Nếu là chuỗi rỗng -> gửi null (để backend hiểu là không có ảnh hoặc xóa ảnh)
+      imageUrl: formData.image && formData.image.trim() !== ""
+        ? formData.image
+        : null,
+
       isActive: formData.isActive,
     };
 
